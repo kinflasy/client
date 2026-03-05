@@ -34,10 +34,13 @@ dependencies:
   flutter_modular: ^6.4.1
   mobx: ^2.6.0
   flutter_mobx: ^2.3.0
+  # mobx e build_runner provavelmente não serão usados. acho que vai ser o signals
   mobx_codegen: ^2.7.6
   build_runner: ^2.11.1
   flutter_screenutil: ^5.9.3
   dio: ^5.9.1
+  signals_flutter: ^6.3.0
+  bot_toast: ^4.1.3
 
 
   # The following adds the Cupertino Icons font to your application.

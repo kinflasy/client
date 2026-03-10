@@ -31,6 +31,31 @@ dependencies:
   flutter:
     sdk: flutter
 
+   # Navegação
+  go_router: ^17.1.0
+
+  # Estado
+  flutter_riverpod: ^3.2.1
+  riverpod_annotation: ^4.0.2
+
+  # Rede
+  dio: ^5.9.2
+  retrofit: ^4.9.0
+
+  # Serialização
+  freezed_annotation: ^2.0.0
+  json_annotation: ^4.0.0
+
+  # Storage seguro
+  flutter_secure_storage: ^9.0.0
+
+  # Notificações in-app
+  toastification: ^3.0.3
+
+  # Utils
+  fpdart: ^1.0.0
+  equatable: ^2.0.0
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -50,6 +75,14 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
+build_runner: ^2.0.0
+riverpod_generator: ^4.0.3
+freezed: ^2.0.0
+json_serializable: ^6.0.0
+retrofit_generator: ^10.2.0
+very_good_analysis: ^10.0.0
+mocktail: ^1.0.0
+
 flutter:
 
   # The following line ensures that the Material Icons font is

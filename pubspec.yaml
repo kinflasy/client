@@ -43,8 +43,8 @@ dependencies:
   retrofit: ^4.9.0
 
   # Serialização
-  freezed_annotation: ^2.0.0
-  json_annotation: ^4.0.0
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.11.0
 
   # Storage seguro
   flutter_secure_storage: ^9.0.0
@@ -75,13 +75,13 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
-build_runner: ^2.0.0
-riverpod_generator: ^4.0.3
-freezed: ^2.0.0
-json_serializable: ^6.0.0
-retrofit_generator: ^10.2.0
-very_good_analysis: ^10.0.0
-mocktail: ^1.0.0
+  build_runner: ^2.0.0
+  riverpod_generator: ^4.0.3
+  freezed: ^3.2.5
+  json_serializable: ^6.13.0
+  retrofit_generator: ^10.2.0
+  very_good_analysis: ^10.0.0
+  mocktail: ^1.0.0
 
 flutter:
 

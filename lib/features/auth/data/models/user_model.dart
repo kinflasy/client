@@ -13,6 +13,7 @@ abstract class UserModel with _$UserModel {
     required String email,
     String? nickname,
     String? phone,
+    String? gender,
     @JsonKey(name: 'birthDate') String? birthDate,
   }) = _UserModel;
 
@@ -27,5 +28,8 @@ extension UserModelX on UserModel {
         username: username,
         email: email,
         nickname: nickname,
+        phone: phone,
+        gender: gender,
+        birthDate: birthDate != null ? DateTime.tryParse(birthDate!) : null,
       );
 }

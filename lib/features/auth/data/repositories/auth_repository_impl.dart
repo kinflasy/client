@@ -7,6 +7,7 @@ import 'package:client/features/auth/domain/entities/user_entity.dart';
 import 'package:client/features/auth/domain/repositories/auth_repository.dart';
 import 'package:client/features/auth/data/datasources/auth_request_models.dart';
 import 'package:client/features/auth/data/models/user_model.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthApi _api;
@@ -80,10 +81,23 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserEntity?> getCurrentUser() async {
-    // Se há token salvo, o usuário está logado.
-    // Os dados completos do usuário serão buscados via /v1/core/users na Fase 3.
     final token = await _storage.getToken();
     if (token == null) return null;
-    return const UserEntity(id: '', username: '', email: '', fullName: '');
+
+    try {
+      // 1. Decodifica o JWT localmente — extrai o username do claim 'sub'
+      final Map<String, dynamic> payload = JwtDecoder.decode(token);
+      final String username = payload['sub'] as String;
+
+      // 2. Busca os dados completos do usuário na API
+      final userModel = await _api.getUserByUsername(username);
+
+      // 3. Converte para entidade de domínio e retorna
+      return userModel.toEntity();
+    } catch (e) {
+      // Token inválido ou expirado → limpa o storage e força novo login
+      await _storage.deleteToken();
+      return null;
+    }
   }
 }

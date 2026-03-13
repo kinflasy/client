@@ -6,6 +6,9 @@ import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/auth/presentation/screens/splash_screen.dart';
 import 'package:client/features/auth/presentation/screens/login_screen.dart';
 import 'package:client/features/auth/presentation/screens/register_screen.dart';
+import 'package:client/features/membership/providers/membership_providers.dart';
+import 'package:client/features/home/presentation/screens/home_screen.dart';
+import 'package:client/features/onboarding/presentation/screens/onboarding_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = _AuthRouterNotifier(ref);
@@ -15,29 +18,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: notifier,
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
+      final membershipState = ref.read(membershipProvider);
 
       if (authState.isLoading) return AppRoutes.splash;
 
       final isLoggedIn = authState.value != null;
-      final isAuthRoute =
-          state.matchedLocation.startsWith('/login') ||
-          state.matchedLocation.startsWith('/register');
 
-      if (!isLoggedIn &&
-          !isAuthRoute &&
-          state.matchedLocation != AppRoutes.splash) {
-        return AppRoutes.login;
+      if (!isLoggedIn) {
+        final isAuthRoute =
+            state.matchedLocation.startsWith('/login') ||
+            state.matchedLocation.startsWith('/register');
+        return isAuthRoute ? null : AppRoutes.login;
       }
 
-      if (!isLoggedIn && state.matchedLocation == AppRoutes.splash) {
-        return AppRoutes.login;
-      }
-      if (isLoggedIn && isAuthRoute) return AppRoutes.peopleList;
-      if (isLoggedIn && state.matchedLocation == AppRoutes.splash) {
-        return AppRoutes.peopleList;
+      if (membershipState.isLoading) return AppRoutes.splash;
+
+      final hasMembership =
+          membershipState.whenOrNull(data: (list) => list.isNotEmpty) ?? false;
+
+      if (hasMembership) {
+        final isBlockedRoute =
+            state.matchedLocation == AppRoutes.login ||
+            state.matchedLocation == AppRoutes.onboarding ||
+            state.matchedLocation == AppRoutes.splash;
+        return isBlockedRoute ? AppRoutes.home : null;
       }
 
-      return null;
+      return state.matchedLocation == AppRoutes.onboarding
+          ? null
+          : AppRoutes.onboarding;
     },
     routes: [
       GoRoute(
@@ -53,31 +62,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, _) => const RegisterScreen(),
       ),
       GoRoute(
-        path: AppRoutes.peopleList,
-        builder: (context, _) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Lista de pessoas'),
-            actions: [
-              Consumer(
-                builder: (context, ref, _) => IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: () => ref.read(authProvider.notifier).signOut(),
-                ),
-              ),
-            ],
-          ),
-          body: const Center(child: Text('Lista de pessoas — em breve')),
-        ),
-        routes: [
-          GoRoute(
-            path: ':id',
-            builder: (context, state) => Scaffold(
-              body: Center(
-                child: Text('Detalhe ${state.pathParameters['id']} — em breve'),
-              ),
-            ),
-          ),
-        ],
+        path: AppRoutes.home,
+        builder: (context, _) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (context, _) => const OnboardingScreen(),
       ),
     ],
   );
@@ -86,5 +76,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 class _AuthRouterNotifier extends ChangeNotifier {
   _AuthRouterNotifier(Ref ref) {
     ref.listen(authStateProvider, (_, next) => notifyListeners());
+    ref.listen(membershipProvider, (_, next) => notifyListeners());
   }
 }

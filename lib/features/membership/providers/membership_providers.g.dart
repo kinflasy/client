@@ -98,4 +98,4 @@ final class HasMembershipProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$hasMembershipHash() => r'da890af7699f768b683c1d613bece1657ab8cce7';
+String _$hasMembershipHash() => r'236ccf6c75c1e18e6e875def1c79d6802446f5aa';

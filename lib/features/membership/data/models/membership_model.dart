@@ -9,6 +9,7 @@ abstract class MembershipModel with _$MembershipModel {
   const factory MembershipModel({
     required String id,
     required String unitId,
+    @Default('VISITOR') String affiliation,
   }) = _MembershipModel;
 
   factory MembershipModel.fromJson(Map<String, dynamic> json) =>
@@ -19,5 +20,6 @@ extension MembershipModelX on MembershipModel {
   MembershipEntity toEntity() => MembershipEntity(
         id: id,
         unitId: unitId,
+        affiliation: affiliation,
       );
 }

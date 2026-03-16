@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MembershipModel {
 
- String get id; String get unitId;
+ String get id; String get unitId; String get affiliation;
 /// Create a copy of MembershipModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $MembershipModelCopyWith<MembershipModel> get copyWith => _$MembershipModelCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MembershipModel&&(identical(other.id, id) || other.id == id)&&(identical(other.unitId, unitId) || other.unitId == unitId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MembershipModel&&(identical(other.id, id) || other.id == id)&&(identical(other.unitId, unitId) || other.unitId == unitId)&&(identical(other.affiliation, affiliation) || other.affiliation == affiliation));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,unitId);
+int get hashCode => Object.hash(runtimeType,id,unitId,affiliation);
 
 @override
 String toString() {
-  return 'MembershipModel(id: $id, unitId: $unitId)';
+  return 'MembershipModel(id: $id, unitId: $unitId, affiliation: $affiliation)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $MembershipModelCopyWith<$Res>  {
   factory $MembershipModelCopyWith(MembershipModel value, $Res Function(MembershipModel) _then) = _$MembershipModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String unitId
+ String id, String unitId, String affiliation
 });
 
 
@@ -65,10 +65,11 @@ class _$MembershipModelCopyWithImpl<$Res>
 
 /// Create a copy of MembershipModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? unitId = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? unitId = null,Object? affiliation = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,unitId: null == unitId ? _self.unitId : unitId // ignore: cast_nullable_to_non_nullable
+as String,affiliation: null == affiliation ? _self.affiliation : affiliation // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -154,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String unitId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String unitId,  String affiliation)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MembershipModel() when $default != null:
-return $default(_that.id,_that.unitId);case _:
+return $default(_that.id,_that.unitId,_that.affiliation);case _:
   return orElse();
 
 }
@@ -175,10 +176,10 @@ return $default(_that.id,_that.unitId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String unitId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String unitId,  String affiliation)  $default,) {final _that = this;
 switch (_that) {
 case _MembershipModel():
-return $default(_that.id,_that.unitId);case _:
+return $default(_that.id,_that.unitId,_that.affiliation);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -195,10 +196,10 @@ return $default(_that.id,_that.unitId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String unitId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String unitId,  String affiliation)?  $default,) {final _that = this;
 switch (_that) {
 case _MembershipModel() when $default != null:
-return $default(_that.id,_that.unitId);case _:
+return $default(_that.id,_that.unitId,_that.affiliation);case _:
   return null;
 
 }
@@ -210,11 +211,12 @@ return $default(_that.id,_that.unitId);case _:
 @JsonSerializable()
 
 class _MembershipModel implements MembershipModel {
-  const _MembershipModel({required this.id, required this.unitId});
+  const _MembershipModel({required this.id, required this.unitId, this.affiliation = 'VISITOR'});
   factory _MembershipModel.fromJson(Map<String, dynamic> json) => _$MembershipModelFromJson(json);
 
 @override final  String id;
 @override final  String unitId;
+@override@JsonKey() final  String affiliation;
 
 /// Create a copy of MembershipModel
 /// with the given fields replaced by the non-null parameter values.
@@ -229,16 +231,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MembershipModel&&(identical(other.id, id) || other.id == id)&&(identical(other.unitId, unitId) || other.unitId == unitId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MembershipModel&&(identical(other.id, id) || other.id == id)&&(identical(other.unitId, unitId) || other.unitId == unitId)&&(identical(other.affiliation, affiliation) || other.affiliation == affiliation));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,unitId);
+int get hashCode => Object.hash(runtimeType,id,unitId,affiliation);
 
 @override
 String toString() {
-  return 'MembershipModel(id: $id, unitId: $unitId)';
+  return 'MembershipModel(id: $id, unitId: $unitId, affiliation: $affiliation)';
 }
 
 
@@ -249,7 +251,7 @@ abstract mixin class _$MembershipModelCopyWith<$Res> implements $MembershipModel
   factory _$MembershipModelCopyWith(_MembershipModel value, $Res Function(_MembershipModel) _then) = __$MembershipModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String unitId
+ String id, String unitId, String affiliation
 });
 
 
@@ -266,10 +268,11 @@ class __$MembershipModelCopyWithImpl<$Res>
 
 /// Create a copy of MembershipModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? unitId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? unitId = null,Object? affiliation = null,}) {
   return _then(_MembershipModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,unitId: null == unitId ? _self.unitId : unitId // ignore: cast_nullable_to_non_nullable
+as String,affiliation: null == affiliation ? _self.affiliation : affiliation // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

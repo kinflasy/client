@@ -1,3 +1,4 @@
+import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,9 +7,7 @@ import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/auth/presentation/screens/splash_screen.dart';
 import 'package:client/features/auth/presentation/screens/login_screen.dart';
 import 'package:client/features/auth/presentation/screens/register_screen.dart';
-import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:client/features/home/presentation/screens/home_screen.dart';
-import 'package:client/features/onboarding/presentation/screens/onboarding_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = _AuthRouterNotifier(ref);
@@ -18,35 +17,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: notifier,
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
-      final membershipState = ref.read(membershipProvider);
 
       if (authState.isLoading) return AppRoutes.splash;
+      final currentPath = state.matchedLocation;
 
       final isLoggedIn = authState.value != null;
 
-      if (!isLoggedIn) {
-        final isAuthRoute =
-            state.matchedLocation.startsWith('/login') ||
-            state.matchedLocation.startsWith('/register');
-        return isAuthRoute ? null : AppRoutes.login;
-      }
+      final isAuthRoute =
+          currentPath.startsWith('/login') ||
+          currentPath.startsWith('/register');
 
-      if (membershipState.isLoading) return AppRoutes.splash;
+      final isSystemRoute = currentPath == AppRoutes.splash;
 
-      final hasMembership =
-          membershipState.whenOrNull(data: (list) => list.isNotEmpty) ?? false;
+      if (!isLoggedIn && !isAuthRoute) return AppRoutes.login;
 
-      if (hasMembership) {
-        final isBlockedRoute =
-            state.matchedLocation == AppRoutes.login ||
-            state.matchedLocation == AppRoutes.onboarding ||
-            state.matchedLocation == AppRoutes.splash;
-        return isBlockedRoute ? AppRoutes.home : null;
-      }
+      if (isLoggedIn && (isAuthRoute || isSystemRoute)) return AppRoutes.home;
 
-      return state.matchedLocation == AppRoutes.onboarding
-          ? null
-          : AppRoutes.onboarding;
+      return null;
     },
     routes: [
       GoRoute(
@@ -64,10 +51,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.home,
         builder: (context, _) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.onboarding,
-        builder: (context, _) => const OnboardingScreen(),
       ),
     ],
   );

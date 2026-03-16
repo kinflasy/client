@@ -1,3 +1,5 @@
+import 'package:client/features/church/presentation/screens/church_tab_screen.dart';
+import 'package:client/features/menu/presentation/screens/menu_screen.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -13,8 +15,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _tabs = const [
     Center(child: Text('Início — em breve')),
     Center(child: Text('Agenda — em breve')),
-    Center(child: Text('Grupos — em breve')),
-    Center(child: Text('Perfil — em breve')),
+    ChurchTabScreen(),
+    MenuScreen(),
   ];
 
   @override
@@ -28,8 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Início'),
           BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), label: 'Agenda'),
-          BottomNavigationBarItem(icon: Icon(Icons.group_outlined), label: 'Grupos'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Perfil'),
+          BottomNavigationBarItem(icon: Icon(Icons.church_outlined), label: 'Igreja'),
+          BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: 'Menu'),
         ],
       ),
     );

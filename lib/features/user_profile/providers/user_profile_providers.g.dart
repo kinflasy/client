@@ -13,8 +13,8 @@ part of 'user_profile_providers.dart';
 final currentUserProfileProvider = CurrentUserProfileProvider._();
 
 final class CurrentUserProfileProvider
-    extends $FunctionalProvider<UserProfile, UserProfile, UserProfile>
-    with $Provider<UserProfile> {
+    extends $FunctionalProvider<Affiliation, Affiliation, Affiliation>
+    with $Provider<Affiliation> {
   CurrentUserProfileProvider._()
     : super(
         from: null,
@@ -31,19 +31,19 @@ final class CurrentUserProfileProvider
 
   @$internal
   @override
-  $ProviderElement<UserProfile> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<Affiliation> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  UserProfile create(Ref ref) {
+  Affiliation create(Ref ref) {
     return currentUserProfile(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(UserProfile value) {
+  Override overrideWithValue(Affiliation value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<UserProfile>(value),
+      providerOverride: $SyncValueProvider<Affiliation>(value),
     );
   }
 }

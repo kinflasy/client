@@ -49,4 +49,4 @@ final class CurrentUserProfileProvider
 }
 
 String _$currentUserProfileHash() =>
-    r'3922e64f6e5270b7bb250ccddca55a380bff1919';
+    r'2488cad8e4222f30b6f2383cbcdc1f66a9531f29';

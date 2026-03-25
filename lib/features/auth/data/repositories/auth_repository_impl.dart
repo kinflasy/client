@@ -82,20 +82,13 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserEntity?> getCurrentUser() async {
     final token = await _storage.getToken();
-    if (token == null) return null;
+    if (token == null) return null;    
 
     try {
-      // 1. Decodifica o JWT localmente — extrai o username do claim 'sub'
-      final Map<String, dynamic> payload = JwtDecoder.decode(token);
-      final String username = payload['sub'] as String;
-
-      // 2. Busca os dados completos do usuário na API
-      final userModel = await _api.getUserByUsername(username);
-
-      // 3. Converte para entidade de domínio e retorna
+      final userModel = await _api.getLoggedUser();
       return userModel.toEntity();
     } catch (e) {
-      // Token inválido ou expirado → limpa o storage e força novo login
+      print('getCurrentUser erro: $e');
       await _storage.deleteToken();
       return null;
     }

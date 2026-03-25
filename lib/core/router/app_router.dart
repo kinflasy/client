@@ -52,6 +52,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.home,
         builder: (context, _) => const HomeScreen(),
       ),
+      GoRoute(
+        path: AppRoutes.registerChurch,
+        builder: (context, _) =>
+            const Scaffold(body: Center(child: Text('Cadastro em breve'))),
+      ),
     ],
   );
 });

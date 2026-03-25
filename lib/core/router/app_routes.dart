@@ -5,4 +5,5 @@ class AppRoutes {
   static const peopleList = '/people';
   static const peopleDetail = '/people/:id';
   static const home = '/home';  
+  static const registerChurch = '/register-church';
 }

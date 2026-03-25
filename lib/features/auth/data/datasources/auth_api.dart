@@ -15,6 +15,6 @@ abstract class AuthApi {
   @POST('/auth/register')
   Future<UserModel> register(@Body() RegisterRequestModel body);
 
-  @GET('/v1/core/users/@{username}')
-  Future<UserModel> getUserByUsername(@Path('username') String username);
+  @GET('/v1/core/users/identify')
+  Future<UserModel> getLoggedUser();
 }

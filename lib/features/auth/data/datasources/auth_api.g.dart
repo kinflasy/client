@@ -76,7 +76,7 @@ class _AuthApi implements AuthApi {
   }
 
   @override
-  Future<UserModel> getUserByUsername(String username) async {
+  Future<UserModel> getLoggedUser() async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -85,7 +85,7 @@ class _AuthApi implements AuthApi {
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            '/v1/core/users/@${username}',
+            '/v1/core/users/identify',
             queryParameters: queryParameters,
             data: _data,
           )

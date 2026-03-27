@@ -8,6 +8,7 @@ import 'package:client/features/auth/presentation/screens/splash_screen.dart';
 import 'package:client/features/auth/presentation/screens/login_screen.dart';
 import 'package:client/features/auth/presentation/screens/register_screen.dart';
 import 'package:client/features/home/presentation/screens/home_screen.dart';
+import 'package:client/features/church/presentation/screens/register_church_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = _AuthRouterNotifier(ref);
@@ -31,7 +32,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (!isLoggedIn && !isAuthRoute) return AppRoutes.login;
 
-      if (isLoggedIn && (isAuthRoute || isSystemRoute)) return AppRoutes.home;
+      if (isLoggedIn && (isAuthRoute || isSystemRoute)) return AppRoutes.registerChurch;
 
       return null;
     },
@@ -54,8 +55,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.registerChurch,
-        builder: (context, _) =>
-            const Scaffold(body: Center(child: Text('Cadastro em breve'))),
+        builder: (context, _) => const RegisterChurchScreen(),
       ),
     ],
   );

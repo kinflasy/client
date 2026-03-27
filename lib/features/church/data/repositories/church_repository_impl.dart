@@ -16,6 +16,7 @@ class ChurchRepositoryImpl implements ChurchRepository {
     ChurchStarterRequestModel request,
   ) async {
     try {
+      print('createChurch request: ${request.toJson()}');
       final model = await _api.createChurch(request);
       return Right(ChurchEntity(
         id: model.id,
@@ -26,6 +27,7 @@ class ChurchRepositoryImpl implements ChurchRepository {
         email: model.email,
       ));
     } on DioException catch (e) {
+      print('createChurch erro: ${e.response?.statusCode} — ${e.response?.data}');
       final statusCode = e.response?.statusCode;
       if (statusCode == 400 || statusCode == 409) {
         final message = e.response?.data?['message'] as String? ??

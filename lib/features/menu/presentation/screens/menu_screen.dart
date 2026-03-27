@@ -1,3 +1,4 @@
+import 'package:client/core/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,7 +27,7 @@ class MenuScreen extends ConsumerWidget {
                 _MenuItem(
                   icon: Icons.church_outlined,
                   label: 'Cadastrar Igreja',
-                  onTap: () => context.push(AppRoutes.registerChurch),
+                  onTap: () => ref.read(appRouterProvider).go(AppRoutes.registerChurch),
                 ),
               ],
             ),

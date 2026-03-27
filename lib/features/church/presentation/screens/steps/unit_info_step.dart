@@ -4,18 +4,10 @@ import 'package:client/features/church/providers/register_church_form_provider.d
 
 class UnitInfoStep extends ConsumerStatefulWidget {
   final GlobalKey<FormState> formKey;
-  final String? initialName;
-  final String? initialSlug;
-  final String? initialPhone;
-  final String? initialEmail;
 
   const UnitInfoStep({
     super.key,
     required this.formKey,
-    this.initialName,
-    this.initialSlug,
-    this.initialPhone,
-    this.initialEmail,
   });
 
   @override
@@ -31,27 +23,13 @@ class _UnitInfoStepState extends ConsumerState<UnitInfoStep> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.initialName ?? '');
-    _slugController = TextEditingController(text: widget.initialSlug ?? '');
-    _phoneController = TextEditingController(text: widget.initialPhone ?? '');
-    _emailController = TextEditingController(text: widget.initialEmail ?? '');
-
-    // Pré-popula o estado do formulário com os valores iniciais
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final notifier = ref.read(registerChurchFormProvider.notifier);
-      if (widget.initialName != null) {
-        notifier.update((s) => s.copyWith(unitName: widget.initialName));
-      }
-      if (widget.initialSlug != null) {
-        notifier.update((s) => s.copyWith(unitSlug: widget.initialSlug));
-      }
-      if (widget.initialPhone != null) {
-        notifier.update((s) => s.copyWith(unitPhone: widget.initialPhone));
-      }
-      if (widget.initialEmail != null) {
-        notifier.update((s) => s.copyWith(unitEmail: widget.initialEmail));
-      }
-    });
+    // Lê o estado atual do formulário direto do provider.
+    // Neste momento o usuário já preencheu a Etapa 1, então os valores estão populados.
+    final formState = ref.read(registerChurchFormProvider);
+    _nameController  = TextEditingController(text: formState.churchName);
+    _slugController  = TextEditingController(text: formState.churchSlug);
+    _phoneController = TextEditingController(text: formState.churchPhone);
+    _emailController = TextEditingController(text: formState.churchEmail);
   }
 
   @override

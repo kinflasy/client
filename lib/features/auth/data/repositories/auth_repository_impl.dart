@@ -7,7 +7,6 @@ import 'package:client/features/auth/domain/entities/user_entity.dart';
 import 'package:client/features/auth/domain/repositories/auth_repository.dart';
 import 'package:client/features/auth/data/datasources/auth_request_models.dart';
 import 'package:client/features/auth/data/models/user_model.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthApi _api;
@@ -58,7 +57,6 @@ class AuthRepositoryImpl implements AuthRepository {
         birthDate: '2000-01-01',
       );
 
-      print('Enviando cadastro: ${request.toJson()}');
 
       final user = await _api.register(request);
       return Right(user.toEntity());

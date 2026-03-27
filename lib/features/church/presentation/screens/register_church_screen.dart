@@ -117,16 +117,8 @@ class _RegisterChurchScreenState extends ConsumerState<RegisterChurchScreen> {
               children: [
                 ChurchInfoStep(formKey: _step1Key),
                 UnitInfoStep(
-                  formKey: _step2Key,
-                  initialName: ref.read(registerChurchFormProvider).churchName,
-                  initialSlug: ref.read(registerChurchFormProvider).churchSlug,
-                  initialPhone: ref
-                      .read(registerChurchFormProvider)
-                      .churchPhone,
-                  initialEmail: ref
-                      .read(registerChurchFormProvider)
-                      .churchEmail,
-                ),
+                  key: ValueKey(_currentStep >= 1),
+                  formKey: _step2Key,),
                 AddressStep(formKey: _step3Key),
               ],
             ),

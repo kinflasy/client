@@ -64,6 +64,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isSystemRoute = _isSystemRoute(currentPath);
       final isProtectedRoute = _isProtectedRoute(currentPath);
 
+      if (!isLoggedIn && currentPath == AppRoutes.splash) {
+        return AppRoutes.login;
+      }
+
       if (!isLoggedIn && isProtectedRoute) return AppRoutes.login;
 
       if (isLoggedIn && (isAuthRoute || isSystemRoute)) {

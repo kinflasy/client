@@ -4,6 +4,7 @@ import '../../../../core/errors/failure.dart';
 import '../../domain/entities/church_entity.dart';
 import '../../domain/repositories/church_repository.dart';
 import '../datasources/church_api.dart';
+import '../models/church_read_models.dart';
 import '../models/church_request_model.dart';
 
 class ChurchRepositoryImpl implements ChurchRepository {
@@ -35,6 +36,36 @@ class ChurchRepositoryImpl implements ChurchRepository {
       return Left(NetworkFailure(
         e.message ?? 'Erro de rede. Tente novamente.',
       ));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ChurchEntity>> getChurchById(String id) async {
+    try {
+      final json = await _api.getChurchById(id);
+      final model = ChurchReadModel.fromJson(json);
+      return Right(
+        ChurchEntity(
+          id: model.id,
+          name: model.name,
+          slug: model.slug,
+          acronym: model.acronym,
+          phone: model.phone,
+          email: model.email,
+          coverUrl: model.coverUrl,
+          logoUrl: model.logoUrl,
+        ),
+      );
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 404) {
+        return const Left(NotFoundFailure('Igreja não encontrada.'));
+      }
+      return Left(
+        NetworkFailure(e.message ?? 'Erro ao buscar os dados da igreja.'),
+      );
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
     }

@@ -7,4 +7,6 @@ abstract class ChurchRepository {
   Future<Either<Failure, ChurchEntity>> createChurch(
     ChurchStarterRequestModel request,
   );
+
+  Future<Either<Failure, ChurchEntity>> getChurchById(String id);
 }

@@ -7,6 +7,8 @@ class ChurchEntity extends Equatable {
   final String? acronym;
   final String? phone;
   final String email;
+  final String? coverUrl;
+  final String? logoUrl;
 
   const ChurchEntity({
     required this.id,
@@ -15,8 +17,19 @@ class ChurchEntity extends Equatable {
     this.acronym,
     this.phone,
     required this.email,
+    this.coverUrl,
+    this.logoUrl,
   });
 
   @override
-  List<Object?> get props => [id, name, slug, acronym, phone, email];
+  List<Object?> get props => [
+        id,
+        name,
+        slug,
+        acronym,
+        phone,
+        email,
+        coverUrl,
+        logoUrl,
+      ];
 }

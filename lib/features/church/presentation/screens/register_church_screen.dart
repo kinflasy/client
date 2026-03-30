@@ -6,6 +6,7 @@ import 'package:toastification/toastification.dart';
 import 'package:client/features/church/data/models/church_request_model.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/church/providers/register_church_form_provider.dart';
+import 'package:client/features/membership/providers/membership_providers.dart';
 import 'steps/church_info_step.dart';
 import 'steps/unit_info_step.dart';
 import 'steps/address_step.dart';
@@ -73,6 +74,9 @@ class _RegisterChurchScreenState extends ConsumerState<RegisterChurchScreen> {
         );
       },
       (_) {
+        ref.invalidate(membershipProvider);
+        ref.invalidate(activeMembershipProvider);
+        ref.invalidate(currentChurchProfileProvider);
         toastification.show(
           context: context,
           type: ToastificationType.success,

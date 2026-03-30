@@ -13,4 +13,7 @@ abstract class ChurchApi {
   Future<ChurchStarterModel> createChurch(
     @Body() ChurchStarterRequestModel request,
   );
+
+  @GET('/v1/core/churches/{id}')
+  Future<Map<String, dynamic>> getChurchById(@Path('id') String id);
 }

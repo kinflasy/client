@@ -1,18 +1,19 @@
-import 'package:dio/dio.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/storage/secure_storage.dart';
 import 'package:client/features/auth/data/datasources/auth_api.dart';
-import 'package:client/features/auth/domain/entities/user_entity.dart';
-import 'package:client/features/auth/domain/repositories/auth_repository.dart';
 import 'package:client/features/auth/data/datasources/auth_request_models.dart';
 import 'package:client/features/auth/data/models/user_model.dart';
+import 'package:client/features/auth/domain/entities/user_entity.dart';
+import 'package:client/features/auth/domain/repositories/auth_repository.dart';
+import 'package:dio/dio.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
+  AuthRepositoryImpl(this._api, this._storage);
+
   final AuthApi _api;
   final SecureStorage _storage;
-
-  AuthRepositoryImpl(this._api, this._storage);
 
   @override
   Future<Either<Failure, UserEntity>> signIn({
@@ -23,10 +24,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final response = await _api.login(
         LoginRequestModel(username: email, password: password),
       );
-      // Backend retorna apenas o token no login —
-      // salvamos e buscamos os dados do usuário depois via /v1/core/users
       await _storage.saveToken(response.token);
-      // Retornamos uma entity temporária; os dados reais virão do getCurrentUser()
       return Right(
         UserEntity(id: '', username: email, email: email, fullName: ''),
       );
@@ -57,17 +55,12 @@ class AuthRepositoryImpl implements AuthRepository {
         birthDate: '2000-01-01',
       );
 
-
       final user = await _api.register(request);
       return Right(user.toEntity());
     } on DioException catch (e) {
-      print(
-        'Erro DioException: ${e.response?.statusCode} — ${e.response?.data}',
-      );
       return Left(NetworkFailure('Erro de conexão: ${e.message}'));
-    } catch (e) {
-      print('Erro inesperado: $e');
-      return Left(UnknownFailure('Erro inesperado: $e'));
+    } catch (_) {
+      return Left(UnknownFailure('Erro inesperado'));
     }
   }
 
@@ -80,13 +73,25 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserEntity?> getCurrentUser() async {
     final token = await _storage.getToken();
-    if (token == null) return null;    
+    if (token == null) return null;
+
+    try {
+      if (JwtDecoder.isExpired(token)) {
+        await _storage.deleteToken();
+        return null;
+      }
+    } catch (_) {
+      await _storage.deleteToken();
+      return null;
+    }
 
     try {
       final userModel = await _api.getLoggedUser();
       return userModel.toEntity();
-    } catch (e) {
-      print('getCurrentUser erro: $e');
+    } on DioException catch (_) {
+      await _storage.deleteToken();
+      return null;
+    } catch (_) {
       await _storage.deleteToken();
       return null;
     }

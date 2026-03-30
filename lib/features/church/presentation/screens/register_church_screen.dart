@@ -1,3 +1,4 @@
+import 'package:client/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -78,7 +79,7 @@ class _RegisterChurchScreenState extends ConsumerState<RegisterChurchScreen> {
           title: const Text('Igreja cadastrada com sucesso!'),
           autoCloseDuration: const Duration(seconds: 3),
         );
-        context.go('/home');
+        context.go(AppRoutes.homeChurch);
       },
     );
   }

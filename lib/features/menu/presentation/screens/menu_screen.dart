@@ -1,9 +1,8 @@
-import 'package:client/core/router/app_router.dart';
+import 'package:client/core/router/app_routes.dart';
+import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/auth/providers/auth_providers.dart';
 
 class MenuScreen extends ConsumerWidget {
   const MenuScreen({super.key});
@@ -12,8 +11,13 @@ class MenuScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref
         .watch(authProvider)
-        .when(data: (u) => u, loading: () => null, error: (_, __) => null);
-    final displayName = user?.nickname ?? user?.fullName ?? user?.username ?? '';
+        .when(
+          data: (u) => u,
+          loading: () => null,
+          error: (error, stackTrace) => null,
+        );
+    final displayName =
+        user?.nickname ?? user?.fullName ?? user?.username ?? '';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -24,10 +28,10 @@ class MenuScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             _MenuSection(
               children: [
-                _MenuItem(
-                  icon: Icons.church_outlined,
-                  label: 'Cadastrar Igreja',
-                  onTap: () => ref.read(appRouterProvider).go(AppRoutes.registerChurch),
+                ListTile(
+                  leading: const Icon(Icons.church_outlined),
+                  title: const Text('Cadastrar Igreja'),
+                  onTap: () => context.pushNamed(AppRoutes.registerChurchName),
                 ),
               ],
             ),
@@ -71,15 +75,15 @@ class MenuScreen extends ConsumerWidget {
         ],
       ),
     );
-    if (confirmed == true && context.mounted) {
+    if (confirmed == true) {
       await ref.read(authProvider.notifier).signOut();
-      if (context.mounted) context.go(AppRoutes.login);
     }
   }
 }
 
 class _UserHeader extends StatelessWidget {
   final String displayName;
+
   const _UserHeader({required this.displayName});
 
   @override
@@ -118,6 +122,7 @@ class _UserHeader extends StatelessWidget {
 
 class _MenuSection extends StatelessWidget {
   final List<Widget> children;
+
   const _MenuSection({required this.children});
 
   @override

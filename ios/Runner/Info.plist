@@ -66,5 +66,15 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>mailto</string>
+		<string>https</string>
+		<string>whatsapp</string>
+		<string>instagram</string>
+		<string>youtube</string>
+		<string>spotify</string>
+	</array>
 </dict>
 </plist>

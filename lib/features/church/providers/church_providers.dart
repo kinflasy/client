@@ -148,6 +148,17 @@ final churchDepartmentsProvider =
       }
     });
 
+/// Provider parametrizado por churchId para o perfil público.
+/// Reutiliza o repositório e endpoint já existentes.
+final publicChurchProfileProvider =
+    FutureProvider.family<ChurchEntity, String>((ref, churchId) async {
+  final result = await ref.read(churchRepositoryProvider).getChurchById(churchId);
+  return result.fold(
+    (failure) => throw failure,
+    (church) => church,
+  );
+});
+
 @riverpod
 class CreateChurchNotifier extends _$CreateChurchNotifier {
   @override

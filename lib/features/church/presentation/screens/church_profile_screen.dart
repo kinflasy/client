@@ -4,6 +4,7 @@ import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_department_entity.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
+import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,46 +66,6 @@ class ChurchProfileScreen extends ConsumerWidget {
   }
 }
 
-class _ChurchSearchRow extends StatelessWidget {
-  const _ChurchSearchRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Spacer(),
-        SizedBox(
-          height: 35,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 190),
-            child: TextField(
-              readOnly: true,
-              textAlignVertical: TextAlignVertical.center,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Busca de igrejas em breve.')),
-                );
-              },
-              decoration: InputDecoration(
-                hintText: 'Pesquisar igreja',
-                isDense: true,
-                prefixIcon: const Icon(Icons.search, size: 16),
-                filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.60),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _ChurchCoverHeader extends StatelessWidget {
   const _ChurchCoverHeader({required this.profile});
 
@@ -146,11 +107,11 @@ class _ChurchCoverHeader extends StatelessWidget {
                       const SizedBox.shrink(),
                 ),
         ),
-        const Positioned(
+        Positioned(
           top: 10,
           left: 16,
           right: 16,
-          child: _ChurchSearchRow(),
+          child: ChurchSearchRow(),
         ),
         Positioned(
           bottom: -58,
@@ -163,7 +124,7 @@ class _ChurchCoverHeader extends StatelessWidget {
               backgroundImage: logoUrl != null ? NetworkImage(logoUrl) : null,
               child: logoUrl == null
                   ? Text(
-                      _initials(profile.church.name),
+                      churchInitials(profile.church.name),
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontSize: 28,
@@ -179,22 +140,13 @@ class _ChurchCoverHeader extends StatelessWidget {
   }
 }
 
-class _ChurchInfoCard extends StatefulWidget {
+class _ChurchInfoCard extends StatelessWidget {
   const _ChurchInfoCard({required this.profile});
 
   final CurrentChurchProfileEntity profile;
 
   @override
-  State<_ChurchInfoCard> createState() => _ChurchInfoCardState();
-}
-
-class _ChurchInfoCardState extends State<_ChurchInfoCard> {
-  bool _expanded = false;
-
-  @override
   Widget build(BuildContext context) {
-    final profile = widget.profile;
-
     return Container(
       width: double.infinity,
       color: AppColors.surface,
@@ -231,48 +183,42 @@ class _ChurchInfoCardState extends State<_ChurchInfoCard> {
               const SizedBox(width: 12),
               InkWell(
                 borderRadius: BorderRadius.circular(999),
-                onTap: () => setState(() => _expanded = !_expanded),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                onTap: () => context.pushNamed(
+                  AppRoutes.churchPublicProfileName,
+                  pathParameters: {'id': profile.church.id},
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   child: Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
+                    Icons.chevron_right,
                     color: AppColors.textSecondary,
                   ),
                 ),
               ),
             ],
           ),
-          AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Wrap(
-                alignment: WrapAlignment.start,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              alignment: WrapAlignment.start,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _InfoChip(
+                  icon: Icons.location_city_outlined,
+                  label: profile.unit.name ?? 'Sede principal',
+                ),
+                if ((profile.church.phone ?? '').isNotEmpty)
                   _InfoChip(
-                    icon: Icons.location_city_outlined,
-                    label: profile.unit.name ?? 'Sede principal',
+                    icon: Icons.call_outlined,
+                    label: profile.church.phone!,
                   ),
-                  if ((profile.church.phone ?? '').isNotEmpty)
-                    _InfoChip(
-                      icon: Icons.call_outlined,
-                      label: profile.church.phone!,
-                    ),
-                  _InfoChip(
-                    icon: Icons.mail_outline,
-                    label: profile.church.email,
-                  ),
-                ],
-              ),
+                _InfoChip(
+                  icon: Icons.mail_outline,
+                  label: profile.church.email,
+                ),
+              ],
             ),
-            crossFadeState: _expanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 180),
           ),
         ],
       ),
@@ -650,16 +596,6 @@ class _ErrorChurchState extends StatelessWidget {
       ),
     );
   }
-}
-
-String _initials(String name) {
-  final parts = name
-      .split(' ')
-      .where((part) => part.trim().isNotEmpty)
-      .take(2)
-      .toList();
-  if (parts.isEmpty) return '?';
-  return parts.map((part) => part[0].toUpperCase()).join();
 }
 
 String _formatDateRange(DateTime start, DateTime end) {

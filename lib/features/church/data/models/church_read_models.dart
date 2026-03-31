@@ -8,6 +8,15 @@ class ChurchReadModel {
     this.phone,
     this.coverUrl,
     this.logoUrl,
+    this.address,
+    this.website,
+    this.instagramUrl,
+    this.youtubeUrl,
+    this.spotifyUrl,
+    this.whatsappNumber,
+    this.isHeadquarters,
+    this.parentChurchId,
+    this.parentChurchAcronym,
   });
 
   factory ChurchReadModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +39,15 @@ class ChurchReadModel {
         'logoImageUrl',
         'logoImage',
       ]),
+      address: _readAddress(json),
+      website: json['website'] as String?,
+      instagramUrl: _readNullableString(json, const ['instagramUrl', 'instagram_url', 'instagram']),
+      youtubeUrl: _readNullableString(json, const ['youtubeUrl', 'youtube_url', 'youtube']),
+      spotifyUrl: _readNullableString(json, const ['spotifyUrl', 'spotify_url', 'spotify']),
+      whatsappNumber: _readNullableString(json, const ['whatsappNumber', 'whatsapp_number', 'whatsapp']),
+      isHeadquarters: json['isHeadquarters'] as bool?,
+      parentChurchId: json['parentChurchId'] as String?,
+      parentChurchAcronym: json['parentChurchAcronym'] as String?,
     );
   }
 
@@ -41,6 +59,15 @@ class ChurchReadModel {
   final String? phone;
   final String? coverUrl;
   final String? logoUrl;
+  final String? address;
+  final String? website;
+  final String? instagramUrl;
+  final String? youtubeUrl;
+  final String? spotifyUrl;
+  final String? whatsappNumber;
+  final bool? isHeadquarters;
+  final String? parentChurchId;
+  final String? parentChurchAcronym;
 }
 
 class ChurchUnitReadModel {
@@ -113,6 +140,26 @@ class ChurchDepartmentReadModel {
   final String name;
   final String? slug;
   final String? type;
+}
+
+/// Lê o endereço, que pode vir como objeto {street, city, ...} ou String direta.
+String? _readAddress(Map<String, dynamic> json) {
+  final raw = json['address'];
+  if (raw == null) return null;
+  if (raw is String && raw.trim().isNotEmpty) return raw.trim();
+  if (raw is Map<String, dynamic>) {
+    // Monta string legível: "Rua X, 123 - Bairro, Cidade - UF"
+    final parts = <String>[
+      if ((raw['street'] as String?)?.isNotEmpty == true) raw['street'] as String,
+      if ((raw['number'] as String?)?.isNotEmpty == true) raw['number'] as String,
+      if ((raw['neighborhood'] as String?)?.isNotEmpty == true) raw['neighborhood'] as String,
+      if ((raw['city'] as String?)?.isNotEmpty == true) raw['city'] as String,
+      if ((raw['state'] as String?)?.isNotEmpty == true) raw['state'] as String,
+    ];
+    final joined = parts.join(', ');
+    return joined.isNotEmpty ? joined : null;
+  }
+  return null;
 }
 
 String? _readNullableString(

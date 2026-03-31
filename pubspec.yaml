@@ -49,6 +49,9 @@ dependencies:
   # Storage seguro
   flutter_secure_storage: ^9.0.0
 
+  # Deep links
+  url_launcher: ^6.2.6
+
   # Notificações in-app
   toastification: ^3.0.3
 

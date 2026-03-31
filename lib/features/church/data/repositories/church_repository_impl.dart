@@ -56,6 +56,15 @@ class ChurchRepositoryImpl implements ChurchRepository {
           email: model.email,
           coverUrl: model.coverUrl,
           logoUrl: model.logoUrl,
+          address: model.address,
+          website: model.website,
+          instagramUrl: model.instagramUrl,
+          youtubeUrl: model.youtubeUrl,
+          spotifyUrl: model.spotifyUrl,
+          whatsappNumber: model.whatsappNumber,
+          isHeadquarters: model.isHeadquarters,
+          parentChurchId: model.parentChurchId,
+          parentChurchAcronym: model.parentChurchAcronym,
         ),
       );
     } on DioException catch (e) {

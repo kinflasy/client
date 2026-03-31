@@ -9,6 +9,15 @@ class ChurchEntity extends Equatable {
   final String email;
   final String? coverUrl;
   final String? logoUrl;
+  final String? address;
+  final String? website;
+  final String? instagramUrl;
+  final String? youtubeUrl;
+  final String? spotifyUrl;
+  final String? whatsappNumber;
+  final bool? isHeadquarters;
+  final String? parentChurchId;
+  final String? parentChurchAcronym;
 
   const ChurchEntity({
     required this.id,
@@ -19,6 +28,15 @@ class ChurchEntity extends Equatable {
     required this.email,
     this.coverUrl,
     this.logoUrl,
+    this.address,
+    this.website,
+    this.instagramUrl,
+    this.youtubeUrl,
+    this.spotifyUrl,
+    this.whatsappNumber,
+    this.isHeadquarters,
+    this.parentChurchId,
+    this.parentChurchAcronym,
   });
 
   @override
@@ -31,5 +49,14 @@ class ChurchEntity extends Equatable {
         email,
         coverUrl,
         logoUrl,
+        address,
+        website,
+        instagramUrl,
+        youtubeUrl,
+        spotifyUrl,
+        whatsappNumber,
+        isHeadquarters,
+        parentChurchId,
+        parentChurchAcronym,
       ];
 }

@@ -40,7 +40,9 @@ class _ProfileContent extends StatelessWidget {
           slivers: [
             SliverToBoxAdapter(child: _ChurchCoverHeader(church: church)),
             SliverToBoxAdapter(child: _IdentitySection(church: church)),
-            const SliverToBoxAdapter(child: Divider(height: 1, color: AppColors.background)),
+            const SliverToBoxAdapter(
+              child: Divider(height: 1, color: AppColors.background),
+            ),
             SliverToBoxAdapter(child: _InfoSection(church: church)),
             if (_hasLinks(church))
               SliverToBoxAdapter(child: _LinksSection(church: church)),
@@ -96,7 +98,8 @@ class _ChurchCoverHeader extends StatelessWidget {
               : Image.network(
                   church.coverUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, exception, stackTrace) => const SizedBox.shrink(),
+                  errorBuilder: (context, exception, stackTrace) =>
+                      const SizedBox.shrink(),
                 ),
         ),
         Positioned(
@@ -107,7 +110,9 @@ class _ChurchCoverHeader extends StatelessWidget {
             child: CircleAvatar(
               radius: 58,
               backgroundColor: const Color(0xFFE8F0FE),
-              backgroundImage: church.logoUrl != null ? NetworkImage(church.logoUrl!) : null,
+              backgroundImage: church.logoUrl != null
+                  ? NetworkImage(church.logoUrl!)
+                  : null,
               child: church.logoUrl == null
                   ? Text(
                       _churchInitials(church.name),
@@ -158,7 +163,10 @@ class _IdentitySection extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '@${church.slug}',
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -192,8 +200,7 @@ class _InfoSection extends StatelessWidget {
               value: church.address!,
               onTap: () => _launchMaps(church.address!),
             ),
-          if (church.phone != null)
-            _PhoneInfoRow(phone: church.phone!),
+          if (church.phone != null) _PhoneInfoRow(phone: church.phone!),
           _InfoRow(
             icon: Icons.mail_outline,
             value: church.email,
@@ -205,7 +212,9 @@ class _InfoSection extends StatelessWidget {
   }
 
   Future<void> _launchMaps(String address) async {
-    final uri = Uri.parse('https://maps.google.com/?q=${Uri.encodeComponent(address)}');
+    final uri = Uri.parse(
+      'https://maps.google.com/?q=${Uri.encodeComponent(address)}',
+    );
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
@@ -218,11 +227,7 @@ class _InfoSection extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.value,
-    this.onTap,
-  });
+  const _InfoRow({required this.icon, required this.value, this.onTap});
   final IconData icon;
   final String value;
   final VoidCallback? onTap;
@@ -244,7 +249,9 @@ class _InfoRow extends StatelessWidget {
                 value,
                 style: TextStyle(
                   fontSize: 15,
-                  color: onTap != null ? AppColors.primary : AppColors.textPrimary,
+                  color: onTap != null
+                      ? AppColors.primary
+                      : AppColors.textPrimary,
                 ),
               ),
             ),
@@ -267,8 +274,11 @@ class _PhoneInfoRow extends StatefulWidget {
 class _PhoneInfoRowState extends State<_PhoneInfoRow> {
   bool _expanded = false;
 
-  List<String> get _numbers =>
-      widget.phone.split(',').map((n) => n.trim()).where((n) => n.isNotEmpty).toList();
+  List<String> get _numbers => widget.phone
+      .split(',')
+      .map((n) => n.trim())
+      .where((n) => n.isNotEmpty)
+      .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -286,12 +296,19 @@ class _PhoneInfoRowState extends State<_PhoneInfoRow> {
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Row(
               children: [
-                const Icon(Icons.call_outlined, size: 20, color: AppColors.textSecondary),
+                const Icon(
+                  Icons.call_outlined,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     numbers.first,
-                    style: const TextStyle(fontSize: 15, color: AppColors.primary),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
                 if (hasMultiple)
@@ -306,13 +323,20 @@ class _PhoneInfoRowState extends State<_PhoneInfoRow> {
         AnimatedCrossFade(
           firstChild: const SizedBox.shrink(),
           secondChild: Column(
-            children: numbers.skip(1).map((n) => _InfoRow(
-              icon: Icons.call_outlined,
-              value: n,
-              onTap: () => _launchPhone(n),
-            )).toList(),
+            children: numbers
+                .skip(1)
+                .map(
+                  (n) => _InfoRow(
+                    icon: Icons.call_outlined,
+                    value: n,
+                    onTap: () => _launchPhone(n),
+                  ),
+                )
+                .toList(),
           ),
-          crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          crossFadeState: _expanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
           duration: const Duration(milliseconds: 180),
         ),
       ],
@@ -367,7 +391,10 @@ class _ErrorState extends StatelessWidget {
               const SizedBox(height: 16),
               Text(message, textAlign: TextAlign.center),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: onRetry, child: const Text('Tentar novamente')),
+              ElevatedButton(
+                onPressed: onRetry,
+                child: const Text('Tentar novamente'),
+              ),
             ],
           ),
         ),

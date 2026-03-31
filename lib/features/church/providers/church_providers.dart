@@ -51,15 +51,16 @@ final activeMembershipProvider = FutureProvider<MembershipEntity?>((ref) async {
   return memberships.isEmpty ? null : memberships.first;
 });
 
-final currentChurchProfileProvider =
-    FutureProvider<CurrentChurchProfileEntity>((ref) async {
-      final activeMembership = await ref.watch(activeMembershipProvider.future);
-      return resolveCurrentChurchProfile(
-        activeMembership: activeMembership,
-        unitRepository: ref.read(churchUnitRepositoryProvider),
-        churchRepository: ref.read(churchRepositoryProvider),
-      );
-    });
+final currentChurchProfileProvider = FutureProvider<CurrentChurchProfileEntity>(
+  (ref) async {
+    final activeMembership = await ref.watch(activeMembershipProvider.future);
+    return resolveCurrentChurchProfile(
+      activeMembership: activeMembership,
+      unitRepository: ref.read(churchUnitRepositoryProvider),
+      churchRepository: ref.read(churchRepositoryProvider),
+    );
+  },
+);
 
 Future<CurrentChurchProfileEntity> resolveCurrentChurchProfile({
   required MembershipEntity? activeMembership,
@@ -71,10 +72,7 @@ Future<CurrentChurchProfileEntity> resolveCurrentChurchProfile({
   }
 
   final unitResult = await unitRepository.getUnitById(activeMembership.unitId);
-  final unit = unitResult.fold(
-    (failure) => throw failure,
-    (value) => value,
-  );
+  final unit = unitResult.fold((failure) => throw failure, (value) => value);
 
   final churchResult = await churchRepository.getChurchById(unit.churchId);
   final church = churchResult.fold(
@@ -96,11 +94,9 @@ final churchEventsProvider =
       final end = DateTime(now.year, now.month + 2, 0, 23, 59, 59);
 
       try {
-        final jsonList = await ref.read(churchEventsApiProvider).getEventsByUnitId(
-              unitId: unitId,
-              start: start,
-              end: end,
-            );
+        final jsonList = await ref
+            .read(churchEventsApiProvider)
+            .getEventsByUnitId(unitId: unitId, start: start, end: end);
         return jsonList
             .whereType<Map>()
             .map((item) => Map<String, dynamic>.from(item))
@@ -150,14 +146,14 @@ final churchDepartmentsProvider =
 
 /// Provider parametrizado por churchId para o perfil público.
 /// Reutiliza o repositório e endpoint já existentes.
-final publicChurchProfileProvider =
-    FutureProvider.family<ChurchEntity, String>((ref, churchId) async {
-  final result = await ref.read(churchRepositoryProvider).getChurchById(churchId);
-  return result.fold(
-    (failure) => throw failure,
-    (church) => church,
-  );
-});
+final publicChurchProfileProvider = FutureProvider.family<ChurchEntity, String>(
+  (ref, churchId) async {
+    final result = await ref
+        .read(churchRepositoryProvider)
+        .getChurchById(churchId);
+    return result.fold((failure) => throw failure, (church) => church);
+  },
+);
 
 @riverpod
 class CreateChurchNotifier extends _$CreateChurchNotifier {
@@ -168,7 +164,9 @@ class CreateChurchNotifier extends _$CreateChurchNotifier {
     ChurchStarterRequestModel request,
   ) async {
     state = const AsyncLoading();
-    final result = await ref.read(churchRepositoryProvider).createChurch(request);
+    final result = await ref
+        .read(churchRepositoryProvider)
+        .createChurch(request);
     result.fold(
       (failure) => state = AsyncError(failure, StackTrace.current),
       (church) => state = AsyncData(church),

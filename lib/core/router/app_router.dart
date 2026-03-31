@@ -14,14 +14,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-final _authRoutes = <String>{
-  AppRoutes.login,
-  AppRoutes.register,
-};
+final _authRoutes = <String>{AppRoutes.login, AppRoutes.register};
 
-final _systemRoutes = <String>{
-  AppRoutes.splash,
-};
+final _systemRoutes = <String>{AppRoutes.splash};
 
 final _protectedRoutes = <String>{
   AppRoutes.homeFeed,

@@ -20,9 +20,7 @@ class ChurchProfileScreen extends ConsumerWidget {
     return profileAsync.when(
       loading: () => const Scaffold(
         backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: Center(child: CircularProgressIndicator()),
-        ),
+        body: SafeArea(child: Center(child: CircularProgressIndicator())),
       ),
       error: (error, stackTrace) {
         if (error is NotFoundFailure) {
@@ -107,12 +105,7 @@ class _ChurchCoverHeader extends StatelessWidget {
                       const SizedBox.shrink(),
                 ),
         ),
-        Positioned(
-          top: 10,
-          left: 16,
-          right: 16,
-          child: ChurchSearchRow(),
-        ),
+        Positioned(top: 10, left: 16, right: 16, child: ChurchSearchRow()),
         Positioned(
           bottom: -58,
           child: CircleAvatar(
@@ -316,7 +309,8 @@ class _DepartmentsTab extends ConsumerWidget {
           return const _InlineStatus(
             icon: Icons.groups_outlined,
             title: 'Nenhum ministério encontrado.',
-            subtitle: 'Quando houver departamentos ativos, eles aparecerão aqui.',
+            subtitle:
+                'Quando houver departamentos ativos, eles aparecerão aqui.',
           );
         }
 
@@ -340,7 +334,8 @@ class _AnnouncementsTab extends StatelessWidget {
     return const _InlineStatus(
       icon: Icons.campaign_outlined,
       title: 'Avisos em breve.',
-      subtitle: 'Esta área ficará disponível quando o backend expuser esse feed.',
+      subtitle:
+          'Esta área ficará disponível quando o backend expuser esse feed.',
     );
   }
 }
@@ -456,11 +451,7 @@ class _InfoChip extends StatelessWidget {
 }
 
 class _InlineStatus extends StatelessWidget {
-  const _InlineStatus({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-  });
+  const _InlineStatus({required this.icon, required this.title, this.subtitle});
 
   final IconData icon;
   final String title;
@@ -480,10 +471,7 @@ class _InlineStatus extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 8),
@@ -548,7 +536,8 @@ class _EmptyChurchState extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(
-                  onPressed: () => context.pushNamed(AppRoutes.registerChurchName),
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.registerChurchName),
                   child: const Text('Cadastrar Igreja'),
                 ),
               ],
@@ -577,7 +566,11 @@ class _ErrorChurchState extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: AppColors.error,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   message,

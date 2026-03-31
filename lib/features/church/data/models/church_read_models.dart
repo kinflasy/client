@@ -41,10 +41,26 @@ class ChurchReadModel {
       ]),
       address: _readAddress(json),
       website: json['website'] as String?,
-      instagramUrl: _readNullableString(json, const ['instagramUrl', 'instagram_url', 'instagram']),
-      youtubeUrl: _readNullableString(json, const ['youtubeUrl', 'youtube_url', 'youtube']),
-      spotifyUrl: _readNullableString(json, const ['spotifyUrl', 'spotify_url', 'spotify']),
-      whatsappNumber: _readNullableString(json, const ['whatsappNumber', 'whatsapp_number', 'whatsapp']),
+      instagramUrl: _readNullableString(json, const [
+        'instagramUrl',
+        'instagram_url',
+        'instagram',
+      ]),
+      youtubeUrl: _readNullableString(json, const [
+        'youtubeUrl',
+        'youtube_url',
+        'youtube',
+      ]),
+      spotifyUrl: _readNullableString(json, const [
+        'spotifyUrl',
+        'spotify_url',
+        'spotify',
+      ]),
+      whatsappNumber: _readNullableString(json, const [
+        'whatsappNumber',
+        'whatsapp_number',
+        'whatsapp',
+      ]),
       isHeadquarters: json['isHeadquarters'] as bool?,
       parentChurchId: json['parentChurchId'] as String?,
       parentChurchAcronym: json['parentChurchAcronym'] as String?,
@@ -150,9 +166,12 @@ String? _readAddress(Map<String, dynamic> json) {
   if (raw is Map<String, dynamic>) {
     // Monta string legível: "Rua X, 123 - Bairro, Cidade - UF"
     final parts = <String>[
-      if ((raw['street'] as String?)?.isNotEmpty == true) raw['street'] as String,
-      if ((raw['number'] as String?)?.isNotEmpty == true) raw['number'] as String,
-      if ((raw['neighborhood'] as String?)?.isNotEmpty == true) raw['neighborhood'] as String,
+      if ((raw['street'] as String?)?.isNotEmpty == true)
+        raw['street'] as String,
+      if ((raw['number'] as String?)?.isNotEmpty == true)
+        raw['number'] as String,
+      if ((raw['neighborhood'] as String?)?.isNotEmpty == true)
+        raw['neighborhood'] as String,
       if ((raw['city'] as String?)?.isNotEmpty == true) raw['city'] as String,
       if ((raw['state'] as String?)?.isNotEmpty == true) raw['state'] as String,
     ];

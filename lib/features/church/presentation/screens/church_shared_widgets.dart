@@ -26,7 +26,10 @@ class ChurchSearchRow extends StatelessWidget {
                 prefixIcon: const Icon(Icons.search, size: 16),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.60),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 10,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(15),
                   borderSide: BorderSide.none,

@@ -20,13 +20,12 @@ class _ChurchApi implements ChurchApi {
   final ParseErrorLogger? errorLogger;
 
   @override
-  Future<ChurchStarterModel> createChurch(
-    ChurchStarterRequestModel request,
-  ) async {
+  Future<ChurchStarterModel> createChurch(Map<String, dynamic> request) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
-    final _data = request;
+    final _data = <String, dynamic>{};
+    _data.addAll(request);
     final _options = _setStreamType<ChurchStarterModel>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
@@ -49,12 +48,12 @@ class _ChurchApi implements ChurchApi {
   }
 
   @override
-  Future<Map<String, dynamic>> getChurchById(String id) async {
+  Future<ChurchReadModel> getChurchById(String id) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<Map<String, dynamic>>(
+    final _options = _setStreamType<ChurchReadModel>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -65,9 +64,9 @@ class _ChurchApi implements ChurchApi {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late Map<String, dynamic> _value;
+    late ChurchReadModel _value;
     try {
-      _value = _result.data ?? <String, dynamic>{};
+      _value = ChurchReadModel.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;

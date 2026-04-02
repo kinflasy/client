@@ -10,6 +10,7 @@ import 'package:client/features/home/presentation/screens/calendar_screen.dart';
 import 'package:client/features/home/presentation/screens/feed_screen.dart';
 import 'package:client/features/home/presentation/screens/home_screen.dart';
 import 'package:client/features/menu/presentation/screens/menu_screen.dart';
+import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +27,10 @@ final _protectedRoutes = <String>{
   AppRoutes.registerChurch,
   AppRoutes.churchPublicProfile,
 };
+
+final _membershipRequiredRoutes = <String>{};
+
+final _memberRoutes = <String>{};
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellFeedNavigatorKey = GlobalKey<NavigatorState>(
@@ -69,6 +74,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (isLoggedIn && (isAuthRoute || isSystemRoute)) {
         return AppRoutes.homeFeed;
+      }
+
+      if (isLoggedIn) {
+        final permissionsAsync = ref.read(sessionPermissionsProvider);
+        final permissions = permissionsAsync.asData?.value;
+
+        if (permissions != null) {
+          if (_membershipRequiredRoutes.contains(currentPath) &&
+              !permissions.hasMembership) {
+            return AppRoutes.homeFeed;
+          }
+
+          if (_memberRoutes.contains(currentPath) && !permissions.isMember) {
+            return AppRoutes.homeFeed;
+          }
+        }
       }
 
       return null;
@@ -165,5 +186,6 @@ bool _isProtectedRoute(String location) => _protectedRoutes.contains(location);
 class _AuthRouterNotifier extends ChangeNotifier {
   _AuthRouterNotifier(Ref ref) {
     ref.listen(authStateProvider, (_, next) => notifyListeners());
+    ref.listen(sessionPermissionsProvider, (_, next) => notifyListeners());
   }
 }

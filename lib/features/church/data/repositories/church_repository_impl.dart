@@ -4,7 +4,6 @@ import '../../../../core/errors/failure.dart';
 import '../../domain/entities/church_entity.dart';
 import '../../domain/repositories/church_repository.dart';
 import '../datasources/church_api.dart';
-import '../models/church_read_models.dart';
 import '../models/church_request_model.dart';
 
 class ChurchRepositoryImpl implements ChurchRepository {
@@ -17,7 +16,7 @@ class ChurchRepositoryImpl implements ChurchRepository {
     ChurchStarterRequestModel request,
   ) async {
     try {
-      final model = await _api.createChurch(request);
+      final model = await _api.createChurch(request.toJson());
       return Right(
         ChurchEntity(
           id: model.id,
@@ -47,8 +46,7 @@ class ChurchRepositoryImpl implements ChurchRepository {
   @override
   Future<Either<Failure, ChurchEntity>> getChurchById(String id) async {
     try {
-      final json = await _api.getChurchById(id);
-      final model = ChurchReadModel.fromJson(json);
+      final model = await _api.getChurchById(id);
       return Right(
         ChurchEntity(
           id: model.id,

@@ -9,12 +9,54 @@ part of 'user_profile_providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
+@ProviderFor(sessionPermissions)
+final sessionPermissionsProvider = SessionPermissionsProvider._();
+
+final class SessionPermissionsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<SessionPermissions>,
+          SessionPermissions,
+          FutureOr<SessionPermissions>
+        >
+    with
+        $FutureModifier<SessionPermissions>,
+        $FutureProvider<SessionPermissions> {
+  SessionPermissionsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'sessionPermissionsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$sessionPermissionsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<SessionPermissions> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<SessionPermissions> create(Ref ref) {
+    return sessionPermissions(ref);
+  }
+}
+
+String _$sessionPermissionsHash() =>
+    r'af8774c2fee78e60f2115cbe73aeffb0e78ea2de';
+
 @ProviderFor(currentUserProfile)
 final currentUserProfileProvider = CurrentUserProfileProvider._();
 
 final class CurrentUserProfileProvider
-    extends $FunctionalProvider<Affiliation, Affiliation, Affiliation>
-    with $Provider<Affiliation> {
+    extends $FunctionalProvider<Affiliation?, Affiliation?, Affiliation?>
+    with $Provider<Affiliation?> {
   CurrentUserProfileProvider._()
     : super(
         from: null,
@@ -31,22 +73,22 @@ final class CurrentUserProfileProvider
 
   @$internal
   @override
-  $ProviderElement<Affiliation> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<Affiliation?> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  Affiliation create(Ref ref) {
+  Affiliation? create(Ref ref) {
     return currentUserProfile(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Affiliation value) {
+  Override overrideWithValue(Affiliation? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<Affiliation>(value),
+      providerOverride: $SyncValueProvider<Affiliation?>(value),
     );
   }
 }
 
 String _$currentUserProfileHash() =>
-    r'2488cad8e4222f30b6f2383cbcdc1f66a9531f29';
+    r'a37e1d79bc3bf803c341d2e6dd4a95b128e15ccc';

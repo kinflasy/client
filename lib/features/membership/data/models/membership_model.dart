@@ -23,3 +23,29 @@ extension MembershipModelX on MembershipModel {
         affiliation: affiliation,
       );
 }
+
+class ActiveMembershipModel {
+  const ActiveMembershipModel({
+    required this.id,
+    required this.unitId,
+    required this.affiliation,
+  });
+
+  factory ActiveMembershipModel.fromJson(Map<String, dynamic> json) {
+    return ActiveMembershipModel(
+      id: (json['id'] ?? '').toString(),
+      unitId: (json['unitId'] ?? '').toString(),
+      affiliation: (json['affiliation'] ?? '').toString(),
+    );
+  }
+
+  final String id;
+  final String unitId;
+  final String affiliation;
+
+  MembershipEntity toEntity() => MembershipEntity(
+    id: id,
+    unitId: unitId,
+    affiliation: affiliation,
+  );
+}

@@ -1,9 +1,9 @@
 enum Affiliation {
-  unauthenticated, // sem sessão ativa
-  visitor, // logado, sem membership ou affiliation=VISITOR
+  unauthenticated, // sem sessao ativa
+  visitor, // affiliation=VISITOR
   congregated, // affiliation=CONGREGATED
   member, // affiliation=MEMBER
-  leader, // TODO: integração de liderança (futuro)
-  somaLeader, // TODO: ExtensionSubscription SOMA ativa (futuro)
-  unitAdmin, // TODO: criou/administra a unidade (futuro)
+  leader, // TODO: integracao de lideranca (futuro)
+  somaLeader, // TODO: extension SOMA ativa (futuro)
+  unitAdmin, // TODO: administra a unidade (futuro)
 }

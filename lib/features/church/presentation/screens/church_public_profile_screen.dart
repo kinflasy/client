@@ -366,8 +366,64 @@ class _AffiliationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implementar quando o backend expuser os campos
-    return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Divider(height: 1, color: AppColors.background),
+          const SizedBox(height: 12),
+          const Text(
+            'Afiliação',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (church.isHeadquarters == true)
+            _affiliationBadge(label: 'Sede da rede', icon: Icons.home_outlined)
+          else if (church.parentChurchAcronym != null)
+            _affiliationBadge(
+              label: 'Filiada à ${church.parentChurchAcronym}',
+              icon: Icons.account_balance_outlined,
+            )
+          else
+            const Text(
+              'Sem afiliação registrada',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _affiliationBadge({required String label, required IconData icon}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppColors.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

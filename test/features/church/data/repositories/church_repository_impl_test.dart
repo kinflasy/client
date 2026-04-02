@@ -1,5 +1,6 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/church/data/datasources/church_api.dart';
+import 'package:client/features/church/data/models/church_read_models.dart';
 import 'package:client/features/church/data/models/church_request_model.dart';
 import 'package:client/features/church/data/repositories/church_repository_impl.dart';
 import 'package:dio/dio.dart';
@@ -20,13 +21,13 @@ void main() {
   group('ChurchRepositoryImpl.getChurchById', () {
     test('returns church entity on success', () async {
       when(() => api.getChurchById('church-1')).thenAnswer(
-        (_) async => {
+        (_) async => ChurchReadModel.fromJson({
           'id': 'church-1',
           'name': 'Igreja Central',
           'slug': 'igreja-central',
           'email': 'contato@igreja.dev',
           'phone': '9999-0000',
-        },
+        }),
       );
 
       final result = await repository.getChurchById('church-1');
@@ -79,7 +80,7 @@ void main() {
         ),
       );
 
-      when(() => api.createChurch(request)).thenThrow(
+      when(() => api.createChurch(request.toJson())).thenThrow(
         DioException(
           requestOptions: RequestOptions(path: '/v1/core/churches'),
           response: Response(

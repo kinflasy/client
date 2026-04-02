@@ -11,4 +11,14 @@ class ChurchDepartmentsApi {
     );
     return response.data ?? <dynamic>[];
   }
+
+  Future<Map<String, dynamic>> getDepartmentExtension(
+    String departmentId,
+    String extension,
+  ) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/v1/core/church/unit/departments/$departmentId/extensions/$extension',
+    );
+    return response.data ?? <String, dynamic>{};
+  }
 }

@@ -14,7 +14,9 @@ import 'package:client/features/church/data/repositories/church_unit_repository_
 import 'package:client/features/church/domain/entities/church_department_entity.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
+import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
+import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/domain/repositories/church_repository.dart';
 import 'package:client/features/church/domain/repositories/church_unit_repository.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
@@ -165,6 +167,71 @@ final churchSearchProvider = FutureProvider.family<List<ChurchEntity>, String>((
       .searchChurches(term.trim());
   return result.fold((failure) => throw failure, (churches) => churches);
 });
+
+final publicChurchUnitProfileProvider =
+    FutureProvider.family<PublicChurchUnitProfileEntity, String>((
+      ref,
+      unitId,
+    ) async {
+      return resolvePublicChurchUnitProfile(
+        unitId: unitId,
+        unitRepository: ref.read(churchUnitRepositoryProvider),
+        churchRepository: ref.read(churchRepositoryProvider),
+      );
+    });
+
+final headquarterUnitByChurchProvider =
+    FutureProvider.family<ChurchUnitEntity, String>((ref, churchId) async {
+      return resolveHeadquarterUnitByChurch(
+        churchId: churchId,
+        unitRepository: ref.read(churchUnitRepositoryProvider),
+      );
+    });
+
+Future<PublicChurchUnitProfileEntity> resolvePublicChurchUnitProfile({
+  required String unitId,
+  required ChurchUnitRepository unitRepository,
+  required ChurchRepository churchRepository,
+}) async {
+  final unitResult = await unitRepository.getUnitById(unitId);
+  final unit = unitResult.fold((failure) => throw failure, (value) => value);
+
+  final churchResult = await churchRepository.getChurchById(unit.churchId);
+  final church = churchResult.fold(
+    (failure) => throw failure,
+    (value) => value,
+  );
+
+  final relatedUnitsResult = await unitRepository.getUnitsByChurchId(
+    unit.churchId,
+  );
+  final relatedUnits = relatedUnitsResult.fold(
+    (failure) => throw failure,
+    (value) => value,
+  );
+
+  return PublicChurchUnitProfileEntity(
+    unit: unit,
+    church: church,
+    relatedUnits: relatedUnits,
+  );
+}
+
+Future<ChurchUnitEntity> resolveHeadquarterUnitByChurch({
+  required String churchId,
+  required ChurchUnitRepository unitRepository,
+}) async {
+  final unitsResult = await unitRepository.getUnitsByChurchId(churchId);
+  final units = unitsResult.fold((failure) => throw failure, (value) => value);
+
+  for (final unit in units) {
+    if (unit.type == 'MAIN') return unit;
+  }
+
+  throw const ValidationFailure(
+    'NÃ£o foi possÃ­vel identificar a unidade sede desta igreja.',
+  );
+}
 
 @riverpod
 class CreateChurchNotifier extends _$CreateChurchNotifier {

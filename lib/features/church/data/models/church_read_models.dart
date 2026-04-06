@@ -92,14 +92,36 @@ class ChurchUnitReadModel {
     required this.churchId,
     this.name,
     this.slug,
+    this.type,
+    this.address,
+    this.phone,
+    this.email,
+    this.logoUrl,
+    this.coverUrl,
   });
 
   factory ChurchUnitReadModel.fromJson(Map<String, dynamic> json) {
     return ChurchUnitReadModel(
       id: json['id'] as String,
       churchId: json['churchId'] as String,
-      name: json['name'] as String?,
-      slug: json['slug'] as String?,
+      name: _readNullableString(json, const ['name']),
+      slug: _readNullableString(json, const ['slug']),
+      type: _readNullableString(json, const ['type']),
+      address: _readAddress(json),
+      phone: _readNullableString(json, const ['phone']),
+      email: _readNullableString(json, const ['email']),
+      logoUrl: _readNullableString(json, const [
+        'logoUrl',
+        'logo_url',
+        'logoImageUrl',
+        'logoImage',
+      ]),
+      coverUrl: _readNullableString(json, const [
+        'coverUrl',
+        'cover_url',
+        'coverImageUrl',
+        'coverImage',
+      ]),
     );
   }
 
@@ -107,6 +129,12 @@ class ChurchUnitReadModel {
   final String churchId;
   final String? name;
   final String? slug;
+  final String? type;
+  final String? address;
+  final String? phone;
+  final String? email;
+  final String? logoUrl;
+  final String? coverUrl;
 }
 
 class ChurchEventReadModel {

@@ -87,12 +87,12 @@ void main() {
 
   test('propagates church lookup failures', () async {
     when(() => unitRepository.getUnitById('unit-1')).thenAnswer(
-      (invocation) async => const Right(
-        ChurchUnitEntity(id: 'unit-1', churchId: 'church-1'),
-      ),
+      (invocation) async =>
+          const Right(ChurchUnitEntity(id: 'unit-1', churchId: 'church-1')),
     );
     when(() => churchRepository.getChurchById('church-1')).thenAnswer(
-      (invocation) async => const Left(NotFoundFailure('Igreja não encontrada.')),
+      (invocation) async =>
+          const Left(NotFoundFailure('Igreja não encontrada.')),
     );
 
     await expectLater(
@@ -106,6 +106,117 @@ void main() {
         churchRepository: churchRepository,
       ),
       throwsA(isA<NotFoundFailure>()),
+    );
+  });
+
+  test('resolves public unit profile successfully', () async {
+    when(() => unitRepository.getUnitById('unit-1')).thenAnswer(
+      (_) async => const Right(
+        ChurchUnitEntity(
+          id: 'unit-1',
+          churchId: 'church-1',
+          name: 'Sede',
+          type: 'MAIN',
+        ),
+      ),
+    );
+    when(() => churchRepository.getChurchById('church-1')).thenAnswer(
+      (_) async => const Right(
+        ChurchEntity(
+          id: 'church-1',
+          name: 'Igreja Central',
+          slug: 'igreja-central',
+          email: 'contato@igreja.dev',
+        ),
+      ),
+    );
+    when(() => unitRepository.getUnitsByChurchId('church-1')).thenAnswer(
+      (_) async => const Right([
+        ChurchUnitEntity(
+          id: 'unit-1',
+          churchId: 'church-1',
+          name: 'Sede',
+          type: 'MAIN',
+        ),
+        ChurchUnitEntity(
+          id: 'unit-2',
+          churchId: 'church-1',
+          name: 'Filial',
+          type: 'BRANCH',
+        ),
+      ]),
+    );
+
+    final profile = await resolvePublicChurchUnitProfile(
+      unitId: 'unit-1',
+      unitRepository: unitRepository,
+      churchRepository: churchRepository,
+    );
+
+    expect(profile.unit.id, 'unit-1');
+    expect(profile.church.id, 'church-1');
+    expect(profile.relatedUnits, hasLength(2));
+  });
+
+  test('resolves headquarter unit successfully', () async {
+    when(() => unitRepository.getUnitsByChurchId('church-1')).thenAnswer(
+      (_) async => const Right([
+        ChurchUnitEntity(
+          id: 'unit-2',
+          churchId: 'church-1',
+          name: 'Filial',
+          type: 'BRANCH',
+        ),
+        ChurchUnitEntity(
+          id: 'unit-1',
+          churchId: 'church-1',
+          name: 'Sede',
+          type: 'MAIN',
+        ),
+      ]),
+    );
+
+    final unit = await resolveHeadquarterUnitByChurch(
+      churchId: 'church-1',
+      unitRepository: unitRepository,
+    );
+
+    expect(unit.id, 'unit-1');
+    expect(unit.type, 'MAIN');
+  });
+
+  test('fails when no headquarter marker is present', () async {
+    when(() => unitRepository.getUnitsByChurchId('church-1')).thenAnswer(
+      (_) async => const Right([
+        ChurchUnitEntity(
+          id: 'unit-2',
+          churchId: 'church-1',
+          name: 'Filial',
+          type: 'BRANCH',
+        ),
+      ]),
+    );
+
+    await expectLater(
+      resolveHeadquarterUnitByChurch(
+        churchId: 'church-1',
+        unitRepository: unitRepository,
+      ),
+      throwsA(isA<ValidationFailure>()),
+    );
+  });
+
+  test('propagates headquarter lookup errors', () async {
+    when(() => unitRepository.getUnitsByChurchId('church-1')).thenAnswer(
+      (_) async => const Left(NetworkFailure('Erro ao buscar unidades.')),
+    );
+
+    await expectLater(
+      resolveHeadquarterUnitByChurch(
+        churchId: 'church-1',
+        unitRepository: unitRepository,
+      ),
+      throwsA(isA<NetworkFailure>()),
     );
   });
 }

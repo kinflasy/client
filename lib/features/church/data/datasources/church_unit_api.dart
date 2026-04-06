@@ -11,4 +11,15 @@ class ChurchUnitApi {
     );
     return response.data ?? <String, dynamic>{};
   }
+
+  Future<List<Map<String, dynamic>>> getUnitsByChurchId(String churchId) async {
+    final response = await _dio.get<List<dynamic>>(
+      '/v1/core/churches/$churchId/units',
+    );
+    final data = response.data ?? <dynamic>[];
+    return data
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
 }

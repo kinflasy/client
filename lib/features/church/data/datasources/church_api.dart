@@ -10,10 +10,11 @@ abstract class ChurchApi {
   factory ChurchApi(Dio dio, {String baseUrl}) = _ChurchApi;
 
   @POST('/v1/core/churches')
-  Future<ChurchStarterModel> createChurch(
-    @Body() Map<String, dynamic> request,
-  );
+  Future<ChurchStarterModel> createChurch(@Body() Map<String, dynamic> request);
 
   @GET('/v1/core/churches/{id}')
   Future<ChurchReadModel> getChurchById(@Path('id') String id);
+
+  @GET('/v1/core/churches/search/{term}')
+  Future<List<ChurchReadModel>> searchChurches(@Path('term') String term);
 }

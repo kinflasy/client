@@ -8,6 +8,7 @@ class AppRoutes {
   static const homeChurch = '/home/church';
   static const homeMenu = '/home/menu';
   static const registerChurch = '/register-church';
+  static const churchSearch = '/church-search';
   static const churchPublicProfile = '/church/:id';
   static const peopleList = '/people';
   static const peopleDetail = '/people/:id';
@@ -20,5 +21,6 @@ class AppRoutes {
   static const homeChurchName = 'home-church';
   static const homeMenuName = 'home-menu';
   static const registerChurchName = 'register-church';
+  static const churchSearchName = 'church-search';
   static const churchPublicProfileName = 'church-public-profile';
 }

@@ -1,5 +1,6 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
+import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,8 +45,6 @@ class _ProfileContent extends StatelessWidget {
               child: Divider(height: 1, color: AppColors.background),
             ),
             SliverToBoxAdapter(child: _InfoSection(church: church)),
-            if (_hasLinks(church))
-              SliverToBoxAdapter(child: _LinksSection(church: church)),
             if (_hasAffiliation(church))
               SliverToBoxAdapter(child: _AffiliationSection(church: church)),
           ],
@@ -53,13 +52,6 @@ class _ProfileContent extends StatelessWidget {
       ),
     );
   }
-
-  bool _hasLinks(ChurchEntity c) =>
-      c.instagramUrl != null ||
-      c.youtubeUrl != null ||
-      c.spotifyUrl != null ||
-      c.whatsappNumber != null ||
-      c.website != null;
 
   bool _hasAffiliation(ChurchEntity c) =>
       c.isHeadquarters != null || c.parentChurchId != null;
@@ -115,7 +107,7 @@ class _ChurchCoverHeader extends StatelessWidget {
                   : null,
               child: church.logoUrl == null
                   ? Text(
-                      _churchInitials(church.name),
+                      churchInitials(church.name),
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontSize: 28,
@@ -126,16 +118,16 @@ class _ChurchCoverHeader extends StatelessWidget {
             ),
           ),
         ),
+        Positioned(
+          top: 8,
+          left: 4,
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
       ],
     );
-  }
-
-  String _churchInitials(String name) {
-    return name
-        .split(' ')
-        .map((e) => e.isNotEmpty ? e[0].toUpperCase() : '')
-        .take(2)
-        .join();
   }
 }
 
@@ -346,17 +338,6 @@ class _PhoneInfoRowState extends State<_PhoneInfoRow> {
   Future<void> _launchPhone(String number) async {
     final uri = Uri(scheme: 'tel', path: number.replaceAll(' ', ''));
     if (await canLaunchUrl(uri)) await launchUrl(uri);
-  }
-}
-
-class _LinksSection extends StatelessWidget {
-  const _LinksSection({required this.church});
-  final ChurchEntity church;
-
-  @override
-  Widget build(BuildContext context) {
-    // TODO: implementar quando o backend expuser os campos
-    return const SizedBox.shrink();
   }
 }
 

@@ -1,4 +1,6 @@
+import 'package:client/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ChurchSearchRow extends StatelessWidget {
   const ChurchSearchRow({super.key});
@@ -15,11 +17,7 @@ class ChurchSearchRow extends StatelessWidget {
             child: TextField(
               readOnly: true,
               textAlignVertical: TextAlignVertical.center,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Busca de igrejas em breve.')),
-                );
-              },
+              onTap: () => context.pushNamed(AppRoutes.churchSearchName),
               decoration: InputDecoration(
                 hintText: 'Pesquisar igreja',
                 isDense: true,

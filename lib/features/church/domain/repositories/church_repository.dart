@@ -9,4 +9,6 @@ abstract class ChurchRepository {
   );
 
   Future<Either<Failure, ChurchEntity>> getChurchById(String id);
+
+  Future<Either<Failure, List<ChurchEntity>>> searchChurches(String term);
 }

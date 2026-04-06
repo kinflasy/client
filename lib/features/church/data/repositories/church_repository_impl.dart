@@ -80,4 +80,40 @@ class ChurchRepositoryImpl implements ChurchRepository {
       return Left(UnknownFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, List<ChurchEntity>>> searchChurches(
+    String term,
+  ) async {
+    try {
+      final churches = (await _api.searchChurches(term))
+          .map(
+            (model) => ChurchEntity(
+              id: model.id,
+              name: model.name,
+              slug: model.slug,
+              acronym: model.acronym,
+              phone: model.phone,
+              email: model.email,
+              coverUrl: model.coverUrl,
+              logoUrl: model.logoUrl,
+              address: model.address,
+              website: model.website,
+              instagramUrl: model.instagramUrl,
+              youtubeUrl: model.youtubeUrl,
+              spotifyUrl: model.spotifyUrl,
+              whatsappNumber: model.whatsappNumber,
+              isHeadquarters: model.isHeadquarters,
+              parentChurchId: model.parentChurchId,
+              parentChurchAcronym: model.parentChurchAcronym,
+            ),
+          )
+          .toList();
+      return Right(churches);
+    } on DioException catch (e) {
+      return Left(NetworkFailure(e.message ?? 'Erro ao buscar igrejas.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
 }

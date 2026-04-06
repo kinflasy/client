@@ -155,6 +155,17 @@ final publicChurchProfileProvider = FutureProvider.family<ChurchEntity, String>(
   },
 );
 
+final churchSearchProvider = FutureProvider.family<List<ChurchEntity>, String>((
+  ref,
+  term,
+) async {
+  if (term.trim().length < 2) return [];
+  final result = await ref
+      .read(churchRepositoryProvider)
+      .searchChurches(term.trim());
+  return result.fold((failure) => throw failure, (churches) => churches);
+});
+
 @riverpod
 class CreateChurchNotifier extends _$CreateChurchNotifier {
   @override

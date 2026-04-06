@@ -5,6 +5,7 @@ import 'package:client/features/auth/presentation/screens/splash_screen.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/church/presentation/screens/church_tab_screen.dart';
 import 'package:client/features/church/presentation/screens/church_public_profile_screen.dart';
+import 'package:client/features/church/presentation/screens/church_search_screen.dart';
 import 'package:client/features/church/presentation/screens/register_church_screen.dart';
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
 import 'package:client/features/home/presentation/screens/feed_screen.dart';
@@ -25,6 +26,7 @@ final _protectedRoutes = <String>{
   AppRoutes.homeChurch,
   AppRoutes.homeMenu,
   AppRoutes.registerChurch,
+  AppRoutes.churchSearch,
   AppRoutes.churchPublicProfile,
 };
 
@@ -163,6 +165,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.registerChurchName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RegisterChurchScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.churchSearch,
+        name: AppRoutes.churchSearchName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ChurchSearchScreen(),
       ),
       GoRoute(
         path: AppRoutes.churchPublicProfile,

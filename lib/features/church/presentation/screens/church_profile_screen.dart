@@ -1,13 +1,11 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
-import 'package:client/core/presentation/widgets/if_permission.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_department_entity.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
 import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
 import 'package:client/features/church/providers/church_providers.dart';
-import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -142,8 +140,6 @@ class _ChurchInfoCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final permissionsAsync = ref.watch(sessionPermissionsProvider);
-
     return Container(
       width: double.infinity,
       color: AppColors.surface,
@@ -398,39 +394,6 @@ class _DepartmentCard extends StatelessWidget {
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: AppColors.textSecondary),
-          const SizedBox(width: 6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 220),
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _InlineStatus extends StatelessWidget {
   const _InlineStatus({required this.icon, required this.title, this.subtitle});
 
@@ -506,13 +469,8 @@ class _EmptyChurchState extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 OutlinedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Busca de igrejas em breve.'),
-                      ),
-                    );
-                  },
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.churchSearchName),
                   child: const Text('Buscar Igreja'),
                 ),
                 const SizedBox(height: 10),

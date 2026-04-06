@@ -1,4 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
@@ -144,13 +145,56 @@ class _SearchResults extends ConsumerWidget {
   }
 }
 
-class _ChurchResultCard extends StatelessWidget {
+class _ChurchResultCard extends ConsumerStatefulWidget {
   const _ChurchResultCard({required this.church});
 
   final ChurchEntity church;
 
   @override
+  ConsumerState<_ChurchResultCard> createState() => _ChurchResultCardState();
+}
+
+class _ChurchResultCardState extends ConsumerState<_ChurchResultCard> {
+  bool _isLoading = false;
+
+  Future<void> _openHeadquarterProfile() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final unit = await resolveHeadquarterUnitByChurch(
+        churchId: widget.church.id,
+        unitRepository: ref.read(churchUnitRepositoryProvider),
+      );
+
+      if (!mounted) return;
+      context.pushNamed(
+        AppRoutes.churchPublicProfileName,
+        pathParameters: {'id': unit.id},
+      );
+    } on Failure catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nao foi possivel abrir o perfil dessa igreja.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final church = widget.church;
     final acronymLabel = church.acronym?.trim();
     final subtitle = acronymLabel != null && acronymLabel.isNotEmpty
         ? '@${church.slug} - $acronymLabel'
@@ -185,11 +229,14 @@ class _ChurchResultCard extends StatelessWidget {
         subtitle,
         style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
       ),
-      trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-      onTap: () => context.pushNamed(
-        AppRoutes.churchPublicProfileName,
-        pathParameters: {'id': church.id},
-      ),
+      trailing: _isLoading
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+      onTap: _isLoading ? null : _openHeadquarterProfile,
     );
   }
 }

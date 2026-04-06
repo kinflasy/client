@@ -177,8 +177,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.churchPublicProfileName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
-          final churchId = state.pathParameters['id']!;
-          return ChurchPublicProfileScreen(churchId: churchId);
+          final unitId = state.pathParameters['id']!;
+          return ChurchPublicProfileScreen(unitId: unitId);
         },
       ),
     ],

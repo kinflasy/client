@@ -1,5 +1,7 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
+import 'package:client/features/church/domain/entities/church_unit_entity.dart';
+import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
@@ -7,30 +9,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ChurchPublicProfileScreen extends ConsumerWidget {
-  const ChurchPublicProfileScreen({super.key, required this.churchId});
-  final String churchId;
+  const ChurchPublicProfileScreen({super.key, required this.unitId});
+
+  final String unitId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final churchAsync = ref.watch(publicChurchProfileProvider(churchId));
+    final profileAsync = ref.watch(publicChurchUnitProfileProvider(unitId));
 
-    return churchAsync.when(
+    return profileAsync.when(
       loading: () => const Scaffold(
         backgroundColor: AppColors.surface,
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (error, _) => _ErrorState(
-        message: 'Não foi possível carregar o perfil da igreja.',
-        onRetry: () => ref.invalidate(publicChurchProfileProvider(churchId)),
+        message: 'Nao foi possivel carregar o perfil da igreja.',
+        onRetry: () => ref.invalidate(publicChurchUnitProfileProvider(unitId)),
       ),
-      data: (church) => _ProfileContent(church: church),
+      data: (profile) => _ProfileContent(profile: profile),
     );
   }
 }
 
 class _ProfileContent extends StatelessWidget {
-  const _ProfileContent({required this.church});
-  final ChurchEntity church;
+  const _ProfileContent({required this.profile});
+
+  final PublicChurchUnitProfileEntity profile;
 
   @override
   Widget build(BuildContext context) {
@@ -39,14 +43,26 @@ class _ProfileContent extends StatelessWidget {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _ChurchCoverHeader(church: church)),
-            SliverToBoxAdapter(child: _IdentitySection(church: church)),
+            SliverToBoxAdapter(
+              child: _ChurchCoverHeader(
+                unit: profile.unit,
+                fallbackChurch: profile.church,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: _IdentitySection(
+                unit: profile.unit,
+                fallbackChurch: profile.church,
+              ),
+            ),
             const SliverToBoxAdapter(
               child: Divider(height: 1, color: AppColors.background),
             ),
-            SliverToBoxAdapter(child: _InfoSection(church: church)),
-            if (_hasAffiliation(church))
-              SliverToBoxAdapter(child: _AffiliationSection(church: church)),
+            SliverToBoxAdapter(child: _InfoSection(unit: profile.unit)),
+            if (_hasAffiliation(profile.church))
+              SliverToBoxAdapter(
+                child: _AffiliationSection(church: profile.church),
+              ),
           ],
         ),
       ),
@@ -58,11 +74,17 @@ class _ProfileContent extends StatelessWidget {
 }
 
 class _ChurchCoverHeader extends StatelessWidget {
-  const _ChurchCoverHeader({required this.church});
-  final ChurchEntity church;
+  const _ChurchCoverHeader({required this.unit, required this.fallbackChurch});
+
+  final ChurchUnitEntity unit;
+  final ChurchEntity fallbackChurch;
 
   @override
   Widget build(BuildContext context) {
+    final coverUrl = unit.coverUrl ?? fallbackChurch.coverUrl;
+    final logoUrl = unit.logoUrl ?? fallbackChurch.logoUrl;
+    final displayName = _displayName(unit, fallbackChurch);
+
     return Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.bottomCenter,
@@ -77,7 +99,7 @@ class _ChurchCoverHeader extends StatelessWidget {
               end: Alignment.bottomRight,
             ),
           ),
-          child: church.coverUrl == null
+          child: coverUrl == null
               ? const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -88,7 +110,7 @@ class _ChurchCoverHeader extends StatelessWidget {
                   ),
                 )
               : Image.network(
-                  church.coverUrl!,
+                  coverUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (context, exception, stackTrace) =>
                       const SizedBox.shrink(),
@@ -102,12 +124,10 @@ class _ChurchCoverHeader extends StatelessWidget {
             child: CircleAvatar(
               radius: 58,
               backgroundColor: const Color(0xFFE8F0FE),
-              backgroundImage: church.logoUrl != null
-                  ? NetworkImage(church.logoUrl!)
-                  : null,
-              child: church.logoUrl == null
+              backgroundImage: logoUrl != null ? NetworkImage(logoUrl) : null,
+              child: logoUrl == null
                   ? Text(
-                      churchInitials(church.name),
+                      churchInitials(displayName),
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontSize: 28,
@@ -132,8 +152,10 @@ class _ChurchCoverHeader extends StatelessWidget {
 }
 
 class _IdentitySection extends StatelessWidget {
-  const _IdentitySection({required this.church});
-  final ChurchEntity church;
+  const _IdentitySection({required this.unit, required this.fallbackChurch});
+
+  final ChurchUnitEntity unit;
+  final ChurchEntity fallbackChurch;
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +166,7 @@ class _IdentitySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            church.name,
+            _displayName(unit, fallbackChurch),
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 22,
@@ -154,7 +176,7 @@ class _IdentitySection extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '@${church.slug}',
+            '@${_displaySlug(unit, fallbackChurch)}',
             style: const TextStyle(
               fontSize: 13,
               color: AppColors.textSecondary,
@@ -167,8 +189,9 @@ class _IdentitySection extends StatelessWidget {
 }
 
 class _InfoSection extends StatelessWidget {
-  const _InfoSection({required this.church});
-  final ChurchEntity church;
+  const _InfoSection({required this.unit});
+
+  final ChurchUnitEntity unit;
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +201,7 @@ class _InfoSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Informações',
+            'Informacoes',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -186,18 +209,19 @@ class _InfoSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          if (church.address != null)
+          if (unit.address != null)
             _InfoRow(
               icon: Icons.location_on_outlined,
-              value: church.address!,
-              onTap: () => _launchMaps(church.address!),
+              value: unit.address!,
+              onTap: () => _launchMaps(unit.address!),
             ),
-          if (church.phone != null) _PhoneInfoRow(phone: church.phone!),
-          _InfoRow(
-            icon: Icons.mail_outline,
-            value: church.email,
-            onTap: () => _launchEmail(church.email),
-          ),
+          if (unit.phone != null) _PhoneInfoRow(phone: unit.phone!),
+          if (unit.email != null)
+            _InfoRow(
+              icon: Icons.mail_outline,
+              value: unit.email!,
+              onTap: () => _launchEmail(unit.email!),
+            ),
         ],
       ),
     );
@@ -220,6 +244,7 @@ class _InfoSection extends StatelessWidget {
 
 class _InfoRow extends StatelessWidget {
   const _InfoRow({required this.icon, required this.value, this.onTap});
+
   final IconData icon;
   final String value;
   final VoidCallback? onTap;
@@ -254,9 +279,9 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-/// Widget de telefone — preparado para múltiplos números no futuro.
 class _PhoneInfoRow extends StatefulWidget {
   const _PhoneInfoRow({required this.phone});
+
   final String phone;
 
   @override
@@ -343,6 +368,7 @@ class _PhoneInfoRowState extends State<_PhoneInfoRow> {
 
 class _AffiliationSection extends StatelessWidget {
   const _AffiliationSection({required this.church});
+
   final ChurchEntity church;
 
   @override
@@ -355,7 +381,7 @@ class _AffiliationSection extends StatelessWidget {
           const Divider(height: 1, color: AppColors.background),
           const SizedBox(height: 12),
           const Text(
-            'Afiliação',
+            'Afiliacao',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -367,12 +393,12 @@ class _AffiliationSection extends StatelessWidget {
             _affiliationBadge(label: 'Sede da rede', icon: Icons.home_outlined)
           else if (church.parentChurchAcronym != null)
             _affiliationBadge(
-              label: 'Filiada à ${church.parentChurchAcronym}',
+              label: 'Filiada a ${church.parentChurchAcronym}',
               icon: Icons.account_balance_outlined,
             )
           else
             const Text(
-              'Sem afiliação registrada',
+              'Sem afiliacao registrada',
               style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
         ],
@@ -410,6 +436,7 @@ class _AffiliationSection extends StatelessWidget {
 
 class _ErrorState extends StatelessWidget {
   const _ErrorState({required this.message, required this.onRetry});
+
   final String message;
   final VoidCallback onRetry;
 
@@ -438,4 +465,16 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+String _displayName(ChurchUnitEntity unit, ChurchEntity fallbackChurch) {
+  final name = unit.name?.trim();
+  if (name != null && name.isNotEmpty) return name;
+  return fallbackChurch.name;
+}
+
+String _displaySlug(ChurchUnitEntity unit, ChurchEntity fallbackChurch) {
+  final slug = unit.slug?.trim();
+  if (slug != null && slug.isNotEmpty) return slug;
+  return fallbackChurch.slug;
 }

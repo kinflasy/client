@@ -9,6 +9,7 @@ import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/presentation/screens/church_profile_screen.dart';
+import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:dio/dio.dart';
@@ -249,5 +250,79 @@ void main() {
     expect(find.text('Ministerios'), findsNothing);
     expect(find.text('Avisos'), findsNothing);
     expect(find.text('Eventos publicos em breve.'), findsOneWidget);
+    expect(find.byKey(ChurchFloatingBackButton.buttonKey), findsOneWidget);
+  });
+
+  testWidgets('visitor mode back button pops to previous screen', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: '/start',
+      routes: [
+        GoRoute(
+          path: '/start',
+          builder: (context, state) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => context.push('/church/unit-1'),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/church/:id',
+          builder: (context, state) =>
+              ChurchProfileScreen(unitId: state.pathParameters['id']!),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          publicChurchUnitProfileProvider.overrideWith(
+            (ref, unitId) async => buildVisitorProfile(),
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sede Central'), findsOneWidget);
+    expect(find.byKey(ChurchFloatingBackButton.buttonKey), findsOneWidget);
+
+    await tester.tap(find.byKey(ChurchFloatingBackButton.buttonKey));
+    await tester.pumpAndSettle();
+
+    expect(find.text('open'), findsOneWidget);
+    expect(find.text('Sede Central'), findsNothing);
+  });
+
+  testWidgets('member mode keeps search row and hides floating back button', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentChurchProfileProvider.overrideWith(
+            (ref) async => buildMemberProfile(),
+          ),
+          churchEventsApiProvider.overrideWithValue(_FakeChurchEventsApi([])),
+          churchDepartmentsApiProvider.overrideWithValue(
+            _FakeChurchDepartmentsApi([]),
+          ),
+        ],
+        child: const MaterialApp(home: ChurchProfileScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pesquisar igreja'), findsOneWidget);
+    expect(find.byKey(ChurchFloatingBackButton.buttonKey), findsNothing);
   });
 }

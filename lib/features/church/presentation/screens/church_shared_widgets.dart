@@ -2,6 +2,25 @@ import 'package:client/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+class ChurchFloatingBackButton extends StatelessWidget {
+  const ChurchFloatingBackButton({super.key});
+
+  static const buttonKey = ValueKey('church-floating-back-button');
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 8,
+      left: 4,
+      child: IconButton(
+        key: buttonKey,
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+}
+
 class ChurchSearchRow extends StatelessWidget {
   const ChurchSearchRow({super.key});
 

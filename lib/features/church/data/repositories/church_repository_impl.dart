@@ -4,12 +4,39 @@ import '../../../../core/errors/failure.dart';
 import '../../domain/entities/church_entity.dart';
 import '../../domain/repositories/church_repository.dart';
 import '../datasources/church_api.dart';
+import '../models/church_read_models.dart';
 import '../models/church_request_model.dart';
 
 class ChurchRepositoryImpl implements ChurchRepository {
   final ChurchApi _api;
 
   ChurchRepositoryImpl(this._api);
+
+  List<ChurchEntity> _mapChurches(List<ChurchReadModel> models) {
+    return models
+        .map(
+          (model) => ChurchEntity(
+            id: model.id,
+            name: model.name,
+            slug: model.slug,
+            acronym: model.acronym,
+            phone: model.phone,
+            email: model.email,
+            coverUrl: model.coverUrl,
+            logoUrl: model.logoUrl,
+            address: model.address,
+            website: model.website,
+            instagramUrl: model.instagramUrl,
+            youtubeUrl: model.youtubeUrl,
+            spotifyUrl: model.spotifyUrl,
+            whatsappNumber: model.whatsappNumber,
+            isHeadquarters: model.isHeadquarters,
+            parentChurchId: model.parentChurchId,
+            parentChurchAcronym: model.parentChurchAcronym,
+          ),
+        )
+        .toList();
+  }
 
   @override
   Future<Either<Failure, ChurchEntity>> createChurch(
@@ -82,34 +109,22 @@ class ChurchRepositoryImpl implements ChurchRepository {
   }
 
   @override
+  Future<Either<Failure, List<ChurchEntity>>> getAllChurches() async {
+    try {
+      return Right(_mapChurches(await _api.getAllChurches()));
+    } on DioException catch (e) {
+      return Left(NetworkFailure(e.message ?? 'Erro ao listar igrejas.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<ChurchEntity>>> searchChurches(
     String term,
   ) async {
     try {
-      final churches = (await _api.searchChurches(term))
-          .map(
-            (model) => ChurchEntity(
-              id: model.id,
-              name: model.name,
-              slug: model.slug,
-              acronym: model.acronym,
-              phone: model.phone,
-              email: model.email,
-              coverUrl: model.coverUrl,
-              logoUrl: model.logoUrl,
-              address: model.address,
-              website: model.website,
-              instagramUrl: model.instagramUrl,
-              youtubeUrl: model.youtubeUrl,
-              spotifyUrl: model.spotifyUrl,
-              whatsappNumber: model.whatsappNumber,
-              isHeadquarters: model.isHeadquarters,
-              parentChurchId: model.parentChurchId,
-              parentChurchAcronym: model.parentChurchAcronym,
-            ),
-          )
-          .toList();
-      return Right(churches);
+      return Right(_mapChurches(await _api.searchChurches(term)));
     } on DioException catch (e) {
       return Left(NetworkFailure(e.message ?? 'Erro ao buscar igrejas.'));
     } catch (e) {

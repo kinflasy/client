@@ -10,8 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class ChurchPublicProfileScreen extends ConsumerWidget {
-  const ChurchPublicProfileScreen({super.key, required this.unitId});
+class ChurchInfoProfileScreen extends ConsumerWidget {
+  const ChurchInfoProfileScreen({super.key, required this.unitId});
 
   final String unitId;
 
@@ -134,14 +134,7 @@ class _ChurchCoverHeader extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(
-          top: 8,
-          left: 4,
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
+        const ChurchFloatingBackButton(),
       ],
     );
   }

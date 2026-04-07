@@ -44,34 +44,7 @@ class _ChurchSearchScreenState extends ConsumerState<ChurchSearchScreen> {
           onChanged: (value) => setState(() => _term = value),
         ),
       ),
-      body: _term.trim().length < 2
-          ? const _SearchHint()
-          : _SearchResults(term: _term.trim()),
-    );
-  }
-}
-
-class _SearchHint extends StatelessWidget {
-  const _SearchHint();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.search, size: 48, color: AppColors.textSecondary),
-            SizedBox(height: 12),
-            Text(
-              'Digite o nome, slug ou sigla da igreja',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
-            ),
-          ],
-        ),
-      ),
+      body: _SearchResults(term: _term.trim()),
     );
   }
 }
@@ -96,7 +69,7 @@ class _SearchResults extends ConsumerWidget {
               const Icon(Icons.error_outline, size: 40, color: AppColors.error),
               const SizedBox(height: 12),
               const Text(
-                'Nao foi possivel buscar igrejas.',
+                'Nao foi possivel carregar as igrejas.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -123,7 +96,9 @@ class _SearchResults extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Nenhuma igreja encontrada para "$term".',
+                    term.isEmpty
+                        ? 'Nenhuma igreja cadastrada foi encontrada.'
+                        : 'Nenhuma igreja encontrada para "$term".',
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: AppColors.textSecondary),
                   ),

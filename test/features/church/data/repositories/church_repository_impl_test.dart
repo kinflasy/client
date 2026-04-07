@@ -65,6 +65,41 @@ void main() {
     });
   });
 
+  group('ChurchRepositoryImpl.getAllChurches', () {
+    test('returns church entities on success', () async {
+      when(() => api.getAllChurches()).thenAnswer(
+        (_) async => [
+          ChurchReadModel.fromJson({
+            'id': 'church-1',
+            'name': 'Igreja Central',
+            'slug': 'igreja-central',
+            'email': 'contato@igreja.dev',
+            'acronym': 'IC',
+          }),
+          ChurchReadModel.fromJson({
+            'id': 'church-2',
+            'name': 'Comunidade Vida',
+            'slug': 'comunidade-vida',
+            'email': 'vida@igreja.dev',
+          }),
+        ],
+      );
+
+      final result = await repository.getAllChurches();
+
+      expect(result.isRight(), isTrue);
+      result.match(
+        (_) => fail('expected success'),
+        (churches) {
+          expect(churches, hasLength(2));
+          expect(churches.first.name, 'Igreja Central');
+          expect(churches.first.acronym, 'IC');
+          expect(churches.last.slug, 'comunidade-vida');
+        },
+      );
+    });
+  });
+
   group('ChurchRepositoryImpl.createChurch', () {
     test('maps validation failures from api', () async {
       final request = ChurchStarterRequestModel(

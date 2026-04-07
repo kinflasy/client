@@ -161,12 +161,62 @@ final churchSearchProvider = FutureProvider.family<List<ChurchEntity>, String>((
   ref,
   term,
 ) async {
-  if (term.trim().length < 2) return [];
-  final result = await ref
-      .read(churchRepositoryProvider)
-      .searchChurches(term.trim());
-  return result.fold((failure) => throw failure, (churches) => churches);
+  final result = await ref.read(churchRepositoryProvider).getAllChurches();
+  final churches = result.fold((failure) => throw failure, (value) => value);
+  final normalizedTerm = _normalizeChurchSearchTerm(term);
+
+  if (normalizedTerm.isEmpty) {
+    return churches;
+  }
+
+  return churches.where((church) {
+    final haystacks = [
+      church.name,
+      church.slug,
+      church.acronym ?? '',
+    ].map(_normalizeChurchSearchTerm);
+
+    return haystacks.any((value) => value.contains(normalizedTerm));
+  }).toList();
 });
+
+String _normalizeChurchSearchTerm(String value) {
+  const accentMap = {
+    'á': 'a',
+    'à': 'a',
+    'â': 'a',
+    'ã': 'a',
+    'ä': 'a',
+    'é': 'e',
+    'è': 'e',
+    'ê': 'e',
+    'ë': 'e',
+    'í': 'i',
+    'ì': 'i',
+    'î': 'i',
+    'ï': 'i',
+    'ó': 'o',
+    'ò': 'o',
+    'ô': 'o',
+    'õ': 'o',
+    'ö': 'o',
+    'ú': 'u',
+    'ù': 'u',
+    'û': 'u',
+    'ü': 'u',
+    'ç': 'c',
+  };
+
+  final lower = value.trim().toLowerCase();
+  final buffer = StringBuffer();
+
+  for (final rune in lower.runes) {
+    final char = String.fromCharCode(rune);
+    buffer.write(accentMap[char] ?? char);
+  }
+
+  return buffer.toString();
+}
 
 final publicChurchUnitProfileProvider =
     FutureProvider.family<PublicChurchUnitProfileEntity, String>((

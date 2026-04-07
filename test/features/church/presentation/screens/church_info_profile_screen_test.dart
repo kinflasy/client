@@ -5,7 +5,8 @@ import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
-import 'package:client/features/church/presentation/screens/church_public_profile_screen.dart';
+import 'package:client/features/church/presentation/screens/church_info_profile_screen.dart';
+import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,7 +97,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: ChurchPublicProfileScreen(unitId: 'unit-1'),
+          home: ChurchInfoProfileScreen(unitId: 'unit-1'),
         ),
       ),
     );
@@ -113,7 +114,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: ChurchPublicProfileScreen(unitId: 'unit-1'),
+          home: ChurchInfoProfileScreen(unitId: 'unit-1'),
         ),
       ),
     );
@@ -126,6 +127,7 @@ void main() {
     expect(find.text('sede@igreja.dev'), findsOneWidget);
     expect(find.text('Sede da rede'), findsOneWidget);
     expect(find.text('Filial Leste'), findsOneWidget);
+    expect(find.byKey(ChurchFloatingBackButton.buttonKey), findsOneWidget);
   });
 
   testWidgets('falls back to church name and slug when unit is incomplete', (
@@ -152,7 +154,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: ChurchPublicProfileScreen(unitId: 'unit-1'),
+          home: ChurchInfoProfileScreen(unitId: 'unit-1'),
         ),
       ),
     );
@@ -169,7 +171,7 @@ void main() {
         GoRoute(
           path: '/start',
           builder: (context, state) =>
-              const ChurchPublicProfileScreen(unitId: 'unit-2'),
+              const ChurchInfoProfileScreen(unitId: 'unit-2'),
         ),
         GoRoute(
           path: AppRoutes.churchPublicProfile,
@@ -211,7 +213,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: ChurchPublicProfileScreen(unitId: 'unit-1'),
+          home: ChurchInfoProfileScreen(unitId: 'unit-1'),
         ),
       ),
     );

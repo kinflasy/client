@@ -9,6 +9,9 @@ part 'church_api.g.dart';
 abstract class ChurchApi {
   factory ChurchApi(Dio dio, {String baseUrl}) = _ChurchApi;
 
+  @GET('/v1/core/churches')
+  Future<List<ChurchReadModel>> getAllChurches();
+
   @POST('/v1/core/churches')
   Future<ChurchStarterModel> createChurch(@Body() Map<String, dynamic> request);
 

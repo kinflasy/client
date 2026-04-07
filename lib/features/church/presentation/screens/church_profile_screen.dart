@@ -130,6 +130,7 @@ class _VisitorProfileBody extends StatelessWidget {
                 child: _ChurchCoverHeader(
                   unit: profile.unit,
                   fallbackChurch: profile.church,
+                  showBackButton: true,
                 ),
               ),
               SliverToBoxAdapter(
@@ -160,11 +161,13 @@ class _ChurchCoverHeader extends StatelessWidget {
     required this.unit,
     required this.fallbackChurch,
     this.showSearchRow = false,
+    this.showBackButton = false,
   });
 
   final ChurchUnitEntity unit;
   final ChurchEntity fallbackChurch;
   final bool showSearchRow;
+  final bool showBackButton;
 
   @override
   Widget build(BuildContext context) {
@@ -203,6 +206,7 @@ class _ChurchCoverHeader extends StatelessWidget {
                       const SizedBox.shrink(),
                 ),
         ),
+        if (showBackButton) const ChurchFloatingBackButton(),
         if (showSearchRow)
           Positioned(top: 10, left: 16, right: 16, child: ChurchSearchRow()),
         Positioned(

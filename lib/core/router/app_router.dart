@@ -5,7 +5,7 @@ import 'package:client/features/auth/presentation/screens/splash_screen.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/church/presentation/screens/church_tab_screen.dart';
 import 'package:client/features/church/presentation/screens/church_profile_screen.dart';
-import 'package:client/features/church/presentation/screens/church_public_profile_screen.dart';
+import 'package:client/features/church/presentation/screens/church_info_profile_screen.dart';
 import 'package:client/features/church/presentation/screens/church_search_screen.dart';
 import 'package:client/features/church/presentation/screens/register_church_screen.dart';
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
@@ -189,7 +189,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final unitId = state.pathParameters['id']!;
-          return ChurchPublicProfileScreen(unitId: unitId);
+          return ChurchInfoProfileScreen(unitId: unitId);
         },
       ),
     ],

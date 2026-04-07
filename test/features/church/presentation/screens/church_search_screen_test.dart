@@ -58,14 +58,17 @@ void main() {
       ProviderScope(
         overrides: [
           churchSearchProvider.overrideWith(
-            (ref, term) async => const [
-              ChurchEntity(
-                id: 'church-1',
-                name: 'Igreja Central',
-                slug: 'igreja-central',
-                email: 'contato@igreja.dev',
-              ),
-            ],
+            (ref, term) async => term.toLowerCase().contains('central') ||
+                    term.isEmpty
+                ? const [
+                    ChurchEntity(
+                      id: 'church-1',
+                      name: 'Igreja Central',
+                      slug: 'igreja-central',
+                      email: 'contato@igreja.dev',
+                    ),
+                  ]
+                : const [],
           ),
           churchUnitRepositoryProvider.overrideWithValue(unitRepository),
         ],
@@ -73,7 +76,10 @@ void main() {
       ),
     );
 
-    await tester.enterText(find.byType(TextField), 'ig');
+    await tester.pumpAndSettle();
+    expect(find.text('Igreja Central'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'central');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Igreja Central'));
     await tester.pumpAndSettle();
@@ -96,14 +102,17 @@ void main() {
       ProviderScope(
         overrides: [
           churchSearchProvider.overrideWith(
-            (ref, term) async => const [
-              ChurchEntity(
-                id: 'church-1',
-                name: 'Igreja Central',
-                slug: 'igreja-central',
-                email: 'contato@igreja.dev',
-              ),
-            ],
+            (ref, term) async => term.toLowerCase().contains('central') ||
+                    term.isEmpty
+                ? const [
+                    ChurchEntity(
+                      id: 'church-1',
+                      name: 'Igreja Central',
+                      slug: 'igreja-central',
+                      email: 'contato@igreja.dev',
+                    ),
+                  ]
+                : const [],
           ),
           churchUnitRepositoryProvider.overrideWithValue(unitRepository),
         ],
@@ -111,7 +120,7 @@ void main() {
       ),
     );
 
-    await tester.enterText(find.byType(TextField), 'ig');
+    await tester.enterText(find.byType(TextField), 'central');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Igreja Central'));
     await tester.pumpAndSettle();
@@ -120,5 +129,59 @@ void main() {
       find.text('Nao foi possivel identificar a unidade sede desta igreja.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('shows all churches initially and filters as the user types', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          churchSearchProvider.overrideWith((ref, term) async {
+            if (term.isEmpty) {
+              return const [
+                ChurchEntity(
+                  id: 'church-1',
+                  name: 'Igreja Central',
+                  slug: 'igreja-central',
+                  email: 'contato@igreja.dev',
+                ),
+                ChurchEntity(
+                  id: 'church-2',
+                  name: 'Comunidade Vida',
+                  slug: 'comunidade-vida',
+                  email: 'vida@igreja.dev',
+                ),
+              ];
+            }
+
+            if (term.toLowerCase() == 'vida') {
+              return const [
+                ChurchEntity(
+                  id: 'church-2',
+                  name: 'Comunidade Vida',
+                  slug: 'comunidade-vida',
+                  email: 'vida@igreja.dev',
+                ),
+              ];
+            }
+
+            return const [];
+          }),
+          churchUnitRepositoryProvider.overrideWithValue(unitRepository),
+        ],
+        child: MaterialApp.router(routerConfig: buildRouter()),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.text('Igreja Central'), findsOneWidget);
+    expect(find.text('Comunidade Vida'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'vida');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Comunidade Vida'), findsOneWidget);
+    expect(find.text('Igreja Central'), findsNothing);
   });
 }

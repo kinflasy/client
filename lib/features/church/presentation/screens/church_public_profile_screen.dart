@@ -1,4 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
@@ -6,6 +7,7 @@ import 'package:client/features/church/presentation/screens/church_shared_widget
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ChurchPublicProfileScreen extends ConsumerWidget {
@@ -59,18 +61,12 @@ class _ProfileContent extends StatelessWidget {
               child: Divider(height: 1, color: AppColors.background),
             ),
             SliverToBoxAdapter(child: _InfoSection(unit: profile.unit)),
-            if (_hasAffiliation(profile.church))
-              SliverToBoxAdapter(
-                child: _AffiliationSection(church: profile.church),
-              ),
+            SliverToBoxAdapter(child: _AffiliationSection(profile: profile)),
           ],
         ),
       ),
     );
   }
-
-  bool _hasAffiliation(ChurchEntity c) =>
-      c.isHeadquarters != null || c.parentChurchId != null;
 }
 
 class _ChurchCoverHeader extends StatelessWidget {
@@ -367,12 +363,18 @@ class _PhoneInfoRowState extends State<_PhoneInfoRow> {
 }
 
 class _AffiliationSection extends StatelessWidget {
-  const _AffiliationSection({required this.church});
+  const _AffiliationSection({required this.profile});
 
-  final ChurchEntity church;
+  final PublicChurchUnitProfileEntity profile;
 
   @override
   Widget build(BuildContext context) {
+    final isMain = profile.unit.type == 'MAIN';
+    final headquarter = _findHeadquarter(profile);
+    final relatedBranches = profile.relatedUnits
+        .where((unit) => unit.id != profile.unit.id && unit.type == 'BRANCH')
+        .toList();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
@@ -389,14 +391,44 @@ class _AffiliationSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          if (church.isHeadquarters == true)
-            _affiliationBadge(label: 'Sede da rede', icon: Icons.home_outlined)
-          else if (church.parentChurchAcronym != null)
+          if (isMain) ...[
+            _affiliationBadge(label: 'Sede da rede', icon: Icons.home_outlined),
+            if (relatedBranches.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Text(
+                'Unidades da rede',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...relatedBranches.map(
+                (unit) => _AffiliationLinkTile(
+                  label: _displayName(unit, profile.church),
+                  onTap: () => context.pushNamed(
+                    AppRoutes.churchPublicProfileName,
+                    pathParameters: {'id': unit.id},
+                  ),
+                ),
+              ),
+            ],
+          ] else if (headquarter != null) ...[
             _affiliationBadge(
-              label: 'Filiada a ${church.parentChurchAcronym}',
+              label:
+                  'Pertence a rede ${_displayName(headquarter, profile.church)}',
               icon: Icons.account_balance_outlined,
-            )
-          else
+            ),
+            const SizedBox(height: 8),
+            _AffiliationLinkTile(
+              label: 'Ver unidade sede',
+              onTap: () => context.pushNamed(
+                AppRoutes.churchPublicProfileName,
+                pathParameters: {'id': headquarter.id},
+              ),
+            ),
+          ] else
             const Text(
               'Sem afiliacao registrada',
               style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
@@ -404,6 +436,13 @@ class _AffiliationSection extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  ChurchUnitEntity? _findHeadquarter(PublicChurchUnitProfileEntity profile) {
+    for (final unit in profile.relatedUnits) {
+      if (unit.type == 'MAIN') return unit;
+    }
+    return null;
   }
 
   Widget _affiliationBadge({required String label, required IconData icon}) {
@@ -429,6 +468,45 @@ class _AffiliationSection extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AffiliationLinkTile extends StatelessWidget {
+  const _AffiliationLinkTile({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.account_tree_outlined,
+              size: 18,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+          ],
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:client/features/auth/presentation/screens/register_screen.dart';
 import 'package:client/features/auth/presentation/screens/splash_screen.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/church/presentation/screens/church_tab_screen.dart';
+import 'package:client/features/church/presentation/screens/church_profile_screen.dart';
 import 'package:client/features/church/presentation/screens/church_public_profile_screen.dart';
 import 'package:client/features/church/presentation/screens/church_search_screen.dart';
 import 'package:client/features/church/presentation/screens/register_church_screen.dart';
@@ -27,6 +28,7 @@ final _protectedRoutes = <String>{
   AppRoutes.homeMenu,
   AppRoutes.registerChurch,
   AppRoutes.churchSearch,
+  AppRoutes.churchProfile,
   AppRoutes.churchPublicProfile,
 };
 
@@ -171,6 +173,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.churchSearchName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ChurchSearchScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.churchProfile,
+        name: AppRoutes.churchProfileName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final unitId = state.pathParameters['id']!;
+          return ChurchProfileScreen(unitId: unitId);
+        },
       ),
       GoRoute(
         path: AppRoutes.churchPublicProfile,

@@ -170,7 +170,7 @@ class _ChurchResultCardState extends ConsumerState<_ChurchResultCard> {
 
       if (!mounted) return;
       context.pushNamed(
-        AppRoutes.churchPublicProfileName,
+        AppRoutes.churchProfileName,
         pathParameters: {'id': unit.id},
       );
     } on Failure catch (error) {

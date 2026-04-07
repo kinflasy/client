@@ -2,21 +2,47 @@ import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_department_entity.dart';
+import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
+import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
+import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+enum _ChurchProfileViewerMode { member, visitor }
+
 class ChurchProfileScreen extends ConsumerWidget {
-  const ChurchProfileScreen({super.key});
+  const ChurchProfileScreen({super.key, this.unitId});
+
+  final String? unitId;
+
+  bool get _isVisitorMode => unitId != null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(currentChurchProfileProvider);
+    if (_isVisitorMode) {
+      final profileAsync = ref.watch(publicChurchUnitProfileProvider(unitId!));
+      return profileAsync.when(
+        loading: () => const Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(child: Center(child: CircularProgressIndicator())),
+        ),
+        error: (error, _) => _ErrorChurchState(
+          message: error is Failure
+              ? error.message
+              : 'Nao foi possivel carregar a igreja agora.',
+          onRetry: () =>
+              ref.invalidate(publicChurchUnitProfileProvider(unitId!)),
+        ),
+        data: (profile) => _VisitorProfileBody(profile: profile),
+      );
+    }
 
+    final profileAsync = ref.watch(currentChurchProfileProvider);
     return profileAsync.when(
       loading: () => const Scaffold(
         backgroundColor: AppColors.background,
@@ -29,34 +55,99 @@ class ChurchProfileScreen extends ConsumerWidget {
         return _ErrorChurchState(
           message: error is Failure
               ? error.message
-              : 'Não foi possível carregar a igreja agora.',
+              : 'Nao foi possivel carregar a igreja agora.',
           onRetry: () => ref.invalidate(currentChurchProfileProvider),
         );
       },
-      data: (profile) => DefaultTabController(
-        length: 3,
-        child: Scaffold(
-          backgroundColor: AppColors.background,
-          body: SafeArea(
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(child: _ChurchCoverHeader(profile: profile)),
-                SliverToBoxAdapter(child: _ChurchInfoCard(profile: profile)),
-                SliverPersistentHeader(delegate: const _ChurchTabBarDelegate()),
-                SliverFillRemaining(
-                  hasScrollBody: true,
-                  child: SizedBox.expand(
-                    child: TabBarView(
-                      children: [
-                        _EventsTab(unitId: profile.unit.id),
-                        _DepartmentsTab(unitId: profile.unit.id),
-                        const _AnnouncementsTab(),
-                      ],
-                    ),
+      data: (profile) => _MemberProfileBody(profile: profile),
+    );
+  }
+}
+
+class _MemberProfileBody extends StatelessWidget {
+  const _MemberProfileBody({required this.profile});
+
+  final CurrentChurchProfileEntity profile;
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: _ChurchCoverHeader(
+                  unit: profile.unit,
+                  fallbackChurch: profile.church,
+                  showSearchRow: true,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: _ChurchInfoCard(
+                  unit: profile.unit,
+                  fallbackChurch: profile.church,
+                ),
+              ),
+              const SliverPersistentHeader(delegate: _ChurchTabBarDelegate()),
+              SliverFillRemaining(
+                hasScrollBody: true,
+                child: SizedBox.expand(
+                  child: TabBarView(
+                    children: [
+                      _EventsTab(unitId: profile.unit.id),
+                      _DepartmentsTab(unitId: profile.unit.id),
+                      const _AnnouncementsTab(),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VisitorProfileBody extends StatelessWidget {
+  const _VisitorProfileBody({required this.profile});
+
+  final PublicChurchUnitProfileEntity profile;
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 1,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: _ChurchCoverHeader(
+                  unit: profile.unit,
+                  fallbackChurch: profile.church,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: _ChurchInfoCard(
+                  unit: profile.unit,
+                  fallbackChurch: profile.church,
+                ),
+              ),
+              const SliverPersistentHeader(
+                delegate: _ChurchTabBarDelegate(
+                  mode: _ChurchProfileViewerMode.visitor,
+                ),
+              ),
+              const SliverFillRemaining(
+                hasScrollBody: true,
+                child: SizedBox.expand(child: _VisitorEventsPlaceholderTab()),
+              ),
+            ],
           ),
         ),
       ),
@@ -65,14 +156,21 @@ class ChurchProfileScreen extends ConsumerWidget {
 }
 
 class _ChurchCoverHeader extends StatelessWidget {
-  const _ChurchCoverHeader({required this.profile});
+  const _ChurchCoverHeader({
+    required this.unit,
+    required this.fallbackChurch,
+    this.showSearchRow = false,
+  });
 
-  final CurrentChurchProfileEntity profile;
+  final ChurchUnitEntity unit;
+  final ChurchEntity fallbackChurch;
+  final bool showSearchRow;
 
   @override
   Widget build(BuildContext context) {
-    final coverUrl = profile.church.coverUrl;
-    final logoUrl = profile.church.logoUrl;
+    final coverUrl = unit.coverUrl ?? fallbackChurch.coverUrl;
+    final logoUrl = unit.logoUrl ?? fallbackChurch.logoUrl;
+    final displayName = _displayName(unit, fallbackChurch);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -105,7 +203,8 @@ class _ChurchCoverHeader extends StatelessWidget {
                       const SizedBox.shrink(),
                 ),
         ),
-        Positioned(top: 10, left: 16, right: 16, child: ChurchSearchRow()),
+        if (showSearchRow)
+          Positioned(top: 10, left: 16, right: 16, child: ChurchSearchRow()),
         Positioned(
           bottom: -58,
           child: CircleAvatar(
@@ -117,7 +216,7 @@ class _ChurchCoverHeader extends StatelessWidget {
               backgroundImage: logoUrl != null ? NetworkImage(logoUrl) : null,
               child: logoUrl == null
                   ? Text(
-                      churchInitials(profile.church.name),
+                      churchInitials(displayName),
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontSize: 28,
@@ -133,62 +232,55 @@ class _ChurchCoverHeader extends StatelessWidget {
   }
 }
 
-class _ChurchInfoCard extends ConsumerWidget {
-  const _ChurchInfoCard({required this.profile});
+class _ChurchInfoCard extends StatelessWidget {
+  const _ChurchInfoCard({required this.unit, required this.fallbackChurch});
 
-  final CurrentChurchProfileEntity profile;
+  final ChurchUnitEntity unit;
+  final ChurchEntity fallbackChurch;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       color: AppColors.surface,
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 16),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      profile.church.name,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '@${profile.church.slug}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _displayName(unit, fallbackChurch),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              InkWell(
-                borderRadius: BorderRadius.circular(999),
-                onTap: () => context.pushNamed(
-                  AppRoutes.churchPublicProfileName,
-                  pathParameters: {'id': profile.church.id},
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Icon(
-                    Icons.chevron_right,
+                const SizedBox(height: 6),
+                Text(
+                  '@${_displaySlug(unit, fallbackChurch)}',
+                  style: const TextStyle(
+                    fontSize: 13,
                     color: AppColors.textSecondary,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: () => context.pushNamed(
+              AppRoutes.churchPublicProfileName,
+              pathParameters: {'id': unit.id},
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            ),
           ),
         ],
       ),
@@ -197,7 +289,9 @@ class _ChurchInfoCard extends ConsumerWidget {
 }
 
 class _ChurchTabBarDelegate extends SliverPersistentHeaderDelegate {
-  const _ChurchTabBarDelegate();
+  const _ChurchTabBarDelegate({this.mode = _ChurchProfileViewerMode.member});
+
+  final _ChurchProfileViewerMode mode;
 
   @override
   double get minExtent => kTextTabBarHeight;
@@ -211,25 +305,43 @@ class _ChurchTabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
+    final tabs = mode == _ChurchProfileViewerMode.member
+        ? const [
+            Tab(text: 'Eventos'),
+            Tab(text: 'Ministerios'),
+            Tab(text: 'Avisos'),
+          ]
+        : const [Tab(text: 'Eventos')];
+
     return Container(
       width: double.infinity,
       color: AppColors.surface,
-      child: const TabBar(
+      child: TabBar(
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.textSecondary,
         indicatorColor: AppColors.primary,
-        tabs: [
-          Tab(text: 'Eventos'),
-          Tab(text: 'Ministérios'),
-          Tab(text: 'Avisos'),
-        ],
+        tabs: tabs,
       ),
     );
   }
 
   @override
-  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
-    return false;
+  bool shouldRebuild(covariant _ChurchTabBarDelegate oldDelegate) {
+    return oldDelegate.mode != mode;
+  }
+}
+
+class _VisitorEventsPlaceholderTab extends StatelessWidget {
+  const _VisitorEventsPlaceholderTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _InlineStatus(
+      icon: Icons.event_note_outlined,
+      title: 'Eventos publicos em breve.',
+      subtitle:
+          'Esta area ficara disponivel quando trabalharmos o contrato de eventos publicos.',
+    );
   }
 }
 
@@ -245,14 +357,14 @@ class _EventsTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(
         icon: Icons.event_busy_outlined,
-        title: 'Não foi possível carregar os eventos.',
+        title: 'Nao foi possivel carregar os eventos.',
       ),
       data: (events) {
         if (events.isEmpty) {
           return const _InlineStatus(
             icon: Icons.event_note_outlined,
             title: 'Nenhum evento encontrado.',
-            subtitle: 'Os próximos eventos da sua igreja aparecerão aqui.',
+            subtitle: 'Os proximos eventos da sua igreja aparecerao aqui.',
           );
         }
 
@@ -279,15 +391,15 @@ class _DepartmentsTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(
         icon: Icons.groups_2_outlined,
-        title: 'Não foi possível carregar os ministérios.',
+        title: 'Nao foi possivel carregar os ministerios.',
       ),
       data: (departments) {
         if (departments.isEmpty) {
           return const _InlineStatus(
             icon: Icons.groups_outlined,
-            title: 'Nenhum ministério encontrado.',
+            title: 'Nenhum ministerio encontrado.',
             subtitle:
-                'Quando houver departamentos ativos, eles aparecerão aqui.',
+                'Quando houver departamentos ativos, eles aparecerao aqui.',
           );
         }
 
@@ -312,7 +424,7 @@ class _AnnouncementsTab extends StatelessWidget {
       icon: Icons.campaign_outlined,
       title: 'Avisos em breve.',
       subtitle:
-          'Esta área ficará disponível quando o backend expuser esse feed.',
+          'Esta area ficara disponivel quando o backend expuser esse feed.',
     );
   }
 }
@@ -387,7 +499,7 @@ class _DepartmentCard extends StatelessWidget {
         subtitle: Text(
           department.slug != null && department.slug!.isNotEmpty
               ? '@${department.slug}'
-              : department.type ?? 'Ministério',
+              : department.type ?? 'Ministerio',
         ),
       ),
     );
@@ -453,7 +565,7 @@ class _EmptyChurchState extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Você ainda não participa de nenhuma igreja no app.',
+                  'Voce ainda nao participa de nenhuma igreja no app.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -463,7 +575,7 @@ class _EmptyChurchState extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Você pode procurar uma igreja existente ou cadastrar uma nova se não encontrar.',
+                  'Voce pode procurar uma igreja existente ou cadastrar uma nova se nao encontrar.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
@@ -528,6 +640,18 @@ class _ErrorChurchState extends StatelessWidget {
       ),
     );
   }
+}
+
+String _displayName(ChurchUnitEntity unit, ChurchEntity fallbackChurch) {
+  final name = unit.name?.trim();
+  if (name != null && name.isNotEmpty) return name;
+  return fallbackChurch.name;
+}
+
+String _displaySlug(ChurchUnitEntity unit, ChurchEntity fallbackChurch) {
+  final slug = unit.slug?.trim();
+  if (slug != null && slug.isNotEmpty) return slug;
+  return fallbackChurch.slug;
 }
 
 String _formatDateRange(DateTime start, DateTime end) {

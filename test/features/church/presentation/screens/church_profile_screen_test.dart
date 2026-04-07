@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/data/datasources/church_departments_api.dart';
 import 'package:client/features/church/data/datasources/church_events_api.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
+import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/presentation/screens/church_profile_screen.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
@@ -13,6 +15,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 class _FakeChurchEventsApi extends ChurchEventsApi {
   _FakeChurchEventsApi(this.events) : super(Dio());
@@ -41,14 +44,19 @@ class _FakeChurchDepartmentsApi extends ChurchDepartmentsApi {
 }
 
 void main() {
-  CurrentChurchProfileEntity buildProfile() {
+  CurrentChurchProfileEntity buildMemberProfile() {
     return const CurrentChurchProfileEntity(
       membership: MembershipEntity(
         id: 'membership-1',
         unitId: 'unit-1',
         affiliation: 'MEMBER',
       ),
-      unit: ChurchUnitEntity(id: 'unit-1', churchId: 'church-1', name: 'Sede'),
+      unit: ChurchUnitEntity(
+        id: 'unit-1',
+        churchId: 'church-1',
+        name: 'Sede Central',
+        slug: 'sede-central',
+      ),
       church: ChurchEntity(
         id: 'church-1',
         name: 'Igreja Central',
@@ -58,7 +66,25 @@ void main() {
     );
   }
 
-  testWidgets('shows loading state', (tester) async {
+  PublicChurchUnitProfileEntity buildVisitorProfile() {
+    return const PublicChurchUnitProfileEntity(
+      unit: ChurchUnitEntity(
+        id: 'unit-1',
+        churchId: 'church-1',
+        name: 'Sede Central',
+        slug: 'sede-central',
+      ),
+      church: ChurchEntity(
+        id: 'church-1',
+        name: 'Igreja Central',
+        slug: 'igreja-central',
+        email: 'contato@igreja.dev',
+      ),
+      relatedUnits: [],
+    );
+  }
+
+  testWidgets('shows loading state for member mode', (tester) async {
     final completer = Completer<CurrentChurchProfileEntity>();
 
     await tester.pumpWidget(
@@ -73,7 +99,7 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
-  testWidgets('shows empty state when user has no church', (tester) async {
+  testWidgets('shows empty state when member has no church', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -90,12 +116,12 @@ void main() {
 
     expect(find.text('Cadastrar Igreja'), findsOneWidget);
     expect(
-      find.text('Você ainda não está vinculado a nenhuma igreja.'),
+      find.text('Voce ainda nao participa de nenhuma igreja no app.'),
       findsOneWidget,
     );
   });
 
-  testWidgets('shows generic error state', (tester) async {
+  testWidgets('shows generic error state for member mode', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -114,19 +140,21 @@ void main() {
     expect(find.text('Tentar novamente'), findsOneWidget);
   });
 
-  testWidgets('renders profile and switches tabs', (tester) async {
+  testWidgets('renders member profile with unit identity and switches tabs', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           currentChurchProfileProvider.overrideWith(
-            (ref) async => buildProfile(),
+            (ref) async => buildMemberProfile(),
           ),
           churchEventsApiProvider.overrideWithValue(
             _FakeChurchEventsApi([
               {
                 'id': 'event-1',
                 'title': 'Culto de Domingo',
-                'description': 'Celebração principal',
+                'description': 'Celebracao principal',
                 'startDateTime': '2026-04-05T19:00:00',
                 'endDateTime': '2026-04-05T21:00:00',
               },
@@ -148,17 +176,78 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Igreja Central'), findsOneWidget);
+    expect(find.text('Sede Central'), findsOneWidget);
+    expect(find.text('@sede-central'), findsOneWidget);
     expect(find.text('Culto de Domingo'), findsOneWidget);
 
-    await tester.tap(find.text('Ministérios'));
+    await tester.tap(find.text('Ministerios'));
     await tester.pumpAndSettle();
-
     expect(find.text('Louvor'), findsOneWidget);
 
     await tester.tap(find.text('Avisos'));
     await tester.pumpAndSettle();
-
     expect(find.text('Avisos em breve.'), findsOneWidget);
+  });
+
+  testWidgets('member expand action opens public profile with unit id', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: AppRoutes.homeChurch,
+      routes: [
+        GoRoute(
+          path: AppRoutes.homeChurch,
+          name: AppRoutes.homeChurchName,
+          builder: (context, state) => const ChurchProfileScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.churchPublicProfile,
+          name: AppRoutes.churchPublicProfileName,
+          builder: (context, state) =>
+              Text('opened:${state.pathParameters['id']}'),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentChurchProfileProvider.overrideWith(
+            (ref) async => buildMemberProfile(),
+          ),
+          churchEventsApiProvider.overrideWithValue(_FakeChurchEventsApi([])),
+          churchDepartmentsApiProvider.overrideWithValue(
+            _FakeChurchDepartmentsApi([]),
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.chevron_right));
+    await tester.pumpAndSettle();
+
+    expect(find.text('opened:unit-1'), findsOneWidget);
+  });
+
+  testWidgets('visitor mode shows only events tab placeholder', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          publicChurchUnitProfileProvider.overrideWith(
+            (ref, unitId) async => buildVisitorProfile(),
+          ),
+        ],
+        child: const MaterialApp(home: ChurchProfileScreen(unitId: 'unit-1')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sede Central'), findsOneWidget);
+    expect(find.text('Eventos'), findsOneWidget);
+    expect(find.text('Ministerios'), findsNothing);
+    expect(find.text('Avisos'), findsNothing);
+    expect(find.text('Eventos publicos em breve.'), findsOneWidget);
   });
 }

@@ -31,8 +31,8 @@ void main() {
           builder: (context, state) => const ChurchSearchScreen(),
         ),
         GoRoute(
-          path: AppRoutes.churchPublicProfile,
-          name: AppRoutes.churchPublicProfileName,
+          path: AppRoutes.churchProfile,
+          name: AppRoutes.churchProfileName,
           builder: (context, state) =>
               Text('opened:${state.pathParameters['id']}'),
         ),

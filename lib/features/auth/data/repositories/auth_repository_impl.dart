@@ -25,9 +25,8 @@ class AuthRepositoryImpl implements AuthRepository {
         LoginRequestModel(username: email, password: password),
       );
       await _storage.saveToken(response.token);
-      return Right(
-        UserEntity(id: '', username: email, email: email, fullName: ''),
-      );
+      final currentUser = await _api.getLoggedUser();
+      return Right(currentUser.toEntity());
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         return Left(AuthFailure('Usuário ou senha inválidos'));

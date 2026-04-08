@@ -1,11 +1,10 @@
 import 'package:client/core/domain/enums/affiliation.dart';
-import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/domain/session_permissions.dart';
+import 'package:client/core/fga/fga_relations.dart';
+import 'package:client/core/fga/fga_service.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
-import 'package:client/features/church/providers/church_providers.dart';
-import 'package:client/features/membership/domain/entities/integration_entity.dart';
+import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:client/features/membership/providers/membership_providers.dart';
-import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_profile_providers.g.dart';
@@ -27,62 +26,20 @@ Future<SessionPermissions> sessionPermissions(Ref ref) async {
     );
   }
 
-  final firstMembership = memberships.first;
-  final membershipResult = await ref
-      .read(membershipRepositoryProvider)
-      .getMembershipByUnitAndPerson(firstMembership.unitId, currentUser.id);
-
-  final activeMembership = membershipResult.fold(
-    (_) => firstMembership,
-    (membership) => membership,
-  );
-
-  final affiliation = _mapAffiliation(activeMembership.affiliation);
-
-  List<IntegrationEntity> integrations = const [];
-  if (affiliation == Affiliation.congregated ||
-      affiliation == Affiliation.member) {
-    final integrationsResult = await ref
-        .read(membershipRepositoryProvider)
-        .getIntegrationsByMembershipId(activeMembership.id);
-    integrations = integrationsResult.fold((_) => const [], (value) => value);
-  }
-
-  var isUnitAdmin = false;
-  final departmentsApi = ref.read(churchDepartmentsApiProvider);
-  final adminLeaderIntegrations = integrations.where(
-    (integration) =>
-        integration.departmentType == 'ADMINISTRATIVE' &&
-        integration.integrationType == IntegrationType.leader,
-  );
-
-  for (final integration in adminLeaderIntegrations) {
-    try {
-      await departmentsApi.getDepartmentExtension(
-        integration.departmentId,
-        'SOMA',
-      );
-      isUnitAdmin = true;
-      break;
-    } on DioException catch (error) {
-      if (error.response?.statusCode != 404) rethrow;
-    }
-  }
-
-  return SessionPermissions(
-    isAuthenticated: true,
-    affiliation: isUnitAdmin ? Affiliation.unitAdmin : affiliation,
-    activeUnitId: activeMembership.unitId,
-    hasMembership: true,
-    integrations: integrations,
-    isUnitAdmin: isUnitAdmin,
+  return resolveSessionPermissions(
+    memberships: memberships,
+    checkUnitAdmin: (unitId) => ref
+        .read(fgaServiceProvider)
+        .check(object: FgaObject.unit(unitId), relation: FgaRelation.admin),
   );
 }
 
 @riverpod
 Affiliation? currentUserProfile(Ref ref) {
   final permissionsAsync = ref.watch(sessionPermissionsProvider);
-  return permissionsAsync.whenOrNull(data: (permissions) => permissions.affiliation);
+  return permissionsAsync.whenOrNull(
+    data: (permissions) => permissions.affiliation,
+  );
 }
 
 Affiliation? _mapAffiliation(String value) {
@@ -90,6 +47,44 @@ Affiliation? _mapAffiliation(String value) {
     'VISITOR' => Affiliation.visitor,
     'CONGREGATED' => Affiliation.congregated,
     'MEMBER' => Affiliation.member,
+    'LEADER' => Affiliation.leader,
+    'SOMA_LEADER' => Affiliation.somaLeader,
+    'UNIT_ADMIN' => Affiliation.unitAdmin,
     _ => null,
   };
+}
+
+Future<SessionPermissions> resolveSessionPermissions({
+  required List<MembershipEntity> memberships,
+  required Future<bool> Function(String unitId) checkUnitAdmin,
+}) async {
+  if (memberships.isEmpty) {
+    return const SessionPermissions(
+      isAuthenticated: true,
+      affiliation: null,
+      activeUnitId: null,
+      hasMembership: false,
+      integrations: [],
+      isUnitAdmin: false,
+    );
+  }
+
+  final activeMembership = memberships.first;
+  final affiliation = _mapAffiliation(activeMembership.affiliation);
+
+  var isUnitAdmin = false;
+  try {
+    isUnitAdmin = await checkUnitAdmin(activeMembership.unitId);
+  } catch (_) {
+    isUnitAdmin = false;
+  }
+
+  return SessionPermissions(
+    isAuthenticated: true,
+    affiliation: isUnitAdmin ? Affiliation.unitAdmin : affiliation,
+    activeUnitId: activeMembership.unitId,
+    hasMembership: true,
+    integrations: const [],
+    isUnitAdmin: isUnitAdmin,
+  );
 }

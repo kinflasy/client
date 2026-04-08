@@ -1,5 +1,6 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/presentation/widgets/church_sidebar.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_department_entity.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
@@ -8,6 +9,7 @@ import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
+import 'package:client/features/church/presentation/widgets/church_profile_top_bar.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,31 +66,43 @@ class ChurchProfileScreen extends ConsumerWidget {
   }
 }
 
-class _MemberProfileBody extends StatelessWidget {
+class _MemberProfileBody extends StatefulWidget {
   const _MemberProfileBody({required this.profile});
 
   final CurrentChurchProfileEntity profile;
+
+  @override
+  State<_MemberProfileBody> createState() => _MemberProfileBodyState();
+}
+
+class _MemberProfileBodyState extends State<_MemberProfileBody> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor: AppColors.background,
+        endDrawer: const ChurchSidebar(),
         body: SafeArea(
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
                 child: _ChurchCoverHeader(
-                  unit: profile.unit,
-                  fallbackChurch: profile.church,
-                  showSearchRow: true,
+                  unit: widget.profile.unit,
+                  fallbackChurch: widget.profile.church,
+                  topBar: ChurchProfileTopBar(
+                    onAvatarTap: () =>
+                        _scaffoldKey.currentState?.openEndDrawer(),
+                  ),
                 ),
               ),
               SliverToBoxAdapter(
                 child: _ChurchInfoCard(
-                  unit: profile.unit,
-                  fallbackChurch: profile.church,
+                  unit: widget.profile.unit,
+                  fallbackChurch: widget.profile.church,
                 ),
               ),
               const SliverPersistentHeader(delegate: _ChurchTabBarDelegate()),
@@ -97,8 +111,8 @@ class _MemberProfileBody extends StatelessWidget {
                 child: SizedBox.expand(
                   child: TabBarView(
                     children: [
-                      _EventsTab(unitId: profile.unit.id),
-                      _DepartmentsTab(unitId: profile.unit.id),
+                      _EventsTab(unitId: widget.profile.unit.id),
+                      _DepartmentsTab(unitId: widget.profile.unit.id),
                       const _AnnouncementsTab(),
                     ],
                   ),
@@ -160,13 +174,13 @@ class _ChurchCoverHeader extends StatelessWidget {
   const _ChurchCoverHeader({
     required this.unit,
     required this.fallbackChurch,
-    this.showSearchRow = false,
+    this.topBar,
     this.showBackButton = false,
   });
 
   final ChurchUnitEntity unit;
   final ChurchEntity fallbackChurch;
-  final bool showSearchRow;
+  final Widget? topBar;
   final bool showBackButton;
 
   @override
@@ -207,8 +221,8 @@ class _ChurchCoverHeader extends StatelessWidget {
                 ),
         ),
         if (showBackButton) const ChurchFloatingBackButton(),
-        if (showSearchRow)
-          Positioned(top: 10, left: 16, right: 16, child: ChurchSearchRow()),
+        if (topBar != null)
+          Positioned(top: 10, left: 16, right: 16, child: topBar!),
         Positioned(
           bottom: -58,
           child: CircleAvatar(

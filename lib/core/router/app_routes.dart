@@ -13,6 +13,7 @@ class AppRoutes {
   static const churchPublicProfile = '/church/:id/info';
   static const peopleList = '/people';
   static const peopleDetail = '/people/:id';
+  static const adminPanel = '/admin/gestao';
 
   static const splashName = 'splash';
   static const loginName = 'login';
@@ -25,4 +26,5 @@ class AppRoutes {
   static const churchSearchName = 'church-search';
   static const churchProfileName = 'church-profile';
   static const churchPublicProfileName = 'church-public-profile';
+  static const adminPanelName = 'admin-panel';
 }

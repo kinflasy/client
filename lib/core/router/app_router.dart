@@ -4,6 +4,7 @@ import 'package:client/features/auth/presentation/screens/register_screen.dart';
 import 'package:client/features/auth/presentation/screens/splash_screen.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/church/presentation/screens/church_tab_screen.dart';
+import 'package:client/features/church/presentation/screens/admin_panel_screen.dart';
 import 'package:client/features/church/presentation/screens/church_profile_screen.dart';
 import 'package:client/features/church/presentation/screens/church_info_profile_screen.dart';
 import 'package:client/features/church/presentation/screens/church_search_screen.dart';
@@ -30,11 +31,12 @@ final _protectedRoutes = <String>{
   AppRoutes.churchSearch,
   AppRoutes.churchProfile,
   AppRoutes.churchPublicProfile,
+  AppRoutes.adminPanel,
 };
 
 final _membershipRequiredRoutes = <String>{};
 
-final _memberRoutes = <String>{};
+final _memberRoutes = <String>{AppRoutes.adminPanel};
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellFeedNavigatorKey = GlobalKey<NavigatorState>(
@@ -91,6 +93,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           }
 
           if (_memberRoutes.contains(currentPath) && !permissions.isMember) {
+            return AppRoutes.homeFeed;
+          }
+
+          if (currentPath == AppRoutes.adminPanel && !permissions.isUnitAdmin) {
             return AppRoutes.homeFeed;
           }
         }
@@ -191,6 +197,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final unitId = state.pathParameters['id']!;
           return ChurchInfoProfileScreen(unitId: unitId);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.adminPanel,
+        name: AppRoutes.adminPanelName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AdminPanelScreen(),
       ),
     ],
   );

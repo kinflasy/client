@@ -10,6 +10,7 @@ import 'package:client/features/church/presentation/screens/church_info_profile_
 import 'package:client/features/church/presentation/screens/church_search_screen.dart';
 import 'package:client/features/church/presentation/screens/member_options_screen.dart';
 import 'package:client/features/church/presentation/screens/register_church_screen.dart';
+import 'package:client/features/church/presentation/screens/register_member_screen.dart';
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
 import 'package:client/features/home/presentation/screens/feed_screen.dart';
 import 'package:client/features/home/presentation/screens/home_screen.dart';
@@ -224,7 +225,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.adminMembersRegister,
         name: AppRoutes.adminMembersRegisterName,
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const SizedBox.shrink(),
+        builder: (context, state) => const RegisterMemberScreen(),
       ),
     ],
   );

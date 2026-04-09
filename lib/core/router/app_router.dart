@@ -8,6 +8,7 @@ import 'package:client/features/church/presentation/screens/admin_panel_screen.d
 import 'package:client/features/church/presentation/screens/church_profile_screen.dart';
 import 'package:client/features/church/presentation/screens/church_info_profile_screen.dart';
 import 'package:client/features/church/presentation/screens/church_search_screen.dart';
+import 'package:client/features/church/presentation/screens/member_options_screen.dart';
 import 'package:client/features/church/presentation/screens/register_church_screen.dart';
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
 import 'package:client/features/home/presentation/screens/feed_screen.dart';
@@ -32,11 +33,19 @@ final _protectedRoutes = <String>{
   AppRoutes.churchProfile,
   AppRoutes.churchPublicProfile,
   AppRoutes.adminPanel,
+  AppRoutes.adminMembers,
+  AppRoutes.adminMembersRegister,
 };
 
 final _membershipRequiredRoutes = <String>{};
 
 final _memberRoutes = <String>{AppRoutes.adminPanel};
+
+final _unitAdminRoutes = <String>{
+  AppRoutes.adminPanel,
+  AppRoutes.adminMembers,
+  AppRoutes.adminMembersRegister,
+};
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellFeedNavigatorKey = GlobalKey<NavigatorState>(
@@ -96,7 +105,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             return AppRoutes.homeFeed;
           }
 
-          if (currentPath == AppRoutes.adminPanel && !permissions.isUnitAdmin) {
+          if (_unitAdminRoutes.contains(currentPath) &&
+              !permissions.isUnitAdmin) {
             return AppRoutes.homeFeed;
           }
         }
@@ -203,6 +213,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.adminPanelName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const AdminPanelScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminMembers,
+        name: AppRoutes.adminMembersName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const MemberOptionsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminMembersRegister,
+        name: AppRoutes.adminMembersRegisterName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SizedBox.shrink(),
       ),
     ],
   );

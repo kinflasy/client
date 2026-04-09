@@ -1,5 +1,7 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class AdminPanelScreen extends StatelessWidget {
   const AdminPanelScreen({super.key});
@@ -24,7 +26,7 @@ class AdminPanelScreen extends StatelessWidget {
           _AdminCard(
             icon: Icons.people_outline,
             label: 'Membros',
-            onTap: () => _showComingSoon(context),
+            onTap: () => context.push(AppRoutes.adminMembers),
           ),
           const SizedBox(height: 12),
           _AdminCard(

@@ -73,10 +73,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: notifier,
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
-
-      if (authState.isLoading) return AppRoutes.splash;
-
       final currentPath = state.matchedLocation;
+
+      if (authState.isLoading) {
+        final isAuthRoute = _isAuthRoute(currentPath);
+        return isAuthRoute ? null : AppRoutes.splash;
+      }
+
       final isLoggedIn = authState.value != null;
       final isAuthRoute = _isAuthRoute(currentPath);
       final isSystemRoute = _isSystemRoute(currentPath);

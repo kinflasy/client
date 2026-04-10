@@ -20,19 +20,45 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
+    var tokenSaved = false;
+
     try {
       final response = await _api.login(
         LoginRequestModel(username: email, password: password),
       );
       await _storage.saveToken(response.token);
-      final currentUser = await _api.getLoggedUser();
-      return Right(currentUser.toEntity());
+      tokenSaved = true;
+
+      final currentUser = await _resolveAuthenticatedUser();
+      return Right(currentUser);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        return Left(AuthFailure('Usuário ou senha inválidos'));
+      if (tokenSaved) {
+        await _storage.deleteToken();
       }
-      return Left(NetworkFailure('Erro de conexão'));
+
+      final statusCode = e.response?.statusCode;
+      if (_isInvalidCredentialsStatus(statusCode)) {
+        return Left(
+          AuthFailure(
+            tokenSaved
+                ? 'Nao foi possivel validar a sessao do usuario'
+                : 'Usuario ou senha incorretos',
+          ),
+        );
+      }
+
+      return Left(NetworkFailure('Erro de conexao'));
+    } on _InvalidAuthenticatedUser catch (_) {
+      if (tokenSaved) {
+        await _storage.deleteToken();
+      }
+      return Left(
+        const AuthFailure('Nao foi possivel carregar o usuario autenticado'),
+      );
     } catch (_) {
+      if (tokenSaved) {
+        await _storage.deleteToken();
+      }
       return Left(UnknownFailure('Erro inesperado'));
     }
   }
@@ -57,7 +83,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = await _api.register(request);
       return Right(user.toEntity());
     } on DioException catch (e) {
-      return Left(NetworkFailure('Erro de conexão: ${e.message}'));
+      return Left(NetworkFailure('Erro de conexao: ${e.message}'));
     } catch (_) {
       return Left(UnknownFailure('Erro inesperado'));
     }
@@ -85,9 +111,11 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     try {
-      final userModel = await _api.getLoggedUser();
-      return userModel.toEntity();
+      return await _resolveAuthenticatedUser();
     } on DioException catch (_) {
+      await _storage.deleteToken();
+      return null;
+    } on _InvalidAuthenticatedUser catch (_) {
       await _storage.deleteToken();
       return null;
     } catch (_) {
@@ -95,4 +123,20 @@ class AuthRepositoryImpl implements AuthRepository {
       return null;
     }
   }
+
+  Future<UserEntity> _resolveAuthenticatedUser() async {
+    final user = (await _api.getLoggedUser()).toEntity();
+    if (user.id.trim().isEmpty || user.username.trim().isEmpty) {
+      throw const _InvalidAuthenticatedUser();
+    }
+    return user;
+  }
+
+  bool _isInvalidCredentialsStatus(int? statusCode) {
+    return statusCode == 400 || statusCode == 401 || statusCode == 403;
+  }
+}
+
+class _InvalidAuthenticatedUser implements Exception {
+  const _InvalidAuthenticatedUser();
 }

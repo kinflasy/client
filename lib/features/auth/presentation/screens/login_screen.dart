@@ -1,9 +1,9 @@
+import 'package:client/core/router/app_routes.dart';
+import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:toastification/toastification.dart';
-import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/auth/providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -24,40 +24,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-Future<void> _submit() async {
-  final username = _usernameController.text.trim();
-  final password = _passwordController.text;
+  Future<void> _submit() async {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
 
-  if (username.isEmpty || password.isEmpty) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.warning,
-      title: const Text('Preencha todos os campos'),
-      autoCloseDuration: const Duration(seconds: 3),
-    );
-    return;
+    if (username.isEmpty || password.isEmpty) {
+      toastification.show(
+        context: context,
+        type: ToastificationType.warning,
+        title: const Text('Preencha todos os campos'),
+        autoCloseDuration: const Duration(seconds: 3),
+      );
+      return;
+    }
+
+    await ref.read(authProvider.notifier).signIn(username, password);
   }
-
-  await ref.read(authProvider.notifier).signIn(username, password);
-
-  if (!mounted) return;
-
-  // Lê o estado após o await — agora já está atualizado
-  final authState = ref.read(authProvider);
-  authState.whenOrNull(
-    error: (error, _) => toastification.show(
-      context: context,
-      type: ToastificationType.error,
-      title: Text(error.toString()),
-      autoCloseDuration: const Duration(seconds: 4),
-    ),
-  );
-}
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<dynamic>>(authProvider, (previous, next) {
+      final previousError = previous?.asError?.error;
+      final nextError = next.asError?.error;
+      if (!mounted || nextError == null || nextError == previousError) {
+        return;
+      }
+
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        title: Text(nextError.toString()),
+        autoCloseDuration: const Duration(seconds: 4),
+      );
+    });
+
     final authState = ref.watch(authProvider);
     final isLoading = authState.isLoading;
+    final errorMessage = authState.asError?.error.toString();
 
     return Scaffold(
       body: SafeArea(
@@ -112,6 +115,16 @@ Future<void> _submit() async {
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
               ),
+              if (errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  errorMessage,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: isLoading ? null : _submit,

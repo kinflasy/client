@@ -1,8 +1,10 @@
+import 'package:client/core/errors/failure.dart';
 import 'package:client/core/storage/secure_storage.dart';
 import 'package:client/features/auth/data/datasources/auth_api.dart';
 import 'package:client/features/auth/data/datasources/auth_request_models.dart';
 import 'package:client/features/auth/data/models/user_model.dart';
 import 'package:client/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -52,7 +54,7 @@ void main() {
           id: 'user-1',
           username: 'lisa',
           email: 'lisa@example.com',
-          fullName: 'Lisa',
+          fullName: 'Lisa Silva',
         ),
       );
 
@@ -60,12 +62,82 @@ void main() {
 
       expect(user, isNotNull);
       expect(user?.id, 'user-1');
+      expect(user?.username, 'lisa');
+      expect(user?.fullName, 'Lisa Silva');
       verify(() => api.getLoggedUser()).called(1);
       verifyNever(() => storage.deleteToken());
+    });
+
+    test('clears token when resolved user is missing identity fields', () async {
+      when(() => storage.getToken()).thenAnswer(
+        (_) async =>
+            'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjQ3MDAwMDAwMDB9.signature',
+      );
+      when(() => api.getLoggedUser()).thenAnswer(
+        (_) async => const UserModel(
+          id: '',
+          username: '   ',
+          email: 'lisa@example.com',
+          fullName: 'Lisa Silva',
+        ),
+      );
+      when(() => storage.deleteToken()).thenAnswer((_) async {});
+
+      final user = await repository.getCurrentUser();
+
+      expect(user, isNull);
+      verify(() => api.getLoggedUser()).called(1);
+      verify(() => storage.deleteToken()).called(1);
     });
   });
 
   group('signIn', () {
+    test('returns auth failure when backend rejects credentials with 401', () async {
+      when(
+        () => api.login(any()),
+      ).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/auth/login'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/auth/login'),
+            statusCode: 401,
+          ),
+        ),
+      );
+
+      final result = await repository.signIn(email: 'lisa', password: 'wrong');
+
+      expect(result.isLeft(), isTrue);
+      final failure = result.getLeft().toNullable();
+      expect(failure, isA<AuthFailure>());
+      expect(failure?.message, 'Usuario ou senha incorretos');
+      verifyNever(() => storage.saveToken(any()));
+      verifyNever(() => storage.deleteToken());
+    });
+
+    test('returns auth failure when backend rejects credentials with 403', () async {
+      when(
+        () => api.login(any()),
+      ).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/auth/login'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/auth/login'),
+            statusCode: 403,
+          ),
+        ),
+      );
+
+      final result = await repository.signIn(email: 'lisa', password: 'wrong');
+
+      expect(result.isLeft(), isTrue);
+      final failure = result.getLeft().toNullable();
+      expect(failure, isA<AuthFailure>());
+      expect(failure?.message, 'Usuario ou senha incorretos');
+      verifyNever(() => storage.saveToken(any()));
+      verifyNever(() => storage.deleteToken());
+    });
+
     test('returns the logged user after saving the token', () async {
       when(
         () => api.login(any()),
@@ -76,7 +148,7 @@ void main() {
           id: 'user-123',
           username: 'lisa',
           email: 'lisa@example.com',
-          fullName: 'Lisa',
+          fullName: 'Lisa Silva',
         ),
       );
 
@@ -85,8 +157,57 @@ void main() {
       expect(result.isRight(), isTrue);
       final user = result.getRight().toNullable();
       expect(user?.id, 'user-123');
+      expect(user?.username, 'lisa');
+      expect(user?.fullName, 'Lisa Silva');
+      expect(user?.id, isNotEmpty);
       verify(() => storage.saveToken('jwt-token')).called(1);
       verify(() => api.getLoggedUser()).called(1);
+      verifyNever(() => storage.deleteToken());
+    });
+
+    test('returns auth failure and clears token when identity is incomplete', () async {
+      when(
+        () => api.login(any()),
+      ).thenAnswer((_) async => const LoginResponseModel(token: 'jwt-token'));
+      when(() => storage.saveToken('jwt-token')).thenAnswer((_) async {});
+      when(() => storage.deleteToken()).thenAnswer((_) async {});
+      when(() => api.getLoggedUser()).thenAnswer(
+        (_) async => const UserModel(
+          id: '',
+          username: '',
+          email: 'lisa@example.com',
+          fullName: 'Lisa Silva',
+        ),
+      );
+
+      final result = await repository.signIn(email: 'lisa', password: 'secret');
+
+      expect(result.isLeft(), isTrue);
+      final failure = result.getLeft().toNullable();
+      expect(failure, isA<AuthFailure>());
+      expect(failure?.message, 'Nao foi possivel carregar o usuario autenticado');
+      verify(() => storage.saveToken('jwt-token')).called(1);
+      verify(() => api.getLoggedUser()).called(1);
+      verify(() => storage.deleteToken()).called(1);
+    });
+
+    test('returns left and clears token when getLoggedUser fails after saving token', () async {
+      when(
+        () => api.login(any()),
+      ).thenAnswer((_) async => const LoginResponseModel(token: 'jwt-token'));
+      when(() => storage.saveToken('jwt-token')).thenAnswer((_) async {});
+      when(() => storage.deleteToken()).thenAnswer((_) async {});
+      when(
+        () => api.getLoggedUser(),
+      ).thenThrow(DioException(requestOptions: RequestOptions(path: '/identify')));
+
+      final result = await repository.signIn(email: 'lisa', password: 'secret');
+
+      expect(result.isLeft(), isTrue);
+      expect(result.getLeft().toNullable(), isA<NetworkFailure>());
+      verify(() => storage.saveToken('jwt-token')).called(1);
+      verify(() => api.getLoggedUser()).called(1);
+      verify(() => storage.deleteToken()).called(1);
     });
   });
 }

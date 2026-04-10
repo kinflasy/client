@@ -6,7 +6,6 @@ class InactivePersonRequestModel {
     required this.birthDate,
     this.phone,
     this.email,
-    this.churchId,
   });
 
   final String fullName;
@@ -15,7 +14,6 @@ class InactivePersonRequestModel {
   final String birthDate;
   final String? phone;
   final String? email;
-  final String? churchId;
 
   Map<String, dynamic> toJson() {
     return {
@@ -25,7 +23,6 @@ class InactivePersonRequestModel {
       'birthDate': birthDate,
       if (phone != null) 'phone': phone,
       if (email != null) 'email': email,
-      if (churchId != null) 'churchId': churchId,
     };
   }
 }

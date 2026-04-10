@@ -44,11 +44,9 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
 
     try {
       final membership = await ref.read(activeMembershipProvider.future);
-      final profile = await ref.read(currentChurchProfileProvider.future);
       final unitId = membership?.unitId;
-      final churchId = profile.church.id;
 
-      if (unitId == null || churchId.isEmpty) {
+      if (unitId == null || unitId.isEmpty) {
         _showErrorToast();
         return;
       }
@@ -61,7 +59,6 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
           birthDate: _formatApiDate(formState.birthDate!),
           phone: _nullIfBlank(formState.phone),
           email: _nullIfBlank(formState.email),
-          churchId: churchId,
         ),
         affiliation: formState.affiliation!,
         entryMode: formState.entryMode?.toApiString(),

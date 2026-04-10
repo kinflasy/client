@@ -6,12 +6,12 @@ class FgaConfig {
 
   static const storeId = String.fromEnvironment(
     'OPENFGA_STORE_ID',
-    defaultValue: '01KMPE3CBAXX3X38XGTJ2G75V6',
+    defaultValue: '01KNTK3FMFD2EFFTNXWMKJ8QVK',
   );
 
   static const modelId = String.fromEnvironment(
     'OPENFGA_AUTHORIZATION_MODEL_ID',
-    defaultValue: '01KMPE3CDV6PX5KXT6TKTBTBZ6',
+    defaultValue: '01KNTK3FNQ6PT88B7E0JV40SHQ',
   );
 
   static String get checkUrl => '$host/stores/$storeId/check';

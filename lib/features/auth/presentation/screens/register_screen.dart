@@ -1,9 +1,10 @@
+import 'package:client/core/router/app_routes.dart';
+import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:toastification/toastification.dart';
-import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/auth/providers/auth_providers.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -16,15 +17,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _fullNameController = TextEditingController();
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _birthDateController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
   bool _obscurePassword = true;
+  String? _selectedGender;
+  DateTime? _birthDate;
 
   @override
   void dispose() {
     _fullNameController.dispose();
     _usernameController.dispose();
     _emailController.dispose();
+    _birthDateController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -37,12 +43,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final password = _passwordController.text;
     final confirm = _confirmPasswordController.text;
 
-    if (fullName.isEmpty || username.isEmpty || email.isEmpty || password.isEmpty) {
-      _showWarning('Preencha todos os campos obrigatórios');
+    if (fullName.isEmpty ||
+        username.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirm.isEmpty) {
+      _showWarning('Preencha todos os campos obrigatorios');
       return false;
     }
     if (!email.contains('@')) {
-      _showWarning('Informe um e-mail válido');
+      _showWarning('Informe um e-mail valido');
       return false;
     }
     if (password.length < 6) {
@@ -50,9 +60,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return false;
     }
     if (password != confirm) {
-      _showWarning('As senhas não coincidem');
+      _showWarning('As senhas nao coincidem');
       return false;
     }
+    if (_selectedGender == null) {
+      _showWarning('Selecione o genero');
+      return false;
+    }
+
+    final parsedBirthDate = _parseBirthDate(_birthDateController.text);
+    if (parsedBirthDate == null) {
+      _showWarning('Informe uma data de nascimento valida');
+      return false;
+    }
+    if (parsedBirthDate.isAfter(_today())) {
+      _showWarning('A data de nascimento nao pode ser futura');
+      return false;
+    }
+
+    _birthDate = parsedBirthDate;
     return true;
   }
 
@@ -68,24 +94,75 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _submit() async {
     if (!_validate()) return;
 
-    await ref.read(authProvider.notifier).signUp(
+    await ref
+        .read(authProvider.notifier)
+        .signUp(
           name: _fullNameController.text.trim(),
           username: _usernameController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text,
+          gender: _selectedGender!,
+          birthDate: _birthDate!,
         );
 
-    if (mounted) {
-      final authState = ref.read(authProvider);
-      if (authState.hasError) {
-        toastification.show(
-          context: context,
-          type: ToastificationType.error,
-          title: Text(authState.error.toString()),
-          autoCloseDuration: const Duration(seconds: 4),
-        );
-      }
+    if (!mounted) return;
+
+    final authState = ref.read(authProvider);
+    if (authState.hasError) {
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        title: Text(authState.error.toString()),
+        autoCloseDuration: const Duration(seconds: 4),
+      );
     }
+  }
+
+  Future<void> _pickBirthDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _birthDate ?? DateTime(_today().year - 18, 1, 1),
+      firstDate: DateTime(1900),
+      lastDate: _today(),
+    );
+    if (picked == null) return;
+
+    setState(() {
+      _birthDate = picked;
+      _birthDateController.text = _formatDisplayDate(picked);
+    });
+  }
+
+  DateTime? _parseBirthDate(String value) {
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length != 8) return null;
+
+    final day = int.tryParse(digits.substring(0, 2));
+    final month = int.tryParse(digits.substring(2, 4));
+    final year = int.tryParse(digits.substring(4, 8));
+    if (day == null || month == null || year == null) return null;
+
+    final parsed = DateTime.tryParse(
+      '${year.toString().padLeft(4, '0')}-'
+      '${month.toString().padLeft(2, '0')}-'
+      '${day.toString().padLeft(2, '0')}',
+    );
+    if (parsed == null) return null;
+    if (parsed.year != year || parsed.month != month || parsed.day != day) {
+      return null;
+    }
+    return parsed;
+  }
+
+  String _formatDisplayDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
+
+  DateTime _today() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
   }
 
   @override
@@ -108,8 +185,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               Text(
                 'Criar conta',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -130,7 +207,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               TextField(
                 controller: _usernameController,
                 decoration: const InputDecoration(
-                  labelText: 'Usuário *',
+                  labelText: 'Usuario *',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person_outline),
                 ),
@@ -146,6 +223,50 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedGender,
+                decoration: const InputDecoration(
+                  labelText: 'Genero *',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.wc_outlined),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'MALE', child: Text('Masculino')),
+                  DropdownMenuItem(value: 'FEMALE', child: Text('Feminino')),
+                ],
+                onChanged: isLoading
+                    ? null
+                    : (value) => setState(() => _selectedGender = value),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _birthDateController,
+                decoration: InputDecoration(
+                  labelText: 'Data de nascimento *',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.cake_outlined),
+                  hintText: 'DD/MM/AAAA',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.calendar_today_outlined),
+                    onPressed: isLoading ? null : _pickBirthDate,
+                  ),
+                ),
+                keyboardType: TextInputType.datetime,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  const _DateTextInputFormatter(),
+                ],
+                textInputAction: TextInputAction.next,
+                onChanged: (value) {
+                  final parsedBirthDate = _parseBirthDate(value);
+                  _birthDate =
+                      parsedBirthDate != null &&
+                          !parsedBirthDate.isAfter(_today())
+                      ? parsedBirthDate
+                      : null;
+                },
               ),
               const SizedBox(height: 16),
               TextField(
@@ -193,12 +314,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => context.go(AppRoutes.login),
-                child: const Text('Já tem conta? Entrar'),
+                child: const Text('Ja tem conta? Entrar'),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DateTextInputFormatter extends TextInputFormatter {
+  const _DateTextInputFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final buffer = StringBuffer();
+
+    for (var i = 0; i < digits.length && i < 8; i++) {
+      buffer.write(digits[i]);
+      if ((i == 1 || i == 3) && i != digits.length - 1) {
+        buffer.write('/');
+      }
+    }
+
+    final formatted = buffer.toString();
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

@@ -25,9 +25,7 @@ void main() {
     when(() => repository.getCurrentUser()).thenAnswer((_) async => null);
 
     container = ProviderContainer(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(repository),
-      ],
+      overrides: [authRepositoryProvider.overrideWithValue(repository)],
     );
   });
 
@@ -51,9 +49,7 @@ void main() {
   });
 
   test('signIn publishes AsyncError when repository returns failure', () async {
-    when(
-      () => repository.signIn(email: 'lisa', password: 'secret'),
-    ).thenAnswer(
+    when(() => repository.signIn(email: 'lisa', password: 'secret')).thenAnswer(
       (_) async => const Left(AuthFailure('Nao foi possivel validar a sessao')),
     );
 
@@ -63,4 +59,48 @@ void main() {
     expect(state.hasError, isTrue);
     expect(state.error, 'Nao foi possivel validar a sessao');
   });
+
+  test(
+    'signUp forwards gender and birthDate and publishes AsyncData',
+    () async {
+      final birthDate = DateTime(1998, 4, 9);
+
+      when(
+        () => repository.signUp(
+          name: 'Lisa Silva',
+          username: 'lisa',
+          email: 'lisa@example.com',
+          password: 'secret',
+          gender: 'FEMALE',
+          birthDate: birthDate,
+        ),
+      ).thenAnswer((_) async => const Right(loggedUser));
+
+      await container
+          .read(authProvider.notifier)
+          .signUp(
+            name: 'Lisa Silva',
+            username: 'lisa',
+            email: 'lisa@example.com',
+            password: 'secret',
+            gender: 'FEMALE',
+            birthDate: birthDate,
+          );
+
+      final state = container.read(authProvider);
+      expect(state, isA<AsyncData<UserEntity?>>());
+      expect(state.value?.id, 'user-123');
+
+      verify(
+        () => repository.signUp(
+          name: 'Lisa Silva',
+          username: 'lisa',
+          email: 'lisa@example.com',
+          password: 'secret',
+          gender: 'FEMALE',
+          birthDate: birthDate,
+        ),
+      ).called(1);
+    },
+  );
 }

@@ -69,6 +69,8 @@ class AuthRepositoryImpl implements AuthRepository {
     required String username,
     required String email,
     required String password,
+    required String gender,
+    required DateTime birthDate,
   }) async {
     try {
       final request = RegisterRequestModel(
@@ -76,8 +78,8 @@ class AuthRepositoryImpl implements AuthRepository {
         username: username,
         email: email,
         password: password,
-        gender: 'MALE',
-        birthDate: '2000-01-01',
+        gender: gender,
+        birthDate: _formatApiDate(birthDate),
       );
 
       final user = await _api.register(request);
@@ -134,6 +136,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   bool _isInvalidCredentialsStatus(int? statusCode) {
     return statusCode == 400 || statusCode == 401 || statusCode == 403;
+  }
+
+  String _formatApiDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
   }
 }
 

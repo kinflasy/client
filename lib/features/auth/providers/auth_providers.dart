@@ -45,10 +45,9 @@ class AuthNotifier extends _$AuthNotifier {
 
   Future<void> signIn(String username, String password) async {
     state = const AsyncLoading();
-    final result = await ref.read(signInUsecaseProvider).call(
-          email: username,
-          password: password,
-        );
+    final result = await ref
+        .read(signInUsecaseProvider)
+        .call(email: username, password: password);
     result.fold(
       (failure) => state = AsyncError(failure.message, StackTrace.current),
       (user) => state = AsyncData(user),
@@ -60,13 +59,19 @@ class AuthNotifier extends _$AuthNotifier {
     required String username,
     required String email,
     required String password,
+    required String gender,
+    required DateTime birthDate,
   }) async {
     state = const AsyncLoading();
-    final result = await ref.read(signUpUsecaseProvider).call(
+    final result = await ref
+        .read(signUpUsecaseProvider)
+        .call(
           name: name,
           username: username,
           email: email,
           password: password,
+          gender: gender,
+          birthDate: birthDate,
         );
     result.fold(
       (failure) => state = AsyncError(failure.message, StackTrace.current),

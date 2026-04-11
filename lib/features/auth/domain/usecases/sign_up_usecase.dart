@@ -12,5 +12,14 @@ class SignUpUsecase {
     required String username,
     required String email,
     required String password,
-  }) => _repository.signUp(name: name, username: username, email: email, password: password);
+    required String gender,
+    required DateTime birthDate,
+  }) => _repository.signUp(
+    name: name,
+    username: username,
+    email: email,
+    password: password,
+    gender: gender,
+    birthDate: birthDate,
+  );
 }

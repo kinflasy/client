@@ -13,6 +13,8 @@ abstract class AuthRepository {
     required String username,
     required String email,
     required String password,
+    required String gender,
+    required DateTime birthDate,
   });
 
   Future<Either<Failure, void>> signOut();

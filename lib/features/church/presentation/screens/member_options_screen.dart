@@ -18,22 +18,23 @@ class MemberOptionsScreen extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: const [
-          _AddMemberItem(),
-          SizedBox(height: 12),
+        children: [
+          const _AddMemberItem(),
+          const SizedBox(height: 12),
           _MemberOptionItem(
             icon: Icons.people_outline,
             title: 'Ver Membros',
             subtitle: 'Visualize todos os membros da sua igreja.',
+            onTap: () => context.push(AppRoutes.peopleList),
           ),
-          SizedBox(height: 12),
-          _MemberOptionItem(
+          const SizedBox(height: 12),
+          const _MemberOptionItem(
             icon: Icons.link,
             title: 'Solicitações de vínculo',
             subtitle: 'Gerencie pedidos de entrada na sua unidade.',
           ),
-          SizedBox(height: 12),
-          _MemberOptionItem(
+          const SizedBox(height: 12),
+          const _MemberOptionItem(
             icon: Icons.history,
             title: 'Membros anteriores',
             subtitle: 'Consulte o histórico de membros desvinculados.',

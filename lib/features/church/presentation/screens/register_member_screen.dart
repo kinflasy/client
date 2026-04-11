@@ -6,6 +6,7 @@ import 'package:client/features/membership/data/models/register_member_request_m
 import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:client/features/membership/providers/register_member_form_provider.dart';
 import 'package:client/features/membership/providers/register_member_providers.dart';
+import 'package:client/features/membership/providers/unit_member_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -79,6 +80,7 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
           ref.invalidate(membershipProvider);
           ref.invalidate(activeMembershipProvider);
           ref.invalidate(currentChurchProfileProvider);
+          ref.invalidate(rawUnitMembersProvider(unitId));
           ref.invalidate(registerMemberFormProvider);
           toastification.show(
             context: context,

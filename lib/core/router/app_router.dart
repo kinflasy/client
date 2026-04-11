@@ -14,6 +14,7 @@ import 'package:client/features/church/presentation/screens/register_member_scre
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
 import 'package:client/features/home/presentation/screens/feed_screen.dart';
 import 'package:client/features/home/presentation/screens/home_screen.dart';
+import 'package:client/features/membership/presentation/screens/members_list_screen.dart';
 import 'package:client/features/menu/presentation/screens/menu_screen.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +37,7 @@ final _protectedRoutes = <String>{
   AppRoutes.adminPanel,
   AppRoutes.adminMembers,
   AppRoutes.adminMembersRegister,
+  AppRoutes.peopleList,
 };
 
 final _membershipRequiredRoutes = <String>{};
@@ -46,6 +48,7 @@ final _unitAdminRoutes = <String>{
   AppRoutes.adminPanel,
   AppRoutes.adminMembers,
   AppRoutes.adminMembersRegister,
+  AppRoutes.peopleList,
 };
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -229,6 +232,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.adminMembersRegisterName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RegisterMemberScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.peopleList,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const MembersListScreen(),
       ),
     ],
   );

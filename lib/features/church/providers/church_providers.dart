@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/network/dio_client.dart';
+import 'package:client/core/utils/string_utils.dart';
 import 'package:client/features/church/data/datasources/church_api.dart';
 import 'package:client/features/church/data/datasources/church_departments_api.dart';
 import 'package:client/features/church/data/datasources/church_events_api.dart';
@@ -163,7 +164,7 @@ final churchSearchProvider = FutureProvider.family<List<ChurchEntity>, String>((
 ) async {
   final result = await ref.read(churchRepositoryProvider).getAllChurches();
   final churches = result.fold((failure) => throw failure, (value) => value);
-  final normalizedTerm = _normalizeChurchSearchTerm(term);
+  final normalizedTerm = normalizeSearchTerm(term);
 
   if (normalizedTerm.isEmpty) {
     return churches;
@@ -174,12 +175,13 @@ final churchSearchProvider = FutureProvider.family<List<ChurchEntity>, String>((
       church.name,
       church.slug,
       church.acronym ?? '',
-    ].map(_normalizeChurchSearchTerm);
+    ].map(normalizeSearchTerm);
 
     return haystacks.any((value) => value.contains(normalizedTerm));
   }).toList();
 });
 
+// ignore: unused_element
 String _normalizeChurchSearchTerm(String value) {
   const accentMap = {
     'á': 'a',

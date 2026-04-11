@@ -15,7 +15,10 @@ final unitMemberApiProvider = Provider<UnitMemberApi>(
 );
 
 final unitMemberRepositoryProvider = Provider<UnitMemberRepository>(
-  (ref) => UnitMemberRepositoryImpl(ref.watch(unitMemberApiProvider)),
+  (ref) => UnitMemberRepositoryImpl(
+    ref.watch(unitMemberApiProvider),
+    ref.watch(dioClientProvider),
+  ),
 );
 
 @riverpod

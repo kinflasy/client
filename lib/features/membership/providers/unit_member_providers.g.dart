@@ -138,6 +138,58 @@ final class RawUnitMembersFamily extends $Family
   String toString() => r'rawUnitMembersProvider';
 }
 
+@ProviderFor(MemberFilter)
+final memberFilterProvider = MemberFilterProvider._();
+
+final class MemberFilterProvider
+    extends $NotifierProvider<MemberFilter, MemberFilterState> {
+  MemberFilterProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'memberFilterProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$memberFilterHash();
+
+  @$internal
+  @override
+  MemberFilter create() => MemberFilter();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(MemberFilterState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<MemberFilterState>(value),
+    );
+  }
+}
+
+String _$memberFilterHash() => r'9afad8c6087a54f475314353d30869106e85df8c';
+
+abstract class _$MemberFilter extends $Notifier<MemberFilterState> {
+  MemberFilterState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<MemberFilterState, MemberFilterState>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<MemberFilterState, MemberFilterState>,
+              MemberFilterState,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(filteredMembers)
 final filteredMembersProvider = FilteredMembersFamily._();
 
@@ -203,7 +255,7 @@ final class FilteredMembersProvider
   }
 }
 
-String _$filteredMembersHash() => r'0c887a65a8e7372821f7ff62c226c8bef3f630d0';
+String _$filteredMembersHash() => r'fc5468c58a40e17d6bf0e50668b6f0a73c21a398';
 
 final class FilteredMembersFamily extends $Family
     with $FunctionalFamilyOverride<AsyncValue<List<UnitMemberEntity>>, String> {

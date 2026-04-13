@@ -56,7 +56,7 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
           icon: Icons.error_outline,
           title: error is Failure
               ? error.message
-              : 'Nao foi possivel carregar a unidade ativa.',
+              : 'Não foi possível carregar a unidade ativa.',
         ),
         data: (membership) {
           final unitId = membership?.unitId;
@@ -64,7 +64,7 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
             return const _InlineStatus(
               icon: Icons.people_outline,
               title: 'Nenhuma unidade ativa encontrada.',
-              subtitle: 'Nao foi possivel identificar os membros para listar.',
+              subtitle: 'Não foi possível identificar os membros para listar.',
             );
           }
 
@@ -120,7 +120,7 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
                     icon: Icons.group_off_outlined,
                     title: error is Failure
                         ? error.message
-                        : 'Nao foi possivel carregar os membros.',
+                        : 'Não foi possível carregar os membros.',
                     subtitle: 'Tente novamente em instantes.',
                   ),
                   data: (members) {
@@ -336,7 +336,7 @@ class _MemberFilterSheetState extends ConsumerState<_MemberFilterSheet> {
                 ),
               ),
               const SizedBox(height: 20),
-              const _SectionTitle('Afiliacao'),
+              const _SectionTitle('Filiação'),
               const SizedBox(height: 8),
               for (final affiliation in _allAffiliations)
                 SwitchListTile(
@@ -379,7 +379,7 @@ class _MemberFilterSheetState extends ConsumerState<_MemberFilterSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              const _SectionTitle('Faixa etaria'),
+              const _SectionTitle('Faixa etária'),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Filtrar por idade'),
@@ -411,7 +411,7 @@ class _MemberFilterSheetState extends ConsumerState<_MemberFilterSheet> {
                         controller: _minAgeController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          labelText: 'Idade minima',
+                          labelText: 'Idade mínima',
                         ),
                         onChanged: _updateMinAge,
                       ),
@@ -422,7 +422,7 @@ class _MemberFilterSheetState extends ConsumerState<_MemberFilterSheet> {
                         controller: _maxAgeController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          labelText: 'Idade maxima',
+                          labelText: 'Idade máxima',
                         ),
                         onChanged: _updateMaxAge,
                       ),
@@ -559,9 +559,9 @@ class _InlineStatus extends StatelessWidget {
 
 String _translateAffiliation(String affiliation) {
   return switch (affiliation.toUpperCase()) {
-    'MEMBER' => 'Membro',
-    'CONGREGATED' => 'Congregado',
-    'VISITOR' => 'Visitante',
+    'MEMBER' => 'Membros',
+    'CONGREGATED' => 'Congregados',
+    'VISITOR' => 'Visitantes',
     _ => affiliation,
   };
 }

@@ -184,29 +184,29 @@ final churchSearchProvider = FutureProvider.family<List<ChurchEntity>, String>((
 // ignore: unused_element
 String _normalizeChurchSearchTerm(String value) {
   const accentMap = {
-    'á': 'a',
-    'à': 'a',
-    'â': 'a',
-    'ã': 'a',
-    'ä': 'a',
-    'é': 'e',
-    'è': 'e',
-    'ê': 'e',
-    'ë': 'e',
-    'í': 'i',
-    'ì': 'i',
-    'î': 'i',
-    'ï': 'i',
-    'ó': 'o',
-    'ò': 'o',
-    'ô': 'o',
-    'õ': 'o',
-    'ö': 'o',
-    'ú': 'u',
-    'ù': 'u',
-    'û': 'u',
-    'ü': 'u',
-    'ç': 'c',
+    'Ã¡': 'a',
+    'Ã ': 'a',
+    'Ã¢': 'a',
+    'Ã£': 'a',
+    'Ã¤': 'a',
+    'Ã©': 'e',
+    'Ã¨': 'e',
+    'Ãª': 'e',
+    'Ã«': 'e',
+    'Ã­': 'i',
+    'Ã¬': 'i',
+    'Ã®': 'i',
+    'Ã¯': 'i',
+    'Ã³': 'o',
+    'Ã²': 'o',
+    'Ã´': 'o',
+    'Ãµ': 'o',
+    'Ã¶': 'o',
+    'Ãº': 'u',
+    'Ã¹': 'u',
+    'Ã»': 'u',
+    'Ã¼': 'u',
+    'Ã§': 'c',
   };
 
   final lower = value.trim().toLowerCase();
@@ -281,7 +281,7 @@ Future<ChurchUnitEntity> resolveHeadquarterUnitByChurch({
   }
 
   throw const ValidationFailure(
-    'NÃ£o foi possÃ­vel identificar a unidade sede desta igreja.',
+    'Não foi possível identificar a unidade sede desta igreja.',
   );
 }
 

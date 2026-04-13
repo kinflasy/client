@@ -63,7 +63,7 @@ void main() {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Genero *'), findsOneWidget);
+    expect(find.text('Gênero *'), findsOneWidget);
     expect(find.text('Data de nascimento *'), findsOneWidget);
     expect(find.text('DD/MM/AAAA'), findsOneWidget);
   });
@@ -76,7 +76,7 @@ void main() {
       find.widgetWithText(TextField, 'Nome completo *'),
       'Lisa Silva',
     );
-    await tester.enterText(find.widgetWithText(TextField, 'Usuario *'), 'lisa');
+    await tester.enterText(find.widgetWithText(TextField, 'Usuário *'), 'lisa');
     await tester.enterText(
       find.widgetWithText(TextField, 'E-mail *'),
       'lisa@example.com',
@@ -119,7 +119,7 @@ void main() {
       find.widgetWithText(TextField, 'Nome completo *'),
       'Lisa Silva',
     );
-    await tester.enterText(find.widgetWithText(TextField, 'Usuario *'), 'lisa');
+    await tester.enterText(find.widgetWithText(TextField, 'Usuário *'), 'lisa');
     await tester.enterText(
       find.widgetWithText(TextField, 'E-mail *'),
       'lisa@example.com',
@@ -184,7 +184,7 @@ void main() {
       find.widgetWithText(TextField, 'Nome completo *'),
       'Lisa Silva',
     );
-    await tester.enterText(find.widgetWithText(TextField, 'Usuario *'), 'lisa');
+    await tester.enterText(find.widgetWithText(TextField, 'Usuário *'), 'lisa');
     await tester.enterText(
       find.widgetWithText(TextField, 'E-mail *'),
       'lisa@example.com',

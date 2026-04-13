@@ -50,14 +50,14 @@ void main() {
 
   test('signIn publishes AsyncError when repository returns failure', () async {
     when(() => repository.signIn(email: 'lisa', password: 'secret')).thenAnswer(
-      (_) async => const Left(AuthFailure('Nao foi possivel validar a sessao')),
+      (_) async => const Left(AuthFailure('Não foi possível validar a sessão')),
     );
 
     await container.read(authProvider.notifier).signIn('lisa', 'secret');
 
     final state = container.read(authProvider);
     expect(state.hasError, isTrue);
-    expect(state.error, 'Nao foi possivel validar a sessao');
+    expect(state.error, 'Não foi possível validar a sessão');
   });
 
   test(

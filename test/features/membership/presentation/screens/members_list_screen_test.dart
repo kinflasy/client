@@ -58,7 +58,7 @@ void main() {
     await tester.tap(find.byTooltip('Filtrar membros'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Visitante'));
+    await tester.tap(find.text('Visitantes'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Mulheres'));
     await tester.pumpAndSettle();

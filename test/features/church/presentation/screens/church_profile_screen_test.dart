@@ -117,7 +117,7 @@ void main() {
 
     expect(find.text('Cadastrar Igreja'), findsOneWidget);
     expect(
-      find.text('Voce ainda nao participa de nenhuma igreja no app.'),
+      find.text('Você ainda não participa de nenhuma igreja no app.'),
       findsOneWidget,
     );
   });
@@ -181,7 +181,7 @@ void main() {
     expect(find.text('@sede-central'), findsOneWidget);
     expect(find.text('Culto de Domingo'), findsOneWidget);
 
-    await tester.tap(find.text('Ministerios'));
+    await tester.tap(find.text('Ministérios'));
     await tester.pumpAndSettle();
     expect(find.text('Louvor'), findsOneWidget);
 
@@ -247,9 +247,9 @@ void main() {
 
     expect(find.text('Sede Central'), findsOneWidget);
     expect(find.text('Eventos'), findsOneWidget);
-    expect(find.text('Ministerios'), findsNothing);
+    expect(find.text('Ministérios'), findsNothing);
     expect(find.text('Avisos'), findsNothing);
-    expect(find.text('Eventos publicos em breve.'), findsOneWidget);
+    expect(find.text('Eventos públicos em breve.'), findsOneWidget);
     expect(find.byKey(ChurchFloatingBackButton.buttonKey), findsOneWidget);
   });
 

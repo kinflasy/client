@@ -64,7 +64,7 @@ class UnitMemberRepositoryImpl implements UnitMemberRepository {
       );
     } catch (_) {
       return const Left(
-        UnknownFailure('Nao foi possivel carregar os membros.'),
+        UnknownFailure('Não foi possível carregar os membros.'),
       );
     }
   }

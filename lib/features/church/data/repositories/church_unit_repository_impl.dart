@@ -21,7 +21,7 @@ class ChurchUnitRepositoryImpl implements ChurchUnitRepository {
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
       if (statusCode == 404) {
-        return const Left(NotFoundFailure('Unidade nÃ£o encontrada.'));
+        return const Left(NotFoundFailure('Unidade não encontrada.'));
       }
       return Left(NetworkFailure(e.message ?? 'Erro ao buscar a unidade.'));
     } catch (e) {
@@ -43,7 +43,7 @@ class ChurchUnitRepositoryImpl implements ChurchUnitRepository {
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
       if (statusCode == 404) {
-        return const Left(NotFoundFailure('Igreja nÃ£o encontrada.'));
+        return const Left(NotFoundFailure('Igreja não encontrada.'));
       }
       return Left(
         NetworkFailure(e.message ?? 'Erro ao buscar unidades da igreja.'),

@@ -48,11 +48,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         email.isEmpty ||
         password.isEmpty ||
         confirm.isEmpty) {
-      _showWarning('Preencha todos os campos obrigatorios');
+      _showWarning('Preencha todos os campos obrigatórios');
       return false;
     }
     if (!email.contains('@')) {
-      _showWarning('Informe um e-mail valido');
+      _showWarning('Informe um e-mail válido');
       return false;
     }
     if (password.length < 6) {
@@ -60,21 +60,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return false;
     }
     if (password != confirm) {
-      _showWarning('As senhas nao coincidem');
+      _showWarning('As senhas não coincidem');
       return false;
     }
     if (_selectedGender == null) {
-      _showWarning('Selecione o genero');
+      _showWarning('Selecione o gênero');
       return false;
     }
 
     final parsedBirthDate = _parseBirthDate(_birthDateController.text);
     if (parsedBirthDate == null) {
-      _showWarning('Informe uma data de nascimento valida');
+      _showWarning('Informe uma data de nascimento válida');
       return false;
     }
     if (parsedBirthDate.isAfter(_today())) {
-      _showWarning('A data de nascimento nao pode ser futura');
+      _showWarning('A data de nascimento não pode ser futura');
       return false;
     }
 
@@ -207,7 +207,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               TextField(
                 controller: _usernameController,
                 decoration: const InputDecoration(
-                  labelText: 'Usuario *',
+                  labelText: 'Usuário *',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person_outline),
                 ),
@@ -228,7 +228,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               DropdownButtonFormField<String>(
                 initialValue: _selectedGender,
                 decoration: const InputDecoration(
-                  labelText: 'Genero *',
+                  labelText: 'Gênero *',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.wc_outlined),
                 ),
@@ -314,7 +314,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => context.go(AppRoutes.login),
-                child: const Text('Ja tem conta? Entrar'),
+                child: const Text('Já tem conta? Entrar'),
               ),
             ],
           ),

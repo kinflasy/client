@@ -48,7 +48,7 @@ String _userInitials(UserEntity? user) {
   final rawName =
       [user?.fullName?.trim(), user?.nickname?.trim(), user?.username.trim()]
           .whereType<String>()
-          .firstWhere((value) => value.isNotEmpty, orElse: () => 'Usuario');
+          .firstWhere((value) => value.isNotEmpty, orElse: () => 'Usuário');
 
   final parts = rawName
       .split(RegExp(r'\s+'))

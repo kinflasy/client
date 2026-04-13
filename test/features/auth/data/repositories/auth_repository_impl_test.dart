@@ -116,7 +116,7 @@ void main() {
         expect(result.isLeft(), isTrue);
         final failure = result.getLeft().toNullable();
         expect(failure, isA<AuthFailure>());
-        expect(failure?.message, 'Usuario ou senha incorretos');
+        expect(failure?.message, 'Usuário ou senha incorretos');
         verifyNever(() => storage.saveToken(any()));
         verifyNever(() => storage.deleteToken());
       },
@@ -143,7 +143,7 @@ void main() {
         expect(result.isLeft(), isTrue);
         final failure = result.getLeft().toNullable();
         expect(failure, isA<AuthFailure>());
-        expect(failure?.message, 'Usuario ou senha incorretos');
+        expect(failure?.message, 'Usuário ou senha incorretos');
         verifyNever(() => storage.saveToken(any()));
         verifyNever(() => storage.deleteToken());
       },
@@ -203,7 +203,7 @@ void main() {
         expect(failure, isA<AuthFailure>());
         expect(
           failure?.message,
-          'Nao foi possivel carregar o usuario autenticado',
+          'Não foi possível carregar o usuário autenticado',
         );
         verify(() => storage.saveToken('jwt-token')).called(1);
         verify(() => api.getLoggedUser()).called(1);

@@ -25,7 +25,7 @@ class ChurchInfoProfileScreen extends ConsumerWidget {
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (error, _) => _ErrorState(
-        message: 'Nao foi possivel carregar o perfil da igreja.',
+        message: 'Não foi possível carregar o perfil da igreja.',
         onRetry: () => ref.invalidate(publicChurchUnitProfileProvider(unitId)),
       ),
       data: (profile) => _ProfileContent(profile: profile),
@@ -190,7 +190,7 @@ class _InfoSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Informacoes',
+            'Informações',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -376,7 +376,7 @@ class _AffiliationSection extends StatelessWidget {
           const Divider(height: 1, color: AppColors.background),
           const SizedBox(height: 12),
           const Text(
-            'Afiliacao',
+            'Filiação',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -410,7 +410,7 @@ class _AffiliationSection extends StatelessWidget {
           ] else if (headquarter != null) ...[
             _affiliationBadge(
               label:
-                  'Pertence a rede ${_displayName(headquarter, profile.church)}',
+                  'Pertence à rede ${_displayName(headquarter, profile.church)}',
               icon: Icons.account_balance_outlined,
             ),
             const SizedBox(height: 8),
@@ -423,7 +423,7 @@ class _AffiliationSection extends StatelessWidget {
             ),
           ] else
             const Text(
-              'Sem afiliacao registrada',
+              'Sem filiação registrada',
               style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
         ],

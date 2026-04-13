@@ -36,7 +36,7 @@ class ChurchProfileScreen extends ConsumerWidget {
         error: (error, _) => _ErrorChurchState(
           message: error is Failure
               ? error.message
-              : 'Nao foi possivel carregar a igreja agora.',
+              : 'Não foi possível carregar a igreja agora.',
           onRetry: () =>
               ref.invalidate(publicChurchUnitProfileProvider(unitId!)),
         ),
@@ -57,7 +57,7 @@ class ChurchProfileScreen extends ConsumerWidget {
         return _ErrorChurchState(
           message: error is Failure
               ? error.message
-              : 'Nao foi possivel carregar a igreja agora.',
+              : 'Não foi possível carregar a igreja agora.',
           onRetry: () => ref.invalidate(currentChurchProfileProvider),
         );
       },
@@ -326,7 +326,7 @@ class _ChurchTabBarDelegate extends SliverPersistentHeaderDelegate {
     final tabs = mode == _ChurchProfileViewerMode.member
         ? const [
             Tab(text: 'Eventos'),
-            Tab(text: 'Ministerios'),
+            Tab(text: 'Ministérios'),
             Tab(text: 'Avisos'),
           ]
         : const [Tab(text: 'Eventos')];
@@ -356,9 +356,9 @@ class _VisitorEventsPlaceholderTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _InlineStatus(
       icon: Icons.event_note_outlined,
-      title: 'Eventos publicos em breve.',
+      title: 'Eventos públicos em breve.',
       subtitle:
-          'Esta area ficara disponivel quando trabalharmos o contrato de eventos publicos.',
+          'Esta área ficará disponível quando trabalharmos o contrato de eventos públicos.',
     );
   }
 }
@@ -375,14 +375,14 @@ class _EventsTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(
         icon: Icons.event_busy_outlined,
-        title: 'Nao foi possivel carregar os eventos.',
+        title: 'Não foi possível carregar os eventos.',
       ),
       data: (events) {
         if (events.isEmpty) {
           return const _InlineStatus(
             icon: Icons.event_note_outlined,
             title: 'Nenhum evento encontrado.',
-            subtitle: 'Os proximos eventos da sua igreja aparecerao aqui.',
+            subtitle: 'Os próximos eventos da sua igreja aparecerão aqui.',
           );
         }
 
@@ -409,15 +409,15 @@ class _DepartmentsTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(
         icon: Icons.groups_2_outlined,
-        title: 'Nao foi possivel carregar os ministerios.',
+        title: 'Não foi possível carregar os ministérios.',
       ),
       data: (departments) {
         if (departments.isEmpty) {
           return const _InlineStatus(
             icon: Icons.groups_outlined,
-            title: 'Nenhum ministerio encontrado.',
+            title: 'Nenhum ministério encontrado.',
             subtitle:
-                'Quando houver departamentos ativos, eles aparecerao aqui.',
+                'Quando houver departamentos ativos, eles aparecerão aqui.',
           );
         }
 
@@ -442,7 +442,7 @@ class _AnnouncementsTab extends StatelessWidget {
       icon: Icons.campaign_outlined,
       title: 'Avisos em breve.',
       subtitle:
-          'Esta area ficara disponivel quando o backend expuser esse feed.',
+          'Esta área ficará disponível quando o backend expuser esse feed.',
     );
   }
 }
@@ -517,7 +517,7 @@ class _DepartmentCard extends StatelessWidget {
         subtitle: Text(
           department.slug != null && department.slug!.isNotEmpty
               ? '@${department.slug}'
-              : department.type ?? 'Ministerio',
+              : department.type ?? 'Ministério',
         ),
       ),
     );
@@ -583,7 +583,7 @@ class _EmptyChurchState extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Voce ainda nao participa de nenhuma igreja no app.',
+                  'Você ainda não participa de nenhuma igreja no app.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -593,7 +593,7 @@ class _EmptyChurchState extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Voce pode procurar uma igreja existente ou cadastrar uma nova se nao encontrar.',
+                  'Você pode procurar uma igreja existente ou cadastrar uma nova se não encontrar.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.textSecondary),
                 ),

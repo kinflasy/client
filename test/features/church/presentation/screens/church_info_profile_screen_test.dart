@@ -220,7 +220,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Nao foi possivel carregar o perfil da igreja.'),
+      find.text('Não foi possível carregar o perfil da igreja.'),
       findsOneWidget,
     );
     expect(find.text('Tentar novamente'), findsOneWidget);

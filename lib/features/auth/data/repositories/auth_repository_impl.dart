@@ -41,8 +41,8 @@ class AuthRepositoryImpl implements AuthRepository {
         return Left(
           AuthFailure(
             tokenSaved
-                ? 'Nao foi possivel validar a sessao do usuario'
-                : 'Usuario ou senha incorretos',
+                ? 'Não foi possível validar a sessão do usuário'
+                : 'Usuário ou senha incorretos',
           ),
         );
       }
@@ -53,7 +53,7 @@ class AuthRepositoryImpl implements AuthRepository {
         await _storage.deleteToken();
       }
       return Left(
-        const AuthFailure('Nao foi possivel carregar o usuario autenticado'),
+        const AuthFailure('Não foi possível carregar o usuário autenticado'),
       );
     } catch (_) {
       if (tokenSaved) {

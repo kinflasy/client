@@ -51,7 +51,7 @@ class _MemberAffiliationStepState extends ConsumerState<MemberAffiliationStep> {
               padding: const EdgeInsets.only(bottom: 16),
               child: DropdownButtonFormField<String>(
                 initialValue: formState.affiliation,
-                decoration: _inputDecoration('Afiliação *'),
+                decoration: _inputDecoration('Filiação *'),
                 items: const [
                   DropdownMenuItem(
                     value: 'VISITOR',

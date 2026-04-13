@@ -35,11 +35,11 @@ class FgaService {
       return response.data?['allowed'] == true;
     } on DioException catch (error) {
       throw NetworkFailure(
-        'Nao foi possivel verificar permissoes no FGA: ${error.message}',
+        'Não foi possível verificar permissões no FGA: ${error.message}',
       );
     } catch (_) {
       throw const UnknownFailure(
-        'Nao foi possivel verificar permissoes no FGA.',
+        'Não foi possível verificar permissões no FGA.',
       );
     }
   }

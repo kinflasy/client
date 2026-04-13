@@ -69,7 +69,7 @@ class _SearchResults extends ConsumerWidget {
               const Icon(Icons.error_outline, size: 40, color: AppColors.error),
               const SizedBox(height: 12),
               const Text(
-                'Nao foi possivel carregar as igrejas.',
+                'Não foi possível carregar as igrejas.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -157,7 +157,7 @@ class _ChurchResultCardState extends ConsumerState<_ChurchResultCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Nao foi possivel abrir o perfil dessa igreja.'),
+          content: Text('Não foi possível abrir o perfil dessa igreja.'),
         ),
       );
     } finally {

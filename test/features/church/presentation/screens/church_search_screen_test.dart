@@ -93,7 +93,7 @@ void main() {
     when(() => unitRepository.getUnitsByChurchId('church-1')).thenAnswer(
       (_) async => const Left(
         ValidationFailure(
-          'Nao foi possivel identificar a unidade sede desta igreja.',
+          'Não foi possível identificar a unidade sede desta igreja.',
         ),
       ),
     );
@@ -126,7 +126,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Nao foi possivel identificar a unidade sede desta igreja.'),
+      find.text('Não foi possível identificar a unidade sede desta igreja.'),
       findsOneWidget,
     );
   });

@@ -1,4 +1,5 @@
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/fga/fga_auth_interceptor.dart';
 import 'package:client/core/fga/fga_config.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:dio/dio.dart';
@@ -46,13 +47,17 @@ class FgaService {
 }
 
 final fgaDioProvider = Provider<Dio>((ref) {
-  return Dio(
+  final dio = Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
       headers: {'Content-Type': 'application/json'},
     ),
   );
+
+  dio.interceptors.add(FgaAuthInterceptor());
+
+  return dio;
 });
 
 final fgaServiceProvider = Provider<FgaService>((ref) {

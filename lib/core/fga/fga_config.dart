@@ -1,7 +1,7 @@
 class FgaConfig {
   static const host = String.fromEnvironment(
     'OPENFGA_HOST',
-    defaultValue: 'https://openfga-production-c15b.up.railway.app/',
+    defaultValue: 'https://openfga-production-c15b.up.railway.app',
   );
 
   static const storeId = String.fromEnvironment(

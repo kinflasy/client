@@ -85,7 +85,7 @@ class _MemberProfileBodyState extends State<_MemberProfileBody> {
       child: Scaffold(
         key: _scaffoldKey,
         backgroundColor: AppColors.background,
-        endDrawer: const ChurchSidebar(),
+        drawer: const ChurchSidebar(),
         body: SafeArea(
           child: CustomScrollView(
             slivers: [
@@ -94,8 +94,7 @@ class _MemberProfileBodyState extends State<_MemberProfileBody> {
                   unit: widget.profile.unit,
                   fallbackChurch: widget.profile.church,
                   topBar: ChurchProfileTopBar(
-                    onAvatarTap: () =>
-                        _scaffoldKey.currentState?.openEndDrawer(),
+                    onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
                   ),
                 ),
               ),

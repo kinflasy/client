@@ -1,18 +1,25 @@
-import 'package:client/core/presentation/widgets/current_user_avatar_button.dart';
 import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
 import 'package:flutter/material.dart';
 
 class ChurchProfileTopBar extends StatelessWidget {
-  const ChurchProfileTopBar({super.key, this.onAvatarTap});
+  const ChurchProfileTopBar({super.key, this.onMenuTap});
 
-  final VoidCallback? onAvatarTap;
+  final VoidCallback? onMenuTap;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        CurrentUserAvatarButton(onTap: onAvatarTap),
+        IconButton(
+          onPressed: onMenuTap,
+          icon: const Icon(Icons.menu),
+          iconSize: 27,
+          padding: const EdgeInsets.all(10),
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          color: Colors.white,
+          tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+        ),
         const SizedBox(width: 12),
         const Expanded(child: ChurchSearchRow()),
       ],

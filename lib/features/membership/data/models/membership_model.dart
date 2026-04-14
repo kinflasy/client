@@ -17,35 +17,35 @@ abstract class MembershipModel with _$MembershipModel {
 }
 
 extension MembershipModelX on MembershipModel {
-  MembershipEntity toEntity() => MembershipEntity(
-        id: id,
-        unitId: unitId,
-        affiliation: affiliation,
-      );
+  MembershipEntity toEntity() =>
+      MembershipEntity(id: id, unitId: unitId, affiliation: affiliation);
 }
 
 class ActiveMembershipModel {
   const ActiveMembershipModel({
     required this.id,
     required this.unitId,
+    required this.personId,
     required this.affiliation,
+    this.entryDate,
   });
 
   factory ActiveMembershipModel.fromJson(Map<String, dynamic> json) {
     return ActiveMembershipModel(
       id: (json['id'] ?? '').toString(),
       unitId: (json['unitId'] ?? '').toString(),
+      personId: (json['personId'] ?? '').toString(),
       affiliation: (json['affiliation'] ?? '').toString(),
+      entryDate: json['entryDate']?.toString(),
     );
   }
 
   final String id;
   final String unitId;
+  final String personId;
   final String affiliation;
+  final String? entryDate;
 
-  MembershipEntity toEntity() => MembershipEntity(
-    id: id,
-    unitId: unitId,
-    affiliation: affiliation,
-  );
+  MembershipEntity toEntity() =>
+      MembershipEntity(id: id, unitId: unitId, affiliation: affiliation);
 }

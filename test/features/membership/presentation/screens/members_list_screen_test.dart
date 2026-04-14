@@ -1,4 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
@@ -7,6 +8,7 @@ import 'package:client/features/membership/providers/unit_member_providers.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 void main() {
   final members = [
@@ -81,10 +83,10 @@ void main() {
       AppColors.primary,
     );
     expect(container.read(memberFilterProvider).gender, 'FEMALE');
-    expect(
-      container.read(memberFilterProvider).affiliations,
-      {'MEMBER', 'VISITOR'},
-    );
+    expect(container.read(memberFilterProvider).affiliations, {
+      'MEMBER',
+      'VISITOR',
+    });
 
     await tester.tap(find.byTooltip('Filtrar membros'));
     await tester.pumpAndSettle();
@@ -97,6 +99,54 @@ void main() {
     expect(find.text('1 pessoas'), findsOneWidget);
     expect(find.text('Ana Maria'), findsOneWidget);
     expect(find.text('Bruno Lima'), findsNothing);
-    expect(container.read(memberFilterProvider), MemberFilterState.defaultState);
+    expect(
+      container.read(memberFilterProvider),
+      MemberFilterState.defaultState,
+    );
+  });
+
+  testWidgets('opens member detail using personId route', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        activeMembershipProvider.overrideWith(
+          (ref) async => const MembershipEntity(
+            id: 'membership-1',
+            unitId: 'unit-1',
+            affiliation: 'MEMBER',
+          ),
+        ),
+        rawUnitMembersProvider.overrideWith((ref, unitId) async => members),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final router = GoRouter(
+      initialLocation: AppRoutes.peopleList,
+      routes: [
+        GoRoute(
+          path: AppRoutes.peopleList,
+          builder: (context, state) => const MembersListScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.peopleDetail,
+          name: AppRoutes.peopleDetailName,
+          builder: (context, state) =>
+              Text('opened:${state.pathParameters['id']}'),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ana Maria'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('opened:p1'), findsOneWidget);
   });
 }

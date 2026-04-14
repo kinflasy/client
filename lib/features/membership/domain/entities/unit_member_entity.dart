@@ -10,6 +10,7 @@ class UnitMemberEntity extends Equatable {
     required this.gender,
     this.birthDate,
     this.phone,
+    this.addressId,
   });
 
   final String membershipId;
@@ -20,6 +21,7 @@ class UnitMemberEntity extends Equatable {
   final String gender;
   final DateTime? birthDate;
   final String? phone;
+  final String? addressId;
 
   @override
   List<Object?> get props => [
@@ -31,5 +33,6 @@ class UnitMemberEntity extends Equatable {
     gender,
     birthDate,
     phone,
+    addressId,
   ];
 }

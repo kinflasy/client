@@ -14,6 +14,8 @@ import 'package:client/features/church/presentation/screens/register_member_scre
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
 import 'package:client/features/home/presentation/screens/feed_screen.dart';
 import 'package:client/features/home/presentation/screens/home_screen.dart';
+import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
+import 'package:client/features/membership/presentation/screens/member_profile_screen.dart';
 import 'package:client/features/membership/presentation/screens/members_list_screen.dart';
 import 'package:client/features/menu/presentation/screens/menu_screen.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
@@ -38,6 +40,7 @@ final _protectedRoutes = <String>{
   AppRoutes.adminMembers,
   AppRoutes.adminMembersRegister,
   AppRoutes.peopleList,
+  AppRoutes.peopleDetail,
 };
 
 final _membershipRequiredRoutes = <String>{};
@@ -49,6 +52,7 @@ final _unitAdminRoutes = <String>{
   AppRoutes.adminMembers,
   AppRoutes.adminMembersRegister,
   AppRoutes.peopleList,
+  AppRoutes.peopleDetail,
 };
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -237,6 +241,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.peopleList,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const MembersListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.peopleDetail,
+        name: AppRoutes.peopleDetailName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final personId = state.pathParameters['id']!;
+          final initialMember = state.extra is UnitMemberEntity
+              ? state.extra as UnitMemberEntity
+              : null;
+          return MemberProfileScreen(
+            personId: personId,
+            initialMember: initialMember,
+          );
+        },
       ),
     ],
   );

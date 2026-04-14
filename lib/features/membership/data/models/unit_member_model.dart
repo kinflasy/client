@@ -45,5 +45,6 @@ extension UnitMemberModelX on UnitMemberModel {
         ? DateTime.tryParse(person.birthDate!)
         : null,
     phone: person.phone,
+    addressId: person.addressId,
   );
 }

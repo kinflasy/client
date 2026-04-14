@@ -1,10 +1,12 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
 import 'package:client/features/membership/providers/unit_member_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class MembersListScreen extends ConsumerStatefulWidget {
   const MembersListScreen({super.key});
@@ -488,6 +490,11 @@ class _MemberCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: ListTile(
+        onTap: () => context.pushNamed(
+          AppRoutes.peopleDetailName,
+          pathParameters: {'id': member.personId},
+          extra: member,
+        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         leading: CircleAvatar(
           backgroundColor: AppColors.primary.withValues(alpha: 0.12),
@@ -513,11 +520,7 @@ class _MemberCard extends StatelessWidget {
 }
 
 class _InlineStatus extends StatelessWidget {
-  const _InlineStatus({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-  });
+  const _InlineStatus({required this.icon, required this.title, this.subtitle});
 
   final IconData icon;
   final String title;

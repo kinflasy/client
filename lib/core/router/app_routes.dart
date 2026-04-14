@@ -28,6 +28,7 @@ class AppRoutes {
   static const churchSearchName = 'church-search';
   static const churchProfileName = 'church-profile';
   static const churchPublicProfileName = 'church-public-profile';
+  static const peopleDetailName = 'people-detail';
   static const adminPanelName = 'admin-panel';
   static const adminMembersName = 'admin-members';
   static const adminMembersRegisterName = 'admin-members-register';

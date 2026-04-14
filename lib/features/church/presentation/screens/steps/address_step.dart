@@ -1,9 +1,11 @@
+import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
+import 'package:client/features/church/providers/register_church_form_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:client/features/church/providers/register_church_form_provider.dart';
 
 class AddressStep extends ConsumerWidget {
   final GlobalKey<FormState> formKey;
+
   const AddressStep({super.key, required this.formKey});
 
   @override
@@ -15,9 +17,13 @@ class AddressStep extends ConsumerWidget {
         key: formKey,
         child: Column(
           children: [
-            _field('CEP', (v) => notifier.update((s) => s.copyWith(zip: v))),
             _field(
-              'País',
+              'CEP',
+              (v) => notifier.update((s) => s.copyWith(zip: v)),
+              behavior: AppTextInputBehavior.plain,
+            ),
+            _field(
+              'Pa\u00eds',
               (v) => notifier.update((s) => s.copyWith(country: v)),
             ),
             _field(
@@ -34,15 +40,16 @@ class AddressStep extends ConsumerWidget {
             ),
             _field('Rua', (v) => notifier.update((s) => s.copyWith(street: v))),
             _field(
-              'Número',
+              'N\u00famero',
               (v) => notifier.update((s) => s.copyWith(number: v)),
+              behavior: AppTextInputBehavior.plain,
             ),
             _field(
               'Complemento',
               (v) => notifier.update((s) => s.copyWith(complement: v)),
             ),
             _field(
-              'Referência',
+              'Refer\u00eancia',
               (v) => notifier.update((s) => s.copyWith(reference: v)),
             ),
           ],
@@ -51,16 +58,25 @@ class AddressStep extends ConsumerWidget {
     );
   }
 
-  Widget _field(String label, void Function(String) onChanged) => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: TextFormField(
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        filled: true,
-        fillColor: Colors.white,
+  Widget _field(
+    String label,
+    void Function(String) onChanged, {
+    AppTextInputBehavior behavior = AppTextInputBehavior.nameLike,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        textCapitalization: behavior.textCapitalization,
+        autocorrect: behavior.autocorrect,
+        enableSuggestions: behavior.enableSuggestions,
+        onChanged: onChanged,
       ),
-      onChanged: onChanged,
-    ),
-  );
+    );
+  }
 }

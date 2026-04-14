@@ -1,3 +1,4 @@
+import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
 import 'package:client/features/membership/providers/register_member_form_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,7 +67,7 @@ class _MemberPersonalDataStepState
                   notifier.updatePersonalData(fullName: value),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Campo obrigatório';
+                  return 'Campo obrigat\u00f3rio';
                 }
                 return null;
               },
@@ -81,21 +82,15 @@ class _MemberPersonalDataStepState
               padding: const EdgeInsets.only(bottom: 16),
               child: DropdownButtonFormField<String>(
                 initialValue: formState.gender,
-                decoration: _inputDecoration('Gênero *'),
+                decoration: _inputDecoration('G\u00eanero *'),
                 items: const [
-                  DropdownMenuItem(
-                    value: 'MALE',
-                    child: Text('Masculino'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'FEMALE',
-                    child: Text('Feminino'),
-                  ),
+                  DropdownMenuItem(value: 'MALE', child: Text('Masculino')),
+                  DropdownMenuItem(value: 'FEMALE', child: Text('Feminino')),
                 ],
                 onChanged: (value) =>
                     notifier.updatePersonalData(gender: value),
                 validator: (value) =>
-                    value == null ? 'Campo obrigatório' : null,
+                    value == null ? 'Campo obrigat\u00f3rio' : null,
               ),
             ),
             Padding(
@@ -122,7 +117,7 @@ class _MemberPersonalDataStepState
                   ),
                 ),
                 validator: (_) => formState.birthDate == null
-                    ? 'Campo obrigatório'
+                    ? 'Campo obrigat\u00f3rio'
                     : null,
               ),
             ),
@@ -130,19 +125,21 @@ class _MemberPersonalDataStepState
               label: 'Telefone',
               controller: _phoneController,
               keyboardType: TextInputType.phone,
+              behavior: AppTextInputBehavior.plain,
               onChanged: (value) => notifier.updatePersonalData(phone: value),
             ),
             _field(
               label: 'E-mail',
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
+              behavior: AppTextInputBehavior.emailLike,
               onChanged: (value) => notifier.updatePersonalData(email: value),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) return null;
                 final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
                 return emailRegex.hasMatch(value.trim())
                     ? null
-                    : 'E-mail inválido';
+                    : 'E-mail inv\u00e1lido';
               },
             ),
           ],
@@ -156,6 +153,7 @@ class _MemberPersonalDataStepState
     required TextEditingController controller,
     required void Function(String) onChanged,
     TextInputType? keyboardType,
+    AppTextInputBehavior behavior = AppTextInputBehavior.nameLike,
     String? Function(String?)? validator,
   }) {
     return Padding(
@@ -164,6 +162,9 @@ class _MemberPersonalDataStepState
         controller: controller,
         decoration: _inputDecoration(label),
         keyboardType: keyboardType,
+        textCapitalization: behavior.textCapitalization,
+        autocorrect: behavior.autocorrect,
+        enableSuggestions: behavior.enableSuggestions,
         onChanged: onChanged,
         validator: validator,
       ),

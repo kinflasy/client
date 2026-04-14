@@ -1,3 +1,4 @@
+import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:flutter/material.dart';
@@ -48,11 +49,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         email.isEmpty ||
         password.isEmpty ||
         confirm.isEmpty) {
-      _showWarning('Preencha todos os campos obrigatórios');
+      _showWarning('Preencha todos os campos obrigat\u00f3rios');
       return false;
     }
     if (!email.contains('@')) {
-      _showWarning('Informe um e-mail válido');
+      _showWarning('Informe um e-mail v\u00e1lido');
       return false;
     }
     if (password.length < 6) {
@@ -60,21 +61,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return false;
     }
     if (password != confirm) {
-      _showWarning('As senhas não coincidem');
+      _showWarning('As senhas n\u00e3o coincidem');
       return false;
     }
     if (_selectedGender == null) {
-      _showWarning('Selecione o gênero');
+      _showWarning('Selecione o g\u00eanero');
       return false;
     }
 
     final parsedBirthDate = _parseBirthDate(_birthDateController.text);
     if (parsedBirthDate == null) {
-      _showWarning('Informe uma data de nascimento válida');
+      _showWarning('Informe uma data de nascimento v\u00e1lida');
       return false;
     }
     if (parsedBirthDate.isAfter(_today())) {
-      _showWarning('A data de nascimento não pode ser futura');
+      _showWarning('A data de nascimento n\u00e3o pode ser futura');
       return false;
     }
 
@@ -201,16 +202,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.badge_outlined),
                 ),
+                textCapitalization:
+                    AppTextInputBehavior.nameLike.textCapitalization,
+                autocorrect: AppTextInputBehavior.nameLike.autocorrect,
+                enableSuggestions:
+                    AppTextInputBehavior.nameLike.enableSuggestions,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _usernameController,
                 decoration: const InputDecoration(
-                  labelText: 'Usuário *',
+                  labelText: 'Usu\u00e1rio *',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person_outline),
                 ),
+                textCapitalization:
+                    AppTextInputBehavior.lowercaseId.textCapitalization,
+                autocorrect: AppTextInputBehavior.lowercaseId.autocorrect,
+                enableSuggestions:
+                    AppTextInputBehavior.lowercaseId.enableSuggestions,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
@@ -222,13 +233,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
                 keyboardType: TextInputType.emailAddress,
+                textCapitalization:
+                    AppTextInputBehavior.emailLike.textCapitalization,
+                autocorrect: AppTextInputBehavior.emailLike.autocorrect,
+                enableSuggestions:
+                    AppTextInputBehavior.emailLike.enableSuggestions,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: _selectedGender,
                 decoration: const InputDecoration(
-                  labelText: 'Gênero *',
+                  labelText: 'G\u00eanero *',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.wc_outlined),
                 ),
@@ -314,7 +330,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => context.go(AppRoutes.login),
-                child: const Text('Já tem conta? Entrar'),
+                child: const Text('J\u00e1 tem conta? Entrar'),
               ),
             ],
           ),

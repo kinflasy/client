@@ -1,9 +1,11 @@
+import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
+import 'package:client/features/church/providers/register_church_form_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:client/features/church/providers/register_church_form_provider.dart';
 
 class ChurchInfoStep extends ConsumerWidget {
   final GlobalKey<FormState> formKey;
+
   const ChurchInfoStep({super.key, required this.formKey});
 
   @override
@@ -15,28 +17,39 @@ class ChurchInfoStep extends ConsumerWidget {
         key: formKey,
         child: Column(
           children: [
-            _field('Nome da Igreja *',
+            _field(
+              'Nome da Igreja *',
               (v) => notifier.update((s) => s.copyWith(churchName: v)),
-              validator: (v) => (v == null || v.isEmpty) ? 'Campo obrigatório' : null,
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? 'Campo obrigat\u00f3rio' : null,
             ),
-            _field('Slug *',
+            _field(
+              'Slug *',
               (v) => notifier.update((s) => s.copyWith(churchSlug: v)),
               hint: 'ex: minha-igreja',
-              validator: (v) => (v == null || v.isEmpty) ? 'Campo obrigatório' : null,
+              behavior: AppTextInputBehavior.lowercaseId,
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? 'Campo obrigat\u00f3rio' : null,
             ),
-            _field('Sigla',
+            _field(
+              'Sigla',
               (v) => notifier.update((s) => s.copyWith(churchAcronym: v)),
+              behavior: AppTextInputBehavior.uppercaseAcronym,
             ),
-            _field('Telefone',
+            _field(
+              'Telefone',
               (v) => notifier.update((s) => s.copyWith(churchPhone: v)),
               keyboardType: TextInputType.phone,
+              behavior: AppTextInputBehavior.plain,
             ),
-            _field('E-mail *',
+            _field(
+              'E-mail *',
               (v) => notifier.update((s) => s.copyWith(churchEmail: v)),
               keyboardType: TextInputType.emailAddress,
+              behavior: AppTextInputBehavior.emailLike,
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Campo obrigatório';
-                if (!v.contains('@')) return 'E-mail inválido';
+                if (v == null || v.isEmpty) return 'Campo obrigat\u00f3rio';
+                if (!v.contains('@')) return 'E-mail inv\u00e1lido';
                 return null;
               },
             ),
@@ -51,21 +64,26 @@ class ChurchInfoStep extends ConsumerWidget {
     void Function(String) onChanged, {
     String? hint,
     TextInputType? keyboardType,
+    AppTextInputBehavior behavior = AppTextInputBehavior.nameLike,
     String? Function(String?)? validator,
-  }) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: TextFormField(
-          decoration: InputDecoration(
-            labelText: label,
-            hintText: hint,
-            border: const OutlineInputBorder(),
-            filled: true,
-            fillColor: Colors.white,
-          ),
-          keyboardType: keyboardType,
-          onChanged: onChanged,
-          validator: validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          border: const OutlineInputBorder(),
+          filled: true,
+          fillColor: Colors.white,
         ),
-      );
+        keyboardType: keyboardType,
+        textCapitalization: behavior.textCapitalization,
+        autocorrect: behavior.autocorrect,
+        enableSuggestions: behavior.enableSuggestions,
+        onChanged: onChanged,
+        validator: validator,
+      ),
+    );
+  }
 }

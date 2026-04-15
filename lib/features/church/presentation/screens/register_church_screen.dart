@@ -11,6 +11,28 @@ import 'steps/church_info_step.dart';
 import 'steps/unit_info_step.dart';
 import 'steps/address_step.dart';
 
+ChurchStarterRequestModel? buildChurchStarterRequest(
+  RegisterChurchFormState formState,
+) {
+  final address = formState.address.toRequestOrNull();
+  if (address == null) return null;
+
+  return ChurchStarterRequestModel(
+    name: formState.churchName,
+    slug: formState.churchSlug,
+    acronym: formState.churchAcronym.isEmpty ? null : formState.churchAcronym,
+    phone: formState.churchPhone.isEmpty ? null : formState.churchPhone,
+    email: formState.churchEmail,
+    unit: UnitRequestModel(
+      name: formState.unitName,
+      slug: formState.unitSlug,
+      phone: formState.unitPhone,
+      email: formState.unitEmail,
+      address: address,
+    ),
+  );
+}
+
 class RegisterChurchScreen extends ConsumerStatefulWidget {
   const RegisterChurchScreen({super.key});
 
@@ -29,34 +51,16 @@ class _RegisterChurchScreenState extends ConsumerState<RegisterChurchScreen> {
 
   Future<void> _submit() async {
     final formState = ref.read(registerChurchFormProvider);
-    final request = ChurchStarterRequestModel(
-      name: formState.churchName,
-      slug: formState.churchSlug,
-      acronym: formState.churchAcronym.isEmpty ? null : formState.churchAcronym,
-      phone: formState.churchPhone.isEmpty ? null : formState.churchPhone,
-      email: formState.churchEmail,
-      unit: UnitRequestModel(
-        name: formState.unitName,
-        slug: formState.unitSlug,
-        phone: formState.unitPhone,
-        email: formState.unitEmail,
-        address: AddressRequestModel(
-          zip: formState.zip.isEmpty ? null : formState.zip,
-          country: formState.country.isEmpty ? null : formState.country,
-          state: formState.state.isEmpty ? null : formState.state,
-          city: formState.city.isEmpty ? null : formState.city,
-          neighborhood: formState.neighborhood.isEmpty
-              ? null
-              : formState.neighborhood,
-          street: formState.street.isEmpty ? null : formState.street,
-          number: formState.number.isEmpty ? null : formState.number,
-          complement: formState.complement.isEmpty
-              ? null
-              : formState.complement,
-          reference: formState.reference.isEmpty ? null : formState.reference,
-        ),
-      ),
-    );
+    final request = buildChurchStarterRequest(formState);
+    if (request == null) {
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        title: const Text('Preencha o endere\u00e7o da unidade antes de confirmar.'),
+        autoCloseDuration: const Duration(seconds: 4),
+      );
+      return;
+    }
 
     final result = await ref
         .read(createChurchProvider.notifier)

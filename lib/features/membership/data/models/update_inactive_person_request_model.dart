@@ -1,4 +1,4 @@
-import 'package:client/features/church/data/models/church_request_model.dart';
+import 'package:client/core/address/address_request_model.dart';
 
 class UpdateInactivePersonRequestModel {
   const UpdateInactivePersonRequestModel({

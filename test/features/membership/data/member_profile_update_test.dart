@@ -1,5 +1,5 @@
 import 'package:client/core/errors/failure.dart';
-import 'package:client/features/church/data/models/church_request_model.dart';
+import 'package:client/core/address/address_request_model.dart';
 import 'package:client/features/membership/data/datasources/member_profile_api.dart';
 import 'package:client/features/membership/data/models/update_inactive_person_request_model.dart';
 import 'package:client/features/membership/data/repositories/member_profile_repository_impl.dart';

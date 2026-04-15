@@ -10,6 +10,7 @@ import 'package:client/features/membership/domain/entities/membership_entity.dar
 import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
 import 'package:client/features/membership/presentation/screens/edit_inactive_person_screen.dart';
+import 'package:client/features/membership/providers/edit_inactive_person_providers.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,10 +53,6 @@ class _FakeMemberProfileRepository implements MemberProfileRepository {
 }
 
 void main() {
-  Finder fieldAt(int index) {
-    return find.byType(TextFormField).at(index);
-  }
-
   final profile = MemberProfileEntity(
     personId: 'person-1',
     membershipId: 'membership-1',
@@ -66,7 +63,8 @@ void main() {
     birthDate: DateTime(1995, 2, 3),
     phone: '99999-1111',
     email: 'maria@dev.com',
-    address: 'Rua A, 123, Centro, Fortaleza, CE | Apto 2 - Perto da praca - 60000-000',
+    address:
+        'Rua A, 123, Centro, Fortaleza, CE | Apto 2 - Perto da praca - 60000-000',
     addressDetails: AddressDetailsEntity(
       id: 'address-1',
       zip: '60000-000',
@@ -84,19 +82,23 @@ void main() {
 
   testWidgets('shows prefilled personal and address fields', (tester) async {
     final repository = _FakeMemberProfileRepository();
+    final container = ProviderContainer(
+      overrides: [
+        memberProfileRepositoryProvider.overrideWithValue(repository),
+        activeMembershipProvider.overrideWith(
+          (ref) async => const MembershipEntity(
+            id: 'membership-1',
+            unitId: 'unit-1',
+            affiliation: 'VISITOR',
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          memberProfileRepositoryProvider.overrideWithValue(repository),
-          activeMembershipProvider.overrideWith(
-            (ref) async => const MembershipEntity(
-              id: 'membership-1',
-              unitId: 'unit-1',
-              affiliation: 'VISITOR',
-            ),
-          ),
-        ],
+      UncontrolledProviderScope(
+        container: container,
         child: MaterialApp(
           home: EditInactivePersonScreen(
             personId: 'person-1',
@@ -107,15 +109,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      tester.widget<TextFormField>(fieldAt(0)).controller?.text,
-      'Maria Souza',
-    );
-    expect(
-      tester.widget<TextFormField>(fieldAt(4)).controller?.text,
-      'maria@dev.com',
-    );
+    final formState = container.read(editInactivePersonFormProvider('person-1'));
+
+    expect(find.text('Maria Souza'), findsOneWidget);
+    expect(find.text('maria@dev.com'), findsOneWidget);
+    expect(formState.address.city, 'Fortaleza');
+    expect(formState.address.reference, 'Perto da praca');
     expect(find.text('Editar cadastro'), findsOneWidget);
   });
-
 }

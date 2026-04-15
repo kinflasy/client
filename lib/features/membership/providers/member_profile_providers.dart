@@ -78,7 +78,7 @@ Future<MemberProfileEntity> resolveMemberProfile({
     age: person.age ?? calculateAge(person.birthDate),
     phone: person.phone,
     email: person.email,
-    address: address?.format(),
+    address: address?.toValue().format(),
     addressDetails: address,
     affiliation: membership.affiliation,
     entryDate: membership.entryDate != null

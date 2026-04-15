@@ -63,6 +63,36 @@ void main() {
 
     expect(find.text('Endereço da unidade'), findsOneWidget);
   });
+
+  testWidgets('keeps focus while parent rebuilds after typing', (tester) async {
+    var value = const AddressFormState();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            return Scaffold(
+              body: AddressFormSection(
+                value: value,
+                onChanged: (next) => setState(() => value = next),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(TextFormField).first);
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField).first, '1');
+    await tester.pump();
+
+    final editable = tester.widget<EditableText>(
+      find.byType(EditableText).first,
+    );
+    expect(editable.focusNode.hasFocus, isTrue);
+    expect(value.zip, '1');
+  });
 }
 
 void _noop(AddressFormState _) {}

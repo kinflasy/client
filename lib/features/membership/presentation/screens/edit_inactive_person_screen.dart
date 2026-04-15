@@ -1,6 +1,7 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
+import 'package:client/core/presentation/widgets/address_form_section.dart';
 import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/providers/edit_inactive_person_providers.dart';
@@ -34,15 +35,6 @@ class _EditInactivePersonScreenState
   late final TextEditingController _birthDateController;
   late final TextEditingController _phoneController;
   late final TextEditingController _emailController;
-  late final TextEditingController _zipController;
-  late final TextEditingController _countryController;
-  late final TextEditingController _stateController;
-  late final TextEditingController _cityController;
-  late final TextEditingController _neighborhoodController;
-  late final TextEditingController _streetController;
-  late final TextEditingController _numberController;
-  late final TextEditingController _complementController;
-  late final TextEditingController _referenceController;
 
   @override
   void initState() {
@@ -52,15 +44,6 @@ class _EditInactivePersonScreenState
     _birthDateController = TextEditingController();
     _phoneController = TextEditingController();
     _emailController = TextEditingController();
-    _zipController = TextEditingController();
-    _countryController = TextEditingController();
-    _stateController = TextEditingController();
-    _cityController = TextEditingController();
-    _neighborhoodController = TextEditingController();
-    _streetController = TextEditingController();
-    _numberController = TextEditingController();
-    _complementController = TextEditingController();
-    _referenceController = TextEditingController();
 
     final initialProfile = widget.initialProfile;
     if (initialProfile != null) {
@@ -82,15 +65,6 @@ class _EditInactivePersonScreenState
     _birthDateController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
-    _zipController.dispose();
-    _countryController.dispose();
-    _stateController.dispose();
-    _cityController.dispose();
-    _neighborhoodController.dispose();
-    _streetController.dispose();
-    _numberController.dispose();
-    _complementController.dispose();
-    _referenceController.dispose();
     super.dispose();
   }
 
@@ -130,7 +104,9 @@ class _EditInactivePersonScreenState
 
   @override
   Widget build(BuildContext context) {
-    final formState = ref.watch(editInactivePersonFormProvider(widget.personId));
+    final formState = ref.watch(
+      editInactivePersonFormProvider(widget.personId),
+    );
     final isLoading = ref.watch(editInactivePersonSubmitProvider).isLoading;
     final profileAsync = widget.initialProfile == null
         ? ref.watch(memberProfileProvider(widget.personId))
@@ -234,7 +210,8 @@ class _EditInactivePersonScreenState
                         : () async {
                             final picked = await showDatePicker(
                               context: context,
-                              initialDate: formState.birthDate ??
+                              initialDate:
+                                  formState.birthDate ??
                                   DateTime(DateTime.now().year - 18),
                               firstDate: DateTime(1900),
                               lastDate: DateTime.now(),
@@ -249,9 +226,8 @@ class _EditInactivePersonScreenState
                           },
                   ),
                 ),
-                validator: (_) => formState.birthDate == null
-                    ? 'Campo obrigatorio'
-                    : null,
+                validator: (_) =>
+                    formState.birthDate == null ? 'Campo obrigatorio' : null,
               ),
             ),
             _field(
@@ -285,89 +261,13 @@ class _EditInactivePersonScreenState
             ),
             const SizedBox(height: 8),
             _SectionTitle(title: 'Endereco'),
-            _field(
-              controller: _zipController,
-              label: 'CEP',
-              onChanged: (value) => updateEditInactivePersonAddress(
-                ref,
-                personId: widget.personId,
-                zip: value,
-              ),
-              keyboardType: TextInputType.number,
-              behavior: AppTextInputBehavior.plain,
-            ),
-            _field(
-              controller: _countryController,
-              label: 'Pais',
-              onChanged: (value) => updateEditInactivePersonAddress(
-                ref,
-                personId: widget.personId,
-                country: value,
-              ),
-            ),
-            _field(
-              controller: _stateController,
-              label: 'Estado',
-              onChanged: (value) => updateEditInactivePersonAddress(
-                ref,
-                personId: widget.personId,
-                stateCode: value,
-              ),
-            ),
-            _field(
-              controller: _cityController,
-              label: 'Cidade',
-              onChanged: (value) => updateEditInactivePersonAddress(
-                ref,
-                personId: widget.personId,
-                city: value,
-              ),
-            ),
-            _field(
-              controller: _neighborhoodController,
-              label: 'Bairro',
-              onChanged: (value) => updateEditInactivePersonAddress(
-                ref,
-                personId: widget.personId,
-                neighborhood: value,
-              ),
-            ),
-            _field(
-              controller: _streetController,
-              label: 'Rua',
-              onChanged: (value) => updateEditInactivePersonAddress(
-                ref,
-                personId: widget.personId,
-                street: value,
-              ),
-            ),
-            _field(
-              controller: _numberController,
-              label: 'Numero',
-              onChanged: (value) => updateEditInactivePersonAddress(
-                ref,
-                personId: widget.personId,
-                number: value,
-              ),
-              behavior: AppTextInputBehavior.plain,
-            ),
-            _field(
-              controller: _complementController,
-              label: 'Complemento',
-              onChanged: (value) => updateEditInactivePersonAddress(
-                ref,
-                personId: widget.personId,
-                complement: value,
-              ),
-            ),
-            _field(
-              controller: _referenceController,
-              label: 'Referencia',
-              onChanged: (value) => updateEditInactivePersonAddress(
-                ref,
-                personId: widget.personId,
-                reference: value,
-              ),
+            AddressFormSection(
+              value: formState.address,
+              onChanged: (next) => ref
+                  .read(
+                    editInactivePersonFormProvider(widget.personId).notifier,
+                  )
+                  .update((state) => state.copyWith(address: next)),
             ),
             const SizedBox(height: 8),
             ElevatedButton(
@@ -400,15 +300,6 @@ class _EditInactivePersonScreenState
     _sync(_birthDateController, _formatDate(formState.birthDate));
     _sync(_phoneController, formState.phone);
     _sync(_emailController, formState.email);
-    _sync(_zipController, formState.address.zip);
-    _sync(_countryController, formState.address.country);
-    _sync(_stateController, formState.address.state);
-    _sync(_cityController, formState.address.city);
-    _sync(_neighborhoodController, formState.address.neighborhood);
-    _sync(_streetController, formState.address.street);
-    _sync(_numberController, formState.address.number);
-    _sync(_complementController, formState.address.complement);
-    _sync(_referenceController, formState.address.reference);
   }
 
   void _sync(TextEditingController controller, String value) {

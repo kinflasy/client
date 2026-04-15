@@ -1,3 +1,4 @@
+import 'package:client/core/address/address_form_state.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/membership/providers/edit_inactive_person_providers.dart';
@@ -63,7 +64,7 @@ void main() {
       birthDate: DateTime(1995, 2, 3),
       phone: ' ',
       email: '',
-      address: EditInactivePersonAddressFormState(),
+      address: const AddressFormState(),
       isInitialized: true,
     );
 

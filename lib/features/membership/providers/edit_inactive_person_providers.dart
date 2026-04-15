@@ -1,87 +1,15 @@
+import 'package:client/core/address/address_form_state.dart';
+import 'package:client/core/address/address_value.dart';
 import 'package:client/core/errors/failure.dart';
-import 'package:client/core/address/address_request_model.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/data/models/update_inactive_person_request_model.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:client/features/membership/providers/unit_member_providers.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' show AsyncValue, WidgetRef;
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show AsyncValue, WidgetRef;
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:fpdart/fpdart.dart';
-
-class EditInactivePersonAddressFormState {
-  const EditInactivePersonAddressFormState({
-    this.zip = '',
-    this.country = '',
-    this.state = '',
-    this.city = '',
-    this.neighborhood = '',
-    this.street = '',
-    this.number = '',
-    this.complement = '',
-    this.reference = '',
-  });
-
-  final String zip;
-  final String country;
-  final String state;
-  final String city;
-  final String neighborhood;
-  final String street;
-  final String number;
-  final String complement;
-  final String reference;
-
-  EditInactivePersonAddressFormState copyWith({
-    String? zip,
-    String? country,
-    String? state,
-    String? city,
-    String? neighborhood,
-    String? street,
-    String? number,
-    String? complement,
-    String? reference,
-  }) {
-    return EditInactivePersonAddressFormState(
-      zip: zip ?? this.zip,
-      country: country ?? this.country,
-      state: state ?? this.state,
-      city: city ?? this.city,
-      neighborhood: neighborhood ?? this.neighborhood,
-      street: street ?? this.street,
-      number: number ?? this.number,
-      complement: complement ?? this.complement,
-      reference: reference ?? this.reference,
-    );
-  }
-
-  bool get isBlank =>
-      _isBlank(zip) &&
-      _isBlank(country) &&
-      _isBlank(state) &&
-      _isBlank(city) &&
-      _isBlank(neighborhood) &&
-      _isBlank(street) &&
-      _isBlank(number) &&
-      _isBlank(complement) &&
-      _isBlank(reference);
-
-  AddressRequestModel? toRequestOrNull() {
-    if (isBlank) return null;
-    return AddressRequestModel(
-      zip: _nullIfBlank(zip),
-      country: _nullIfBlank(country),
-      state: _nullIfBlank(state),
-      city: _nullIfBlank(city),
-      neighborhood: _nullIfBlank(neighborhood),
-      street: _nullIfBlank(street),
-      number: _nullIfBlank(number),
-      complement: _nullIfBlank(complement),
-      reference: _nullIfBlank(reference),
-    );
-  }
-}
 
 class EditInactivePersonFormState {
   const EditInactivePersonFormState({
@@ -91,7 +19,7 @@ class EditInactivePersonFormState {
     this.birthDate,
     this.phone = '',
     this.email = '',
-    this.address = const EditInactivePersonAddressFormState(),
+    this.address = const AddressFormState(),
     this.isInitialized = false,
   });
 
@@ -101,7 +29,7 @@ class EditInactivePersonFormState {
   final DateTime? birthDate;
   final String phone;
   final String email;
-  final EditInactivePersonAddressFormState address;
+  final AddressFormState address;
   final bool isInitialized;
 
   EditInactivePersonFormState copyWith({
@@ -112,7 +40,7 @@ class EditInactivePersonFormState {
     bool clearBirthDate = false,
     String? phone,
     String? email,
-    EditInactivePersonAddressFormState? address,
+    AddressFormState? address,
     bool? isInitialized,
   }) {
     return EditInactivePersonFormState(
@@ -128,8 +56,8 @@ class EditInactivePersonFormState {
   }
 }
 
-final editInactivePersonFormProvider =
-    StateProvider.autoDispose.family<EditInactivePersonFormState, String>(
+final editInactivePersonFormProvider = StateProvider.autoDispose
+    .family<EditInactivePersonFormState, String>(
       (ref, personId) => const EditInactivePersonFormState(),
     );
 
@@ -143,7 +71,9 @@ void initializeEditInactivePersonForm(
   required String personId,
   required MemberProfileEntity profile,
 }) {
-  final controller = ref.read(editInactivePersonFormProvider(personId).notifier);
+  final controller = ref.read(
+    editInactivePersonFormProvider(personId).notifier,
+  );
   if (controller.state.isInitialized) return;
   controller.state = createEditInactivePersonFormState(profile);
 }
@@ -158,7 +88,9 @@ void updateEditInactivePersonPersonalData(
   String? phone,
   String? email,
 }) {
-  final controller = ref.read(editInactivePersonFormProvider(personId).notifier);
+  final controller = ref.read(
+    editInactivePersonFormProvider(personId).notifier,
+  );
   controller.state = updateEditInactivePersonFormPersonalData(
     controller.state,
     fullName: fullName,
@@ -183,7 +115,9 @@ void updateEditInactivePersonAddress(
   String? complement,
   String? reference,
 }) {
-  final controller = ref.read(editInactivePersonFormProvider(personId).notifier);
+  final controller = ref.read(
+    editInactivePersonFormProvider(personId).notifier,
+  );
   controller.state = updateEditInactivePersonFormAddress(
     controller.state,
     zip: zip,
@@ -209,16 +143,8 @@ EditInactivePersonFormState createEditInactivePersonFormState(
     birthDate: profile.birthDate,
     phone: profile.phone ?? '',
     email: profile.email ?? '',
-    address: EditInactivePersonAddressFormState(
-      zip: address?.zip ?? '',
-      country: address?.country ?? '',
-      state: address?.state ?? '',
-      city: address?.city ?? '',
-      neighborhood: address?.neighborhood ?? '',
-      street: address?.street ?? '',
-      number: address?.number ?? '',
-      complement: address?.complement ?? '',
-      reference: address?.reference ?? '',
+    address: AddressFormState.fromValue(
+      address?.toValue() ?? const AddressValue.empty(),
     ),
     isInitialized: true,
   );
@@ -329,5 +255,3 @@ String? _nullIfBlank(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
 }
-
-bool _isBlank(String value) => value.trim().isEmpty;

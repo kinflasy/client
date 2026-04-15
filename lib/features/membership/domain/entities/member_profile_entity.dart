@@ -1,3 +1,4 @@
+import 'package:client/core/address/address_value.dart';
 import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:equatable/equatable.dart';
@@ -82,27 +83,18 @@ class AddressDetailsEntity extends Equatable {
   final String? complement;
   final String? reference;
 
-  String? format() {
-    final primaryParts = [
-      if (_hasText(street)) street!.trim(),
-      if (_hasText(number)) number!.trim(),
-      if (_hasText(neighborhood)) neighborhood!.trim(),
-      if (_hasText(city)) city!.trim(),
-      if (_hasText(state)) state!.trim(),
-      if (_hasText(country)) country!.trim(),
-    ];
-    final secondaryParts = [
-      if (_hasText(complement)) complement!.trim(),
-      if (_hasText(reference)) reference!.trim(),
-      if (_hasText(zip)) zip!.trim(),
-    ];
-
-    final formatted = [
-      if (primaryParts.isNotEmpty) primaryParts.join(', '),
-      if (secondaryParts.isNotEmpty) secondaryParts.join(' - '),
-    ].join(' | ');
-
-    return formatted.isEmpty ? null : formatted;
+  AddressValue toValue() {
+    return AddressValue(
+      zip: zip,
+      country: country,
+      state: state,
+      city: city,
+      neighborhood: neighborhood,
+      street: street,
+      number: number,
+      complement: complement,
+      reference: reference,
+    );
   }
 
   @override
@@ -119,8 +111,6 @@ class AddressDetailsEntity extends Equatable {
     reference,
   ];
 }
-
-bool _hasText(String? value) => value != null && value.trim().isNotEmpty;
 
 class MemberProfileIntegrationEntity extends Equatable {
   const MemberProfileIntegrationEntity({

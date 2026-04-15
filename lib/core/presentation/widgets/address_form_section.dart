@@ -97,7 +97,6 @@ class AddressFormSection extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
-        key: ValueKey('$label:$fieldValue'),
         initialValue: fieldValue,
         decoration: InputDecoration(
           labelText: label,

@@ -3,6 +3,7 @@ import 'package:client/features/church/domain/entities/church_department_entity.
 import 'package:client/features/membership/data/models/address_model.dart';
 import 'package:client/features/membership/data/models/membership_model.dart';
 import 'package:client/features/membership/data/models/person_profile_model.dart';
+import 'package:client/features/membership/data/models/update_inactive_person_request_model.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
@@ -43,6 +44,12 @@ class _FakeMemberProfileRepository implements MemberProfileRepository {
   Future<Either<Failure, PersonProfileModel>> getPersonProfile(
     String personId,
   ) async => personResult;
+
+  @override
+  Future<Either<Failure, void>> updateInactivePerson({
+    required String personId,
+    required UpdateInactivePersonRequestModel request,
+  }) async => const Right(null);
 }
 
 void main() {
@@ -142,6 +149,7 @@ void main() {
 
       expect(profile.age, 40);
       expect(profile.address, 'Rua A, 10, Fortaleza, CE');
+      expect(profile.addressDetails?.city, 'Fortaleza');
       expect(profile.integrations.single.departmentName, 'Louvor');
       expect(
         profile.integrations.single.integrationType,

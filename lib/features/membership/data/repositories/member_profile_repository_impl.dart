@@ -4,6 +4,7 @@ import 'package:client/features/membership/data/models/address_model.dart';
 import 'package:client/features/membership/data/models/integration_model.dart';
 import 'package:client/features/membership/data/models/membership_model.dart';
 import 'package:client/features/membership/data/models/person_profile_model.dart';
+import 'package:client/features/membership/data/models/update_inactive_person_request_model.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
 import 'package:dio/dio.dart';
@@ -117,6 +118,44 @@ class MemberProfileRepositoryImpl implements MemberProfileRepository {
     } catch (_) {
       return const Left(
         UnknownFailure('Nao foi possivel carregar as integracoes.'),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateInactivePerson({
+    required String personId,
+    required UpdateInactivePersonRequestModel request,
+  }) async {
+    try {
+      await _api.updateInactivePerson(personId, request);
+      return const Right(null);
+    } on DioException catch (error) {
+      final statusCode = error.response?.statusCode;
+      if (statusCode == 404) {
+        return const Left(NotFoundFailure('Pessoa inativa nao encontrada.'));
+      }
+      if (statusCode == 400 || statusCode == 422) {
+        final message = error.response?.data is Map<String, dynamic>
+            ? (error.response?.data as Map<String, dynamic>)['message']
+                  ?.toString()
+            : null;
+        return Left(
+          ValidationFailure(
+            message ?? 'Nao foi possivel validar os dados informados.',
+          ),
+        );
+      }
+      return Left(
+        NetworkFailure(error.message ?? 'Erro ao atualizar a pessoa inativa.'),
+      );
+    } on FormatException {
+      return const Left(
+        ServerFailure('Resposta inesperada ao atualizar a pessoa inativa.'),
+      );
+    } catch (_) {
+      return const Left(
+        UnknownFailure('Nao foi possivel atualizar a pessoa inativa.'),
       );
     }
   }

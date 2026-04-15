@@ -17,7 +17,7 @@ class AdminPanelScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Gestao da Igreja'),
+        title: const Text('Gestão da Igreja'),
         backgroundColor: AppColors.surface,
       ),
       body: ListView(
@@ -37,7 +37,7 @@ class AdminPanelScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _AdminCard(
             icon: Icons.calendar_month_outlined,
-            label: 'Calendario',
+            label: 'Calendário',
             onTap: () => _showComingSoon(context),
           ),
         ],

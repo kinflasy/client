@@ -1,4 +1,5 @@
 import 'package:client/features/membership/data/models/membership_model.dart';
+import 'package:client/features/membership/data/models/update_inactive_person_request_model.dart';
 import 'package:dio/dio.dart';
 
 class MemberProfileApi {
@@ -39,5 +40,15 @@ class MemberProfileApi {
       '/v1/core/church/unit/memberships/$membershipId/integrations',
     );
     return response.data ?? <dynamic>[];
+  }
+
+  Future<void> updateInactivePerson(
+    String personId,
+    UpdateInactivePersonRequestModel request,
+  ) async {
+    await _dio.put<void>(
+      '/v1/core/inactive-people/$personId',
+      data: request.toJson(),
+    );
   }
 }

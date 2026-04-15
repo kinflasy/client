@@ -1,5 +1,6 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
@@ -7,6 +8,7 @@ import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class MemberProfileScreen extends ConsumerWidget {
   const MemberProfileScreen({
@@ -179,15 +181,11 @@ class _ProfileContent extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Edicao do membro sera implementada em breve.',
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: () => context.pushNamed(
+                      AppRoutes.peopleEditName,
+                      pathParameters: {'id': profile.personId},
+                      extra: profile,
+                    ),
                     icon: const Icon(Icons.edit_outlined),
                     label: const Text('Editar cadastro'),
                   ),

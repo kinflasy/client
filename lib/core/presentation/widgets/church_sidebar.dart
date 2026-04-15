@@ -123,7 +123,7 @@ class _SidebarAdminButton extends StatelessWidget {
         color: AppColors.primary,
       ),
       title: const Text(
-        'Gestao da Igreja',
+        'Gestão da Igreja',
         style: TextStyle(
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,

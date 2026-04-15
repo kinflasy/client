@@ -78,7 +78,8 @@ Future<MemberProfileEntity> resolveMemberProfile({
     age: person.age ?? calculateAge(person.birthDate),
     phone: person.phone,
     email: person.email,
-    address: address,
+    address: address?.format(),
+    addressDetails: address,
     affiliation: membership.affiliation,
     entryDate: membership.entryDate != null
         ? DateTime.tryParse(membership.entryDate!)
@@ -87,13 +88,13 @@ Future<MemberProfileEntity> resolveMemberProfile({
   );
 }
 
-Future<String?> _loadAddress(
+Future<AddressDetailsEntity?> _loadAddress(
   MemberProfileRepository repository,
   String? addressId,
 ) async {
   if (addressId == null || addressId.isEmpty) return null;
   final result = await repository.getAddress(addressId);
-  return result.fold((_) => null, (address) => address.format());
+  return result.fold((_) => null, (address) => address.toEntity());
 }
 
 Future<List<ChurchDepartmentEntity>> _loadDepartments(

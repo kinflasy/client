@@ -23,7 +23,7 @@ class MemberOptionsScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _MemberOptionItem(
             icon: Icons.people_outline,
-            title: 'Ver Membros',
+            title: 'Ver membros',
             subtitle: 'Visualize todos os membros da sua igreja.',
             onTap: () => context.push(AppRoutes.peopleList),
           ),

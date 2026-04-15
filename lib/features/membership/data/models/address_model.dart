@@ -1,3 +1,5 @@
+import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
+
 class AddressModel {
   const AddressModel({
     required this.id,
@@ -59,6 +61,21 @@ class AddressModel {
     ].join(' | ');
 
     return formatted.isEmpty ? null : formatted;
+  }
+
+  AddressDetailsEntity toEntity() {
+    return AddressDetailsEntity(
+      id: id,
+      zip: zip,
+      country: country,
+      state: state,
+      city: city,
+      neighborhood: neighborhood,
+      street: street,
+      number: number,
+      complement: complement,
+      reference: reference,
+    );
   }
 }
 

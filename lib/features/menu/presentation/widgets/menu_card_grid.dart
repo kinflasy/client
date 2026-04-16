@@ -30,7 +30,7 @@ class MenuCardGrid extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        mainAxisExtent: 136,
+        mainAxisExtent: 126,
       ),
       itemCount: cards.length,
       itemBuilder: (context, index) {
@@ -97,7 +97,7 @@ class MenuGridCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(icon, size: 30, color: iconColor),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Text(
                     title,
                     textAlign: TextAlign.left,

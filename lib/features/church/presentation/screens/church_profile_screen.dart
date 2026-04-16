@@ -2,19 +2,16 @@ import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/widgets/church_sidebar.dart';
 import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
-import 'package:client/features/church/domain/entities/church_event_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/presentation/widgets/church_profile_cover_header.dart';
 import 'package:client/features/church/presentation/widgets/church_profile_identity_card.dart';
+import 'package:client/features/church/presentation/widgets/church_profile_tabs.dart';
 import 'package:client/features/church/presentation/widgets/church_profile_top_bar.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-enum _ChurchProfileViewerMode { member, visitor }
 
 class ChurchProfileScreen extends ConsumerWidget {
   const ChurchProfileScreen({super.key, this.unitId});
@@ -107,18 +104,12 @@ class _MemberProfileBodyState extends State<_MemberProfileBody> {
                   ),
                 ),
               ),
-              const SliverPersistentHeader(delegate: _ChurchTabBarDelegate()),
+              const SliverPersistentHeader(
+                delegate: ChurchProfileTabBarDelegate(),
+              ),
               SliverFillRemaining(
                 hasScrollBody: true,
-                child: SizedBox.expand(
-                  child: TabBarView(
-                    children: [
-                      _EventsTab(unitId: widget.profile.unit.id),
-                      _DepartmentsTab(unitId: widget.profile.unit.id),
-                      const _AnnouncementsTab(),
-                    ],
-                  ),
-                ),
+                child: ChurchProfileMemberTabView(unitId: widget.profile.unit.id),
               ),
             ],
           ),
@@ -160,272 +151,14 @@ class _VisitorProfileBody extends StatelessWidget {
                 ),
               ),
               const SliverPersistentHeader(
-                delegate: _ChurchTabBarDelegate(
-                  mode: _ChurchProfileViewerMode.visitor,
-                ),
+                delegate: ChurchProfileTabBarDelegate(isVisitorMode: true),
               ),
               const SliverFillRemaining(
                 hasScrollBody: true,
-                child: SizedBox.expand(child: _VisitorEventsPlaceholderTab()),
+                child: ChurchProfileVisitorTabView(),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ChurchTabBarDelegate extends SliverPersistentHeaderDelegate {
-  const _ChurchTabBarDelegate({this.mode = _ChurchProfileViewerMode.member});
-
-  final _ChurchProfileViewerMode mode;
-
-  @override
-  double get minExtent => kTextTabBarHeight;
-
-  @override
-  double get maxExtent => kTextTabBarHeight;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    final tabs = mode == _ChurchProfileViewerMode.member
-        ? const [
-            Tab(text: 'Eventos'),
-            Tab(text: 'Ministérios'),
-            Tab(text: 'Avisos'),
-          ]
-        : const [Tab(text: 'Eventos')];
-
-    return Container(
-      width: double.infinity,
-      color: AppColors.surface,
-      child: TabBar(
-        labelColor: AppColors.primary,
-        unselectedLabelColor: AppColors.textSecondary,
-        indicatorColor: AppColors.primary,
-        tabs: tabs,
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _ChurchTabBarDelegate oldDelegate) {
-    return oldDelegate.mode != mode;
-  }
-}
-
-class _VisitorEventsPlaceholderTab extends StatelessWidget {
-  const _VisitorEventsPlaceholderTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _InlineStatus(
-      icon: Icons.event_note_outlined,
-      title: 'Eventos públicos em breve.',
-      subtitle:
-          'Esta área ficará disponível quando trabalharmos o contrato de eventos públicos.',
-    );
-  }
-}
-
-class _EventsTab extends ConsumerWidget {
-  const _EventsTab({required this.unitId});
-
-  final String unitId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(churchEventsProvider(unitId));
-    return eventsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => const _InlineStatus(
-        icon: Icons.event_busy_outlined,
-        title: 'Não foi possível carregar os eventos.',
-      ),
-      data: (events) {
-        if (events.isEmpty) {
-          return const _InlineStatus(
-            icon: Icons.event_note_outlined,
-            title: 'Nenhum evento encontrado.',
-            subtitle: 'Os próximos eventos da sua igreja aparecerão aqui.',
-          );
-        }
-
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          itemCount: events.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) => _EventCard(event: events[index]),
-        );
-      },
-    );
-  }
-}
-
-class _DepartmentsTab extends ConsumerWidget {
-  const _DepartmentsTab({required this.unitId});
-
-  final String unitId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final departmentsAsync = ref.watch(churchDepartmentsProvider(unitId));
-    return departmentsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => const _InlineStatus(
-        icon: Icons.groups_2_outlined,
-        title: 'Não foi possível carregar os ministérios.',
-      ),
-      data: (departments) {
-        if (departments.isEmpty) {
-          return const _InlineStatus(
-            icon: Icons.groups_outlined,
-            title: 'Nenhum ministério encontrado.',
-            subtitle:
-                'Quando houver departamentos ativos, eles aparecerão aqui.',
-          );
-        }
-
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          itemCount: departments.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) =>
-              _DepartmentCard(department: departments[index]),
-        );
-      },
-    );
-  }
-}
-
-class _AnnouncementsTab extends StatelessWidget {
-  const _AnnouncementsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _InlineStatus(
-      icon: Icons.campaign_outlined,
-      title: 'Avisos em breve.',
-      subtitle:
-          'Esta área ficará disponível quando o backend expuser esse feed.',
-    );
-  }
-}
-
-class _EventCard extends StatelessWidget {
-  const _EventCard({required this.event});
-
-  final ChurchEventEntity event;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            event.title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _formatDateRange(event.startDateTime, event.endDateTime),
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          if ((event.description ?? '').isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              event.description!,
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _DepartmentCard extends StatelessWidget {
-  const _DepartmentCard({required this.department});
-
-  final ChurchDepartmentEntity department;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFFE8F0FE),
-          child: Icon(
-            department.type == 'ADMINISTRATIVE'
-                ? Icons.admin_panel_settings_outlined
-                : Icons.groups_3_outlined,
-            color: AppColors.primary,
-          ),
-        ),
-        title: Text(department.name),
-        subtitle: Text(
-          department.slug != null && department.slug!.isNotEmpty
-              ? '@${department.slug}'
-              : department.type ?? 'Ministério',
-        ),
-      ),
-    );
-  }
-}
-
-class _InlineStatus extends StatelessWidget {
-  const _InlineStatus({required this.icon, required this.title, this.subtitle});
-
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: SizedBox(
-        width: double.infinity,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 40, color: AppColors.textSecondary),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                subtitle!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-            ],
-          ],
         ),
       ),
     );
@@ -528,26 +261,4 @@ class _ErrorChurchState extends StatelessWidget {
       ),
     );
   }
-}
-
-String _formatDateRange(DateTime start, DateTime end) {
-  const months = [
-    'jan',
-    'fev',
-    'mar',
-    'abr',
-    'mai',
-    'jun',
-    'jul',
-    'ago',
-    'set',
-    'out',
-    'nov',
-    'dez',
-  ];
-  final startLabel =
-      '${start.day} ${months[start.month - 1]} ${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
-  final endLabel =
-      '${end.day} ${months[end.month - 1]} ${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
-  return '$startLabel - $endLabel';
 }

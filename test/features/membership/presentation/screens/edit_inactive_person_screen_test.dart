@@ -9,7 +9,7 @@ import 'package:client/features/membership/domain/entities/member_profile_entity
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
-import 'package:client/features/membership/presentation/screens/edit_inactive_person_screen.dart';
+import 'package:client/features/church_admin/presentation/screens/edit_inactive_person_screen.dart';
 import 'package:client/features/membership/providers/edit_inactive_person_providers.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:flutter/material.dart';

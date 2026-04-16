@@ -1,7 +1,7 @@
 import 'package:client/core/config/theme/app_colors.dart';
-import 'package:client/features/church/presentation/screens/steps/member_affiliation_step.dart';
-import 'package:client/features/church/presentation/screens/steps/member_personal_data_step.dart';
 import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/church_admin/presentation/screens/steps/member_affiliation_step.dart';
+import 'package:client/features/church_admin/presentation/screens/steps/member_personal_data_step.dart';
 import 'package:client/features/membership/data/models/register_member_request_model.dart';
 import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:client/features/membership/providers/register_member_form_provider.dart';

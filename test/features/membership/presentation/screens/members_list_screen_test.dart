@@ -3,7 +3,7 @@ import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
-import 'package:client/features/membership/presentation/screens/members_list_screen.dart';
+import 'package:client/features/church_admin/presentation/screens/members_list_screen.dart';
 import 'package:client/features/membership/providers/unit_member_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

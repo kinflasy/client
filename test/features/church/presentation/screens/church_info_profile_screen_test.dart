@@ -6,7 +6,7 @@ import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/presentation/screens/church_info_profile_screen.dart';
-import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
+import 'package:client/features/church/presentation/widgets/church_shared_widgets.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

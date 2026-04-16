@@ -1,4 +1,4 @@
-import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
+import 'package:client/features/church/presentation/widgets/church_shared_widgets.dart';
 import 'package:flutter/material.dart';
 
 class ChurchProfileTopBar extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
+import 'package:client/features/church/presentation/widgets/church_shared_widgets.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
 import 'package:client/features/membership/domain/enums/person_type.dart';

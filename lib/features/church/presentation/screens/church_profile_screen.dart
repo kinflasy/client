@@ -3,12 +3,11 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/widgets/church_sidebar.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_department_entity.dart';
-import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
-import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
-import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
+import 'package:client/features/church/presentation/widgets/church_profile_cover_header.dart';
+import 'package:client/features/church/presentation/widgets/church_profile_identity_card.dart';
 import 'package:client/features/church/presentation/widgets/church_profile_top_bar.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
@@ -90,7 +89,7 @@ class _MemberProfileBodyState extends State<_MemberProfileBody> {
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
-                child: _ChurchCoverHeader(
+                child: ChurchProfileCoverHeader(
                   unit: widget.profile.unit,
                   fallbackChurch: widget.profile.church,
                   topBar: ChurchProfileTopBar(
@@ -99,9 +98,13 @@ class _MemberProfileBodyState extends State<_MemberProfileBody> {
                 ),
               ),
               SliverToBoxAdapter(
-                child: _ChurchInfoCard(
+                child: ChurchProfileIdentityCard(
                   unit: widget.profile.unit,
                   fallbackChurch: widget.profile.church,
+                  onOpenPublicProfile: () => context.pushNamed(
+                    AppRoutes.churchPublicProfileName,
+                    pathParameters: {'id': widget.profile.unit.id},
+                  ),
                 ),
               ),
               const SliverPersistentHeader(delegate: _ChurchTabBarDelegate()),
@@ -140,16 +143,20 @@ class _VisitorProfileBody extends StatelessWidget {
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
-                child: _ChurchCoverHeader(
+                child: ChurchProfileCoverHeader(
                   unit: profile.unit,
                   fallbackChurch: profile.church,
                   showBackButton: true,
                 ),
               ),
               SliverToBoxAdapter(
-                child: _ChurchInfoCard(
+                child: ChurchProfileIdentityCard(
                   unit: profile.unit,
                   fallbackChurch: profile.church,
+                  onOpenPublicProfile: () => context.pushNamed(
+                    AppRoutes.churchPublicProfileName,
+                    pathParameters: {'id': profile.unit.id},
+                  ),
                 ),
               ),
               const SliverPersistentHeader(
@@ -164,142 +171,6 @@ class _VisitorProfileBody extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ChurchCoverHeader extends StatelessWidget {
-  const _ChurchCoverHeader({
-    required this.unit,
-    required this.fallbackChurch,
-    this.topBar,
-    this.showBackButton = false,
-  });
-
-  final ChurchUnitEntity unit;
-  final ChurchEntity fallbackChurch;
-  final Widget? topBar;
-  final bool showBackButton;
-
-  @override
-  Widget build(BuildContext context) {
-    final coverUrl = unit.coverUrl ?? fallbackChurch.coverUrl;
-    final logoUrl = unit.logoUrl ?? fallbackChurch.logoUrl;
-    final displayName = _displayName(unit, fallbackChurch);
-
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.bottomCenter,
-      children: [
-        Container(
-          height: 168,
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF0F4C81), AppColors.primary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: coverUrl == null
-              ? const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0x22000000), Color(0x00000000)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                )
-              : Image.network(
-                  coverUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const SizedBox.shrink(),
-                ),
-        ),
-        if (showBackButton) const ChurchFloatingBackButton(),
-        if (topBar != null)
-          Positioned(top: 10, left: 16, right: 16, child: topBar!),
-        Positioned(
-          bottom: -58,
-          child: CircleAvatar(
-            radius: 64,
-            backgroundColor: AppColors.surface,
-            child: CircleAvatar(
-              radius: 58,
-              backgroundColor: const Color(0xFFE8F0FE),
-              backgroundImage: logoUrl != null ? NetworkImage(logoUrl) : null,
-              child: logoUrl == null
-                  ? Text(
-                      churchInitials(displayName),
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ChurchInfoCard extends StatelessWidget {
-  const _ChurchInfoCard({required this.unit, required this.fallbackChurch});
-
-  final ChurchUnitEntity unit;
-  final ChurchEntity fallbackChurch;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      color: AppColors.surface,
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _displayName(unit, fallbackChurch),
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '@${_displaySlug(unit, fallbackChurch)}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: () => context.pushNamed(
-              AppRoutes.churchPublicProfileName,
-              pathParameters: {'id': unit.id},
-            ),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Icon(Icons.chevron_right, color: AppColors.textSecondary),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -657,18 +528,6 @@ class _ErrorChurchState extends StatelessWidget {
       ),
     );
   }
-}
-
-String _displayName(ChurchUnitEntity unit, ChurchEntity fallbackChurch) {
-  final name = unit.name?.trim();
-  if (name != null && name.isNotEmpty) return name;
-  return fallbackChurch.name;
-}
-
-String _displaySlug(ChurchUnitEntity unit, ChurchEntity fallbackChurch) {
-  final slug = unit.slug?.trim();
-  if (slug != null && slug.isNotEmpty) return slug;
-  return fallbackChurch.slug;
 }
 
 String _formatDateRange(DateTime start, DateTime end) {

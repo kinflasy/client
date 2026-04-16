@@ -2,7 +2,7 @@ import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
 import 'package:client/core/presentation/widgets/address_form_section.dart';
-import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
+import 'package:client/features/church/presentation/widgets/church_shared_widgets.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/providers/edit_inactive_person_providers.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';

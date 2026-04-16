@@ -3,7 +3,7 @@ import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
-import 'package:client/features/church/presentation/screens/church_shared_widgets.dart';
+import 'package:client/features/church/presentation/widgets/church_profile_cover_header.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,9 +46,10 @@ class _ProfileContent extends StatelessWidget {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-              child: _ChurchCoverHeader(
+              child: ChurchProfileCoverHeader(
                 unit: profile.unit,
                 fallbackChurch: profile.church,
+                showBackButton: true,
               ),
             ),
             SliverToBoxAdapter(
@@ -65,77 +66,6 @@ class _ProfileContent extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ChurchCoverHeader extends StatelessWidget {
-  const _ChurchCoverHeader({required this.unit, required this.fallbackChurch});
-
-  final ChurchUnitEntity unit;
-  final ChurchEntity fallbackChurch;
-
-  @override
-  Widget build(BuildContext context) {
-    final coverUrl = unit.coverUrl ?? fallbackChurch.coverUrl;
-    final logoUrl = unit.logoUrl ?? fallbackChurch.logoUrl;
-    final displayName = _displayName(unit, fallbackChurch);
-
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.bottomCenter,
-      children: [
-        Container(
-          height: 168,
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF0F4C81), AppColors.primary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: coverUrl == null
-              ? const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0x22000000), Color(0x00000000)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                )
-              : Image.network(
-                  coverUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, exception, stackTrace) =>
-                      const SizedBox.shrink(),
-                ),
-        ),
-        Positioned(
-          bottom: -58,
-          child: CircleAvatar(
-            radius: 64,
-            backgroundColor: AppColors.surface,
-            child: CircleAvatar(
-              radius: 58,
-              backgroundColor: const Color(0xFFE8F0FE),
-              backgroundImage: logoUrl != null ? NetworkImage(logoUrl) : null,
-              child: logoUrl == null
-                  ? Text(
-                      churchInitials(displayName),
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-        const ChurchFloatingBackButton(),
-      ],
     );
   }
 }

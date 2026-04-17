@@ -26,7 +26,7 @@ class ChurchProfileScreen extends ConsumerWidget {
       final profileAsync = ref.watch(publicChurchUnitProfileProvider(unitId!));
       return profileAsync.when(
         loading: () => const Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: AppColors.surface,
           body: SafeArea(child: Center(child: CircularProgressIndicator())),
         ),
         error: (error, _) => _ErrorChurchState(
@@ -43,7 +43,7 @@ class ChurchProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(currentChurchProfileProvider);
     return profileAsync.when(
       loading: () => const Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.surface,
         body: SafeArea(child: Center(child: CircularProgressIndicator())),
       ),
       error: (error, stackTrace) {
@@ -80,7 +80,7 @@ class _MemberProfileBodyState extends State<_MemberProfileBody> {
       length: 3,
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.surface,
         drawer: const ChurchSidebar(),
         body: SafeArea(
           child: CustomScrollView(
@@ -129,7 +129,7 @@ class _VisitorProfileBody extends StatelessWidget {
     return DefaultTabController(
       length: 1,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.surface,
         body: SafeArea(
           child: CustomScrollView(
             slivers: [
@@ -171,7 +171,7 @@ class _EmptyChurchState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -230,7 +230,7 @@ class _ErrorChurchState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Center(
           child: Padding(

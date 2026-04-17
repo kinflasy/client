@@ -17,6 +17,7 @@ class AppRoutes {
   static const adminPanel = '/admin/gestao';
   static const adminMembers = '/admin/membros';
   static const adminMembersRegister = '/admin/membros/cadastrar';
+  static const adminDepartments = '/admin/departamentos';
 
   static const splashName = 'splash';
   static const loginName = 'login';
@@ -34,4 +35,5 @@ class AppRoutes {
   static const adminPanelName = 'admin-panel';
   static const adminMembersName = 'admin-members';
   static const adminMembersRegisterName = 'admin-members-register';
+  static const adminDepartmentsName = 'admin-departments';
 }

@@ -1,0 +1,294 @@
+import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/errors/failure.dart';
+import 'package:client/core/utils/string_utils.dart';
+import 'package:client/features/church/domain/entities/church_department_entity.dart';
+import 'package:client/features/church/providers/church_providers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class DepartmentsListScreen extends ConsumerStatefulWidget {
+  const DepartmentsListScreen({super.key});
+
+  @override
+  ConsumerState<DepartmentsListScreen> createState() =>
+      _DepartmentsListScreenState();
+}
+
+class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
+  late final TextEditingController _searchController;
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showComingSoon(String label) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$label em breve')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activeMembershipAsync = ref.watch(activeMembershipProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Departamentos'),
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+      ),
+      body: activeMembershipAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => _InlineStatus(
+          icon: Icons.error_outline,
+          title: error is Failure
+              ? error.message
+              : 'Não foi possível carregar a unidade ativa.',
+        ),
+        data: (membership) {
+          final unitId = membership?.unitId;
+          if (unitId == null || unitId.isEmpty) {
+            return const _InlineStatus(
+              icon: Icons.account_tree_outlined,
+              title: 'Nenhuma unidade ativa encontrada.',
+              subtitle:
+                  'Não foi possível identificar os departamentos para listar.',
+            );
+          }
+
+          final departmentsAsync = ref.watch(churchDepartmentsProvider(unitId));
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Buscar departamento por nome',
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () =>
+                            _showComingSoon('Adicionar departamento'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Adicionar departamento'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: departmentsAsync.when(
+                  loading: () => const _CounterRow(count: null),
+                  error: (error, stackTrace) => const _CounterRow(count: 0),
+                  data: (departments) => _CounterRow(
+                    count: _filterDepartments(departments, _searchQuery).length,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: departmentsAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stackTrace) => _InlineStatus(
+                    icon: Icons.groups_2_outlined,
+                    title: error is Failure
+                        ? error.message
+                        : 'Não foi possível carregar os departamentos.',
+                    subtitle: 'Tente novamente em instantes.',
+                  ),
+                  data: (departments) {
+                    final filteredDepartments = _filterDepartments(
+                      departments,
+                      _searchQuery,
+                    );
+
+                    if (filteredDepartments.isEmpty) {
+                      return const _InlineStatus(
+                        icon: Icons.groups_outlined,
+                        title: 'Nenhum departamento encontrado.',
+                        subtitle:
+                            'Tente buscar por outro nome de departamento.',
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      itemCount: filteredDepartments.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) => _DepartmentCard(
+                        department: filteredDepartments[index],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CounterRow extends StatelessWidget {
+  const _CounterRow({required this.count});
+
+  final int? count;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = count == null ? 'Carregando...' : '$count departamentos';
+
+    return Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DepartmentCard extends StatelessWidget {
+  const _DepartmentCard({required this.department});
+
+  final ChurchDepartmentEntity department;
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = department.slug != null && department.slug!.isNotEmpty
+        ? '@${department.slug}'
+        : _translateDepartmentType(department.type);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        leading: CircleAvatar(
+          backgroundColor: const Color(0xFFE8F0FE),
+          child: Icon(
+            department.type == 'ADMINISTRATIVE'
+                ? Icons.admin_panel_settings_outlined
+                : Icons.groups_3_outlined,
+            color: AppColors.primary,
+          ),
+        ),
+        title: Text(
+          department.name,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+      ),
+    );
+  }
+}
+
+class _InlineStatus extends StatelessWidget {
+  const _InlineStatus({required this.icon, required this.title, this.subtitle});
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 40, color: AppColors.textSecondary),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                subtitle!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _translateDepartmentType(String? type) {
+  return switch (type?.toUpperCase()) {
+    'ADMINISTRATIVE' => 'Administrativo',
+    'MINISTRY' => 'Departamento',
+    _ => 'Departamento',
+  };
+}
+
+List<ChurchDepartmentEntity> _filterDepartments(
+  List<ChurchDepartmentEntity> departments,
+  String query,
+) {
+  final normalizedQuery = normalizeSearchTerm(query);
+  if (normalizedQuery.isEmpty) return departments;
+
+  return departments.where((department) {
+    final normalizedName = normalizeSearchTerm(department.name);
+    return normalizedName.contains(normalizedQuery);
+  }).toList();
+}

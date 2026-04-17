@@ -32,7 +32,7 @@ class AdminPanelScreen extends StatelessWidget {
           _AdminCard(
             icon: Icons.account_tree_outlined,
             label: 'Departamentos',
-            onTap: () => _showComingSoon(context),
+            onTap: () => context.push(AppRoutes.adminDepartments),
           ),
           const SizedBox(height: 12),
           _AdminCard(

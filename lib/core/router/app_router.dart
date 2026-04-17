@@ -9,6 +9,7 @@ import 'package:client/features/church/presentation/screens/church_search_screen
 import 'package:client/features/church/presentation/screens/register_church_screen.dart';
 import 'package:client/features/church/presentation/screens/church_tab_screen.dart';
 import 'package:client/features/church_admin/presentation/screens/admin_panel_screen.dart';
+import 'package:client/features/church_admin/presentation/screens/departments_list_screen.dart';
 import 'package:client/features/church_admin/presentation/screens/edit_inactive_person_screen.dart';
 import 'package:client/features/church_admin/presentation/screens/member_options_screen.dart';
 import 'package:client/features/church_admin/presentation/screens/member_profile_screen.dart';
@@ -41,6 +42,7 @@ final _protectedRoutes = <String>{
   AppRoutes.adminPanel,
   AppRoutes.adminMembers,
   AppRoutes.adminMembersRegister,
+  AppRoutes.adminDepartments,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
@@ -54,6 +56,7 @@ final _unitAdminRoutes = <String>{
   AppRoutes.adminPanel,
   AppRoutes.adminMembers,
   AppRoutes.adminMembersRegister,
+  AppRoutes.adminDepartments,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
@@ -240,6 +243,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.adminMembersRegisterName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RegisterMemberScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminDepartments,
+        name: AppRoutes.adminDepartmentsName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const DepartmentsListScreen(),
       ),
       GoRoute(
         path: AppRoutes.peopleList,

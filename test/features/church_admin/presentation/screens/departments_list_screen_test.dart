@@ -100,7 +100,7 @@ void main() {
     expect(find.text('Adicionar departamento'), findsOneWidget);
   });
 
-  testWidgets('shows empty state when there are no departments', (
+  testWidgets('shows registered-empty state when there are no departments', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -122,11 +122,11 @@ void main() {
 
     expect(find.text('Buscar departamento por nome'), findsOneWidget);
     expect(find.text('0 departamentos'), findsOneWidget);
-    expect(find.text('Nenhum departamento encontrado.'), findsOneWidget);
+    expect(find.text('Nenhum departamento cadastrado.'), findsOneWidget);
     expect(find.text('Adicionar departamento'), findsOneWidget);
   });
 
-  testWidgets('shows department list, filters by typing and keeps add mocked', (
+  testWidgets('filters list by typing and updates empty state for search', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -142,15 +142,15 @@ void main() {
           churchDepartmentsProvider.overrideWith(
             (ref, unitId) async => const [
               ChurchDepartmentEntity(
-                id: 'dept-1',
-                name: 'Louvor',
-                slug: 'louvor',
-                type: 'MINISTRY',
-              ),
-              ChurchDepartmentEntity(
                 id: 'dept-2',
                 name: 'Secretaria',
                 type: 'ADMINISTRATIVE',
+              ),
+              ChurchDepartmentEntity(
+                id: 'dept-1',
+                name: 'Ministério de Louvor',
+                slug: 'louvor',
+                type: 'MINISTRY',
               ),
             ],
           ),
@@ -161,17 +161,24 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('2 departamentos'), findsOneWidget);
-    expect(find.text('Louvor'), findsOneWidget);
-    expect(find.text('@louvor'), findsOneWidget);
+    expect(find.text('Ministério de Louvor'), findsOneWidget);
     expect(find.text('Secretaria'), findsOneWidget);
-    expect(find.text('Administrativo'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'sec');
+    await tester.enterText(find.byType(TextField), 'ministerio');
     await tester.pumpAndSettle();
 
     expect(find.text('1 departamentos'), findsOneWidget);
-    expect(find.text('Louvor'), findsNothing);
-    expect(find.text('Secretaria'), findsOneWidget);
+    expect(find.text('Ministério de Louvor'), findsOneWidget);
+    expect(find.text('Secretaria'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'inexistente');
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Nenhum departamento encontrado para esta busca.'),
+      findsOneWidget,
+    );
+    expect(find.text('0 departamentos'), findsOneWidget);
 
     await tester.tap(find.text('Adicionar departamento'));
     await tester.pump();

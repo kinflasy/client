@@ -1,7 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
-import 'package:client/core/utils/string_utils.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
 import 'package:client/features/church/presentation/widgets/department_card.dart';
 import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
@@ -18,12 +16,13 @@ class DepartmentsListScreen extends ConsumerStatefulWidget {
 
 class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
   late final TextEditingController _searchController;
-  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
+    _searchController = TextEditingController(
+      text: ref.read(departmentSearchQueryProvider),
+    );
   }
 
   @override
@@ -69,7 +68,10 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
             );
           }
 
-          final departmentsAsync = ref.watch(churchDepartmentsProvider(unitId));
+          final rawDepartmentsAsync = ref.watch(churchDepartmentsProvider(unitId));
+          final filteredDepartmentsAsync = ref.watch(
+            filteredChurchDepartmentsProvider(unitId),
+          );
 
           return Column(
             children: [
@@ -79,11 +81,9 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                   children: [
                     TextField(
                       controller: _searchController,
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
+                      onChanged: (value) => ref
+                          .read(departmentSearchQueryProvider.notifier)
+                          .update(value),
                       decoration: InputDecoration(
                         hintText: 'Buscar departamento por nome',
                         prefixIcon: const Icon(Icons.search),
@@ -110,17 +110,15 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: departmentsAsync.when(
+                child: filteredDepartmentsAsync.when(
                   loading: () => const _CounterRow(count: null),
                   error: (error, stackTrace) => const _CounterRow(count: 0),
-                  data: (departments) => _CounterRow(
-                    count: _filterDepartments(departments, _searchQuery).length,
-                  ),
+                  data: (departments) => _CounterRow(count: departments.length),
                 ),
               ),
               const SizedBox(height: 8),
               Expanded(
-                child: departmentsAsync.when(
+                child: filteredDepartmentsAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
                   error: (error, stackTrace) => _InlineStatus(
@@ -130,31 +128,47 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                         : 'Não foi possível carregar os departamentos.',
                     subtitle: 'Tente novamente em instantes.',
                   ),
-                  data: (departments) {
-                    final filteredDepartments = _filterDepartments(
-                      departments,
-                      _searchQuery,
-                    );
+                  data: (departments) => rawDepartmentsAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => _InlineStatus(
+                      icon: Icons.groups_2_outlined,
+                      title: error is Failure
+                          ? error.message
+                          : 'Não foi possível carregar os departamentos.',
+                      subtitle: 'Tente novamente em instantes.',
+                    ),
+                    data: (rawDepartments) {
+                      if (departments.isEmpty) {
+                        if (rawDepartments.isEmpty) {
+                          return const _InlineStatus(
+                            icon: Icons.groups_outlined,
+                            title: 'Nenhum departamento cadastrado.',
+                            subtitle:
+                                'Adicione um departamento para começar.',
+                          );
+                        }
 
-                    if (filteredDepartments.isEmpty) {
-                      return const _InlineStatus(
-                        icon: Icons.groups_outlined,
-                        title: 'Nenhum departamento encontrado.',
-                        subtitle:
-                            'Tente buscar por outro nome de departamento.',
+                        return const _InlineStatus(
+                          icon: Icons.search_off_outlined,
+                          title:
+                              'Nenhum departamento encontrado para esta busca.',
+                          subtitle:
+                              'Tente buscar por outro nome de departamento.',
+                        );
+                      }
+
+                      return ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        itemCount: departments.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) => DepartmentCard(
+                          department: departments[index],
+                        ),
                       );
-                    }
-
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      itemCount: filteredDepartments.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, index) => DepartmentCard(
-                        department: filteredDepartments[index],
-                      ),
-                    );
-                  },
+                    },
+                  ),
                 ),
               ),
             ],
@@ -228,17 +242,4 @@ class _InlineStatus extends StatelessWidget {
       ),
     );
   }
-}
-
-List<ChurchDepartmentEntity> _filterDepartments(
-  List<ChurchDepartmentEntity> departments,
-  String query,
-) {
-  final normalizedQuery = normalizeSearchTerm(query);
-  if (normalizedQuery.isEmpty) return departments;
-
-  return departments.where((department) {
-    final normalizedName = normalizeSearchTerm(department.name);
-    return normalizedName.contains(normalizedQuery);
-  }).toList();
 }

@@ -85,4 +85,73 @@ void main() {
       throwsA(isA<NetworkFailure>()),
     );
   });
+
+  test('filteredChurchDepartmentsProvider returns ordered list for empty query', () async {
+    when(() => repository.getDepartmentsByUnitId('unit-1')).thenAnswer(
+      (_) async => const Right([
+        ChurchDepartmentEntity(
+          id: 'dep-2',
+          name: 'Secretaria',
+          type: 'ADMINISTRATIVE',
+        ),
+        ChurchDepartmentEntity(
+          id: 'dep-1',
+          name: 'Louvor',
+          slug: 'louvor',
+          type: 'MINISTRY',
+        ),
+      ]),
+    );
+
+    await _readDepartments(container, 'unit-1');
+
+    final result = container.read(filteredChurchDepartmentsProvider('unit-1'));
+
+    expect(result.requireValue.map((item) => item.name), ['Louvor', 'Secretaria']);
+  });
+
+  test('filteredChurchDepartmentsProvider filters by normalized name query', () async {
+    when(() => repository.getDepartmentsByUnitId('unit-1')).thenAnswer(
+      (_) async => const Right([
+        ChurchDepartmentEntity(
+          id: 'dep-1',
+          name: 'Ministério de Louvor',
+          slug: 'louvor',
+          type: 'MINISTRY',
+        ),
+        ChurchDepartmentEntity(
+          id: 'dep-2',
+          name: 'Secretaria',
+          type: 'ADMINISTRATIVE',
+        ),
+      ]),
+    );
+
+    await _readDepartments(container, 'unit-1');
+    container.read(departmentSearchQueryProvider.notifier).update('ministerio');
+
+    final result = container.read(filteredChurchDepartmentsProvider('unit-1'));
+
+    expect(result.requireValue.map((item) => item.name), ['Ministério de Louvor']);
+  });
+
+  test('filteredChurchDepartmentsProvider returns empty list when there are no matches', () async {
+    when(() => repository.getDepartmentsByUnitId('unit-1')).thenAnswer(
+      (_) async => const Right([
+        ChurchDepartmentEntity(
+          id: 'dep-1',
+          name: 'Louvor',
+          slug: 'louvor',
+          type: 'MINISTRY',
+        ),
+      ]),
+    );
+
+    await _readDepartments(container, 'unit-1');
+    container.read(departmentSearchQueryProvider.notifier).update('infantil');
+
+    final result = container.read(filteredChurchDepartmentsProvider('unit-1'));
+
+    expect(result.requireValue, isEmpty);
+  });
 }

@@ -174,7 +174,7 @@ class ChurchDepartmentReadModel {
   factory ChurchDepartmentReadModel.fromJson(Map<String, dynamic> json) {
     return ChurchDepartmentReadModel(
       id: (json['id'] ?? '').toString(),
-      name: (json['name'] ?? 'Ministério').toString(),
+      name: (json['name'] ?? 'Departamento').toString(),
       slug: json['slug']?.toString(),
       type: json['type']?.toString(),
     );

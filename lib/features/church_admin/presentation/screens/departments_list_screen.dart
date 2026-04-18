@@ -2,6 +2,8 @@ import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/utils/string_utils.dart';
 import 'package:client/features/church/domain/entities/church_department_entity.dart';
+import 'package:client/features/church/presentation/widgets/department_card.dart';
+import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -148,7 +150,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                       itemCount: filteredDepartments.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 12),
-                      itemBuilder: (context, index) => _DepartmentCard(
+                      itemBuilder: (context, index) => DepartmentCard(
                         department: filteredDepartments[index],
                       ),
                     );
@@ -183,50 +185,6 @@ class _CounterRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _DepartmentCard extends StatelessWidget {
-  const _DepartmentCard({required this.department});
-
-  final ChurchDepartmentEntity department;
-
-  @override
-  Widget build(BuildContext context) {
-    final subtitle = department.slug != null && department.slug!.isNotEmpty
-        ? '@${department.slug}'
-        : _translateDepartmentType(department.type);
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFFE8F0FE),
-          child: Icon(
-            department.type == 'ADMINISTRATIVE'
-                ? Icons.admin_panel_settings_outlined
-                : Icons.groups_3_outlined,
-            color: AppColors.primary,
-          ),
-        ),
-        title: Text(
-          department.name,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
-      ),
     );
   }
 }
@@ -270,14 +228,6 @@ class _InlineStatus extends StatelessWidget {
       ),
     );
   }
-}
-
-String _translateDepartmentType(String? type) {
-  return switch (type?.toUpperCase()) {
-    'ADMINISTRATIVE' => 'Administrativo',
-    'MINISTRY' => 'Departamento',
-    _ => 'Departamento',
-  };
 }
 
 List<ChurchDepartmentEntity> _filterDepartments(

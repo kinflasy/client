@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_department_entity.dart';
+import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/church_admin/presentation/screens/admin_panel_screen.dart';
 import 'package:client/features/church_admin/presentation/screens/departments_list_screen.dart';

@@ -2,14 +2,15 @@ import 'dart:async';
 
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/church/data/datasources/church_departments_api.dart';
 import 'package:client/features/church/data/datasources/church_events_api.dart';
+import 'package:client/features/church/domain/entities/church_department_entity.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/presentation/screens/church_profile_screen.dart';
 import 'package:client/features/church/presentation/widgets/church_shared_widgets.dart';
+import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:dio/dio.dart';
@@ -30,17 +31,6 @@ class _FakeChurchEventsApi extends ChurchEventsApi {
     required DateTime end,
   }) async {
     return events;
-  }
-}
-
-class _FakeChurchDepartmentsApi extends ChurchDepartmentsApi {
-  _FakeChurchDepartmentsApi(this.departments) : super(Dio());
-
-  final List<dynamic> departments;
-
-  @override
-  Future<List<dynamic>> getDepartmentsByUnitId(String unitId) async {
-    return departments;
   }
 }
 
@@ -161,15 +151,15 @@ void main() {
               },
             ]),
           ),
-          churchDepartmentsApiProvider.overrideWithValue(
-            _FakeChurchDepartmentsApi([
-              {
-                'id': 'dept-1',
-                'name': 'Louvor',
-                'slug': 'louvor',
-                'type': 'MINISTRY',
-              },
-            ]),
+          churchDepartmentsProvider.overrideWith(
+            (ref, unitId) async => const [
+              ChurchDepartmentEntity(
+                id: 'dept-1',
+                name: 'Louvor',
+                slug: 'louvor',
+                type: 'MINISTRY',
+              ),
+            ],
           ),
         ],
         child: const MaterialApp(home: ChurchProfileScreen()),
@@ -181,7 +171,7 @@ void main() {
     expect(find.text('@sede-central'), findsOneWidget);
     expect(find.text('Culto de Domingo'), findsOneWidget);
 
-    await tester.tap(find.text('Ministérios'));
+    await tester.tap(find.text('Departamentos'));
     await tester.pumpAndSettle();
     expect(find.text('Louvor'), findsOneWidget);
 
@@ -217,8 +207,8 @@ void main() {
             (ref) async => buildMemberProfile(),
           ),
           churchEventsApiProvider.overrideWithValue(_FakeChurchEventsApi([])),
-          churchDepartmentsApiProvider.overrideWithValue(
-            _FakeChurchDepartmentsApi([]),
+          churchDepartmentsProvider.overrideWith(
+            (ref, unitId) async => const [],
           ),
         ],
         child: MaterialApp.router(routerConfig: router),
@@ -247,7 +237,7 @@ void main() {
 
     expect(find.text('Sede Central'), findsOneWidget);
     expect(find.text('Eventos'), findsOneWidget);
-    expect(find.text('Ministérios'), findsNothing);
+    expect(find.text('Departamentos'), findsNothing);
     expect(find.text('Avisos'), findsNothing);
     expect(find.text('Eventos públicos em breve.'), findsOneWidget);
     expect(find.byKey(ChurchFloatingBackButton.buttonKey), findsOneWidget);
@@ -313,8 +303,8 @@ void main() {
             (ref) async => buildMemberProfile(),
           ),
           churchEventsApiProvider.overrideWithValue(_FakeChurchEventsApi([])),
-          churchDepartmentsApiProvider.overrideWithValue(
-            _FakeChurchDepartmentsApi([]),
+          churchDepartmentsProvider.overrideWith(
+            (ref, unitId) async => const [],
           ),
         ],
         child: const MaterialApp(home: ChurchProfileScreen()),

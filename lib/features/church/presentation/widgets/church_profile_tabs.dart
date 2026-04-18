@@ -1,6 +1,7 @@
 import 'package:client/core/config/theme/app_colors.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
+import 'package:client/features/church/presentation/widgets/department_card.dart';
+import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +27,7 @@ class ChurchProfileTabBarDelegate extends SliverPersistentHeaderDelegate {
         ? const [Tab(text: 'Eventos')]
         : const [
             Tab(text: 'Eventos'),
-            Tab(text: 'Ministérios'),
+            Tab(text: 'Departamentos'),
             Tab(text: 'Avisos'),
           ];
 
@@ -136,13 +137,13 @@ class ChurchDepartmentsTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(
         icon: Icons.groups_2_outlined,
-        title: 'Não foi possível carregar os ministérios.',
+        title: 'Não foi possível carregar os departamentos.',
       ),
       data: (departments) {
         if (departments.isEmpty) {
           return const _InlineStatus(
             icon: Icons.groups_outlined,
-            title: 'Nenhum ministério encontrado.',
+            title: 'Nenhum departamento encontrado.',
             subtitle:
                 'Quando houver departamentos ativos, eles aparecerão aqui.',
           );
@@ -153,7 +154,7 @@ class ChurchDepartmentsTab extends ConsumerWidget {
           itemCount: departments.length,
           separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) =>
-              _DepartmentCard(department: departments[index]),
+              DepartmentCard(department: departments[index]),
         );
       },
     );
@@ -168,7 +169,8 @@ class ChurchAnnouncementsTab extends StatelessWidget {
     return const _InlineStatus(
       icon: Icons.campaign_outlined,
       title: 'Avisos em breve.',
-      subtitle: 'Esta área ficará disponível quando o backend expuser esse feed.',
+      subtitle:
+          'Esta área ficará disponível quando o backend expuser esse feed.',
     );
   }
 }
@@ -211,40 +213,6 @@ class _EventCard extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _DepartmentCard extends StatelessWidget {
-  const _DepartmentCard({required this.department});
-
-  final ChurchDepartmentEntity department;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFFE8F0FE),
-          child: Icon(
-            department.type == 'ADMINISTRATIVE'
-                ? Icons.admin_panel_settings_outlined
-                : Icons.groups_3_outlined,
-            color: AppColors.primary,
-          ),
-        ),
-        title: Text(department.name),
-        subtitle: Text(
-          department.slug != null && department.slug!.isNotEmpty
-              ? '@${department.slug}'
-              : department.type ?? 'Ministério',
-        ),
       ),
     );
   }

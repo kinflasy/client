@@ -1,18 +1,13 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/network/dio_client.dart';
 import 'package:client/core/utils/string_utils.dart';
 import 'package:client/features/church/data/datasources/church_api.dart';
-import 'package:client/features/church/data/datasources/church_departments_api.dart';
 import 'package:client/features/church/data/datasources/church_events_api.dart';
 import 'package:client/features/church/data/datasources/church_unit_api.dart';
 import 'package:client/features/church/data/models/church_read_models.dart';
 import 'package:client/features/church/data/models/church_request_model.dart';
 import 'package:client/features/church/data/repositories/church_repository_impl.dart';
 import 'package:client/features/church/data/repositories/church_unit_repository_impl.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
@@ -22,6 +17,9 @@ import 'package:client/features/church/domain/repositories/church_repository.dar
 import 'package:client/features/church/domain/repositories/church_unit_repository.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:client/features/membership/providers/membership_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'church_providers.g.dart';
 
@@ -43,10 +41,6 @@ final churchUnitRepositoryProvider = Provider<ChurchUnitRepository>(
 
 final churchEventsApiProvider = Provider<ChurchEventsApi>(
   (ref) => ChurchEventsApi(ref.watch(dioClientProvider)),
-);
-
-final churchDepartmentsApiProvider = Provider<ChurchDepartmentsApi>(
-  (ref) => ChurchDepartmentsApi(ref.watch(dioClientProvider)),
 );
 
 final activeMembershipProvider = FutureProvider<MembershipEntity?>((ref) async {
@@ -119,34 +113,6 @@ final churchEventsProvider =
       }
     });
 
-final churchDepartmentsProvider =
-    FutureProvider.family<List<ChurchDepartmentEntity>, String>((
-      ref,
-      unitId,
-    ) async {
-      try {
-        final jsonList = await ref
-            .read(churchDepartmentsApiProvider)
-            .getDepartmentsByUnitId(unitId);
-        return jsonList
-            .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item))
-            .map(ChurchDepartmentReadModel.fromJson)
-            .where((model) => model.id.isNotEmpty)
-            .map(
-              (model) => ChurchDepartmentEntity(
-                id: model.id,
-                name: model.name,
-                slug: model.slug,
-                type: model.type,
-              ),
-            )
-            .toList();
-      } catch (_) {
-        throw const NetworkFailure('Erro ao carregar ministérios da igreja.');
-      }
-    });
-
 /// Provider parametrizado por churchId para o perfil público.
 /// Reutiliza o repositório e endpoint já existentes.
 final publicChurchProfileProvider = FutureProvider.family<ChurchEntity, String>(
@@ -184,29 +150,29 @@ final churchSearchProvider = FutureProvider.family<List<ChurchEntity>, String>((
 // ignore: unused_element
 String _normalizeChurchSearchTerm(String value) {
   const accentMap = {
-    'Ã¡': 'a',
-    'Ã ': 'a',
-    'Ã¢': 'a',
-    'Ã£': 'a',
-    'Ã¤': 'a',
-    'Ã©': 'e',
-    'Ã¨': 'e',
-    'Ãª': 'e',
-    'Ã«': 'e',
-    'Ã­': 'i',
-    'Ã¬': 'i',
-    'Ã®': 'i',
-    'Ã¯': 'i',
-    'Ã³': 'o',
-    'Ã²': 'o',
-    'Ã´': 'o',
-    'Ãµ': 'o',
-    'Ã¶': 'o',
-    'Ãº': 'u',
-    'Ã¹': 'u',
-    'Ã»': 'u',
-    'Ã¼': 'u',
-    'Ã§': 'c',
+    'á': 'a',
+    'à': 'a',
+    'â': 'a',
+    'ã': 'a',
+    'ä': 'a',
+    'é': 'e',
+    'è': 'e',
+    'ê': 'e',
+    'ë': 'e',
+    'í': 'i',
+    'ì': 'i',
+    'î': 'i',
+    'ï': 'i',
+    'ó': 'o',
+    'ò': 'o',
+    'ô': 'o',
+    'õ': 'o',
+    'ö': 'o',
+    'ú': 'u',
+    'ù': 'u',
+    'û': 'u',
+    'ü': 'u',
+    'ç': 'c',
   };
 
   final lower = value.trim().toLowerCase();

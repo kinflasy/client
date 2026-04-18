@@ -18,6 +18,7 @@ class AppRoutes {
   static const adminMembers = '/admin/membros';
   static const adminMembersRegister = '/admin/membros/cadastrar';
   static const adminDepartments = '/admin/departamentos';
+  static const adminDepartmentsRegister = '/admin/departamentos/cadastrar';
 
   static const splashName = 'splash';
   static const loginName = 'login';
@@ -36,4 +37,5 @@ class AppRoutes {
   static const adminMembersName = 'admin-members';
   static const adminMembersRegisterName = 'admin-members-register';
   static const adminDepartmentsName = 'admin-departments';
+  static const adminDepartmentsRegisterName = 'admin-departments-register';
 }

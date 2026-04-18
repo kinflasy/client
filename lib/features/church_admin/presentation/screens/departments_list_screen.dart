@@ -1,10 +1,12 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/presentation/widgets/department_card.dart';
 import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class DepartmentsListScreen extends ConsumerStatefulWidget {
   const DepartmentsListScreen({super.key});
@@ -29,12 +31,6 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _showComingSoon(String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label em breve')));
   }
 
   @override
@@ -68,7 +64,9 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
             );
           }
 
-          final rawDepartmentsAsync = ref.watch(churchDepartmentsProvider(unitId));
+          final rawDepartmentsAsync = ref.watch(
+            churchDepartmentsProvider(unitId),
+          );
           final filteredDepartmentsAsync = ref.watch(
             filteredChurchDepartmentsProvider(unitId),
           );
@@ -100,7 +98,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () =>
-                            _showComingSoon('Adicionar departamento'),
+                            context.push(AppRoutes.adminDepartmentsRegister),
                         icon: const Icon(Icons.add),
                         label: const Text('Adicionar departamento'),
                       ),
@@ -144,8 +142,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                           return const _InlineStatus(
                             icon: Icons.groups_outlined,
                             title: 'Nenhum departamento cadastrado.',
-                            subtitle:
-                                'Adicione um departamento para começar.',
+                            subtitle: 'Adicione um departamento para começar.',
                           );
                         }
 
@@ -163,9 +160,8 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                         itemCount: departments.length,
                         separatorBuilder: (context, index) =>
                             const SizedBox(height: 12),
-                        itemBuilder: (context, index) => DepartmentCard(
-                          department: departments[index],
-                        ),
+                        itemBuilder: (context, index) =>
+                            DepartmentCard(department: departments[index]),
                       );
                     },
                   ),

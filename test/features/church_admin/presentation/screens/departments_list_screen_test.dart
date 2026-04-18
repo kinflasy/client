@@ -129,6 +129,21 @@ void main() {
   testWidgets('filters list by typing and updates empty state for search', (
     tester,
   ) async {
+    final router = GoRouter(
+      initialLocation: AppRoutes.adminDepartments,
+      routes: [
+        GoRoute(
+          path: AppRoutes.adminDepartments,
+          builder: (context, state) => const DepartmentsListScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.adminDepartmentsRegister,
+          builder: (context, state) =>
+              const Scaffold(body: Text('register department')),
+        ),
+      ],
+    );
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -155,7 +170,7 @@ void main() {
             ],
           ),
         ],
-        child: const MaterialApp(home: DepartmentsListScreen()),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
@@ -181,7 +196,8 @@ void main() {
     expect(find.text('0 departamentos'), findsOneWidget);
 
     await tester.tap(find.text('Adicionar departamento'));
-    await tester.pump();
-    expect(find.text('Adicionar departamento em breve'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('register department'), findsOneWidget);
   });
 }

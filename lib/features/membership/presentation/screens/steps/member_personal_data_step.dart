@@ -1,6 +1,9 @@
+import 'package:client/core/presentation/forms/app_autofill_hints.dart';
+import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
 import 'package:client/features/membership/providers/register_member_form_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class MemberPersonalDataStep extends ConsumerStatefulWidget {
@@ -28,7 +31,7 @@ class _MemberPersonalDataStepState
     _fullNameController = TextEditingController(text: formState.fullName);
     _nicknameController = TextEditingController(text: formState.nickname);
     _birthDateController = TextEditingController(
-      text: _formatDate(formState.birthDate),
+      text: formatBrazilianDate(formState.birthDate),
     );
     _phoneController = TextEditingController(text: formState.phone);
     _emailController = TextEditingController(text: formState.email);
@@ -49,11 +52,6 @@ class _MemberPersonalDataStepState
     final formState = ref.watch(registerMemberFormProvider);
     final notifier = ref.read(registerMemberFormProvider.notifier);
 
-    final formattedBirthDate = _formatDate(formState.birthDate);
-    if (_birthDateController.text != formattedBirthDate) {
-      _birthDateController.text = formattedBirthDate;
-    }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Form(
@@ -65,6 +63,7 @@ class _MemberPersonalDataStepState
               controller: _fullNameController,
               onChanged: (value) =>
                   notifier.updatePersonalData(fullName: value),
+              autofillHints: AppAutofillHints.fullName,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Campo obrigat\u00f3rio';
@@ -77,6 +76,7 @@ class _MemberPersonalDataStepState
               controller: _nicknameController,
               onChanged: (value) =>
                   notifier.updatePersonalData(nickname: value),
+              autofillHints: AppAutofillHints.nickname,
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -97,8 +97,8 @@ class _MemberPersonalDataStepState
               padding: const EdgeInsets.only(bottom: 16),
               child: TextFormField(
                 controller: _birthDateController,
-                readOnly: true,
                 decoration: _inputDecoration('Data de nascimento *').copyWith(
+                  hintText: 'DD/MM/AAAA',
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.calendar_today),
                     onPressed: () async {
@@ -111,28 +111,62 @@ class _MemberPersonalDataStepState
                         lastDate: DateTime.now(),
                       );
                       if (picked != null) {
+                        _birthDateController.text = formatBrazilianDate(picked);
                         notifier.updatePersonalData(birthDate: picked);
                       }
                     },
                   ),
                 ),
-                validator: (_) => formState.birthDate == null
-                    ? 'Campo obrigat\u00f3rio'
-                    : null,
+                keyboardType: TextInputType.datetime,
+                autofillHints: AppAutofillHints.birthDate,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  const DateTextInputFormatter(),
+                ],
+                onChanged: (value) {
+                  final parsed = parseBrazilianDate(value);
+                  final isValidPastDate =
+                      parsed != null && !parsed.isAfter(DateTime.now());
+                  notifier.updatePersonalData(
+                    birthDate: isValidPastDate ? parsed : null,
+                    clearBirthDate: !isValidPastDate,
+                  );
+                },
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Campo obrigat\u00f3rio';
+                  }
+                  final parsed = parseBrazilianDate(value);
+                  if (parsed == null) return 'Data inv\u00e1lida';
+                  if (parsed.isAfter(DateTime.now())) {
+                    return 'Data n\u00e3o pode ser futura';
+                  }
+                  return null;
+                },
               ),
             ),
             _field(
               label: 'Telefone',
               controller: _phoneController,
+              hint: '(00) 00000-0000',
               keyboardType: TextInputType.phone,
               behavior: AppTextInputBehavior.plain,
+              autofillHints: AppAutofillHints.phone,
+              inputFormatters: const [BrazilianPhoneTextInputFormatter()],
               onChanged: (value) => notifier.updatePersonalData(phone: value),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) return null;
+                return isCompleteBrazilianPhone(value)
+                    ? null
+                    : 'Telefone inv\u00e1lido';
+              },
             ),
             _field(
               label: 'E-mail',
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               behavior: AppTextInputBehavior.emailLike,
+              autofillHints: AppAutofillHints.email,
               onChanged: (value) => notifier.updatePersonalData(email: value),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) return null;
@@ -152,19 +186,24 @@ class _MemberPersonalDataStepState
     required String label,
     required TextEditingController controller,
     required void Function(String) onChanged,
+    String? hint,
     TextInputType? keyboardType,
     AppTextInputBehavior behavior = AppTextInputBehavior.nameLike,
+    Iterable<String>? autofillHints,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
-        decoration: _inputDecoration(label),
+        decoration: _inputDecoration(label).copyWith(hintText: hint),
         keyboardType: keyboardType,
         textCapitalization: behavior.textCapitalization,
         autocorrect: behavior.autocorrect,
         enableSuggestions: behavior.enableSuggestions,
+        autofillHints: autofillHints,
+        inputFormatters: inputFormatters,
         onChanged: onChanged,
         validator: validator,
       ),
@@ -178,12 +217,5 @@ class _MemberPersonalDataStepState
       filled: true,
       fillColor: Colors.white,
     );
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    return '$day/$month/${date.year}';
   }
 }

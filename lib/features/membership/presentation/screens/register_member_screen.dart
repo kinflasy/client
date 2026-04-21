@@ -1,3 +1,4 @@
+import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/data/models/register_member_request_model.dart';
@@ -58,7 +59,7 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
           nickname: _nullIfBlank(formState.nickname),
           gender: formState.gender!,
           birthDate: _formatApiDate(formState.birthDate!),
-          phone: _nullIfBlank(formState.phone),
+          phone: _nullIfBlank(normalizePhone(formState.phone)),
           email: _nullIfBlank(formState.email),
         ),
         affiliation: formState.affiliation!,
@@ -74,23 +75,20 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
 
       if (!mounted) return;
 
-      result.fold(
-        (_) => _showErrorToast(),
-        (_) {
-          ref.invalidate(membershipProvider);
-          ref.invalidate(activeMembershipProvider);
-          ref.invalidate(currentChurchProfileProvider);
-          ref.invalidate(rawUnitMembersProvider(unitId));
-          ref.invalidate(registerMemberFormProvider);
-          toastification.show(
-            context: context,
-            type: ToastificationType.success,
-            title: const Text('Membro cadastrado com sucesso!'),
-            autoCloseDuration: const Duration(seconds: 3),
-          );
-          context.pop();
-        },
-      );
+      result.fold((_) => _showErrorToast(), (_) {
+        ref.invalidate(membershipProvider);
+        ref.invalidate(activeMembershipProvider);
+        ref.invalidate(currentChurchProfileProvider);
+        ref.invalidate(rawUnitMembersProvider(unitId));
+        ref.invalidate(registerMemberFormProvider);
+        toastification.show(
+          context: context,
+          type: ToastificationType.success,
+          title: const Text('Membro cadastrado com sucesso!'),
+          autoCloseDuration: const Duration(seconds: 3),
+        );
+        context.pop();
+      });
     } catch (_) {
       if (!mounted) return;
       _showErrorToast();
@@ -196,9 +194,7 @@ class _StepIndicator extends StatelessWidget {
                   Expanded(
                     child: Container(
                       height: 2,
-                      color: isDone
-                          ? AppColors.primary
-                          : Colors.grey.shade300,
+                      color: isDone ? AppColors.primary : Colors.grey.shade300,
                     ),
                   ),
               ],

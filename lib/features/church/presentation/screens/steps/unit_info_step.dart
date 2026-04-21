@@ -1,6 +1,9 @@
+import 'package:client/core/presentation/forms/app_autofill_hints.dart';
+import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
 import 'package:client/features/church/providers/register_church_form_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class UnitInfoStep extends ConsumerStatefulWidget {
@@ -50,6 +53,7 @@ class _UnitInfoStepState extends ConsumerState<UnitInfoStep> {
               'Nome da Sede *',
               _nameController,
               (v) => notifier.update((s) => s.copyWith(unitName: v)),
+              autofillHints: AppAutofillHints.fullName,
               validator: (v) =>
                   (v == null || v.isEmpty) ? 'Campo obrigat\u00f3rio' : null,
             ),
@@ -66,10 +70,16 @@ class _UnitInfoStepState extends ConsumerState<UnitInfoStep> {
               'Telefone *',
               _phoneController,
               (v) => notifier.update((s) => s.copyWith(unitPhone: v)),
+              hint: '(00) 00000-0000',
               keyboardType: TextInputType.phone,
               behavior: AppTextInputBehavior.plain,
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Campo obrigat\u00f3rio' : null,
+              autofillHints: AppAutofillHints.phone,
+              inputFormatters: const [BrazilianPhoneTextInputFormatter()],
+              validator: (v) => (v == null || v.isEmpty)
+                  ? 'Campo obrigat\u00f3rio'
+                  : isCompleteBrazilianPhone(v)
+                  ? null
+                  : 'Telefone inv\u00e1lido',
             ),
             _field(
               'E-mail *',
@@ -77,6 +87,7 @@ class _UnitInfoStepState extends ConsumerState<UnitInfoStep> {
               (v) => notifier.update((s) => s.copyWith(unitEmail: v)),
               keyboardType: TextInputType.emailAddress,
               behavior: AppTextInputBehavior.emailLike,
+              autofillHints: AppAutofillHints.email,
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Campo obrigat\u00f3rio';
                 if (!v.contains('@')) return 'E-mail inv\u00e1lido';
@@ -96,6 +107,8 @@ class _UnitInfoStepState extends ConsumerState<UnitInfoStep> {
     String? hint,
     TextInputType? keyboardType,
     AppTextInputBehavior behavior = AppTextInputBehavior.nameLike,
+    Iterable<String>? autofillHints,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Padding(
@@ -113,6 +126,8 @@ class _UnitInfoStepState extends ConsumerState<UnitInfoStep> {
         textCapitalization: behavior.textCapitalization,
         autocorrect: behavior.autocorrect,
         enableSuggestions: behavior.enableSuggestions,
+        autofillHints: autofillHints,
+        inputFormatters: inputFormatters,
         onChanged: onChanged,
         validator: validator,
       ),

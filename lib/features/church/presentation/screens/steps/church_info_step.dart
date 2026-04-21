@@ -1,6 +1,9 @@
+import 'package:client/core/presentation/forms/app_autofill_hints.dart';
+import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
 import 'package:client/features/church/providers/register_church_form_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ChurchInfoStep extends ConsumerWidget {
@@ -20,6 +23,7 @@ class ChurchInfoStep extends ConsumerWidget {
             _field(
               'Nome da Igreja *',
               (v) => notifier.update((s) => s.copyWith(churchName: v)),
+              autofillHints: AppAutofillHints.fullName,
               validator: (v) =>
                   (v == null || v.isEmpty) ? 'Campo obrigat\u00f3rio' : null,
             ),
@@ -39,14 +43,19 @@ class ChurchInfoStep extends ConsumerWidget {
             _field(
               'Telefone',
               (v) => notifier.update((s) => s.copyWith(churchPhone: v)),
+              hint: '(00) 00000-0000',
               keyboardType: TextInputType.phone,
               behavior: AppTextInputBehavior.plain,
+              autofillHints: AppAutofillHints.phone,
+              inputFormatters: const [BrazilianPhoneTextInputFormatter()],
+              validator: _optionalPhoneValidator,
             ),
             _field(
               'E-mail *',
               (v) => notifier.update((s) => s.copyWith(churchEmail: v)),
               keyboardType: TextInputType.emailAddress,
               behavior: AppTextInputBehavior.emailLike,
+              autofillHints: AppAutofillHints.email,
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Campo obrigat\u00f3rio';
                 if (!v.contains('@')) return 'E-mail inv\u00e1lido';
@@ -65,6 +74,8 @@ class ChurchInfoStep extends ConsumerWidget {
     String? hint,
     TextInputType? keyboardType,
     AppTextInputBehavior behavior = AppTextInputBehavior.nameLike,
+    Iterable<String>? autofillHints,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Padding(
@@ -81,9 +92,16 @@ class ChurchInfoStep extends ConsumerWidget {
         textCapitalization: behavior.textCapitalization,
         autocorrect: behavior.autocorrect,
         enableSuggestions: behavior.enableSuggestions,
+        autofillHints: autofillHints,
+        inputFormatters: inputFormatters,
         onChanged: onChanged,
         validator: validator,
       ),
     );
+  }
+
+  static String? _optionalPhoneValidator(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return isCompleteBrazilianPhone(value) ? null : 'Telefone inv\u00e1lido';
   }
 }

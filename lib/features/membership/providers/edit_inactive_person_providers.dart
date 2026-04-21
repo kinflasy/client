@@ -1,3 +1,4 @@
+import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/address/address_form_state.dart';
 import 'package:client/core/address/address_value.dart';
 import 'package:client/core/errors/failure.dart';
@@ -85,6 +86,7 @@ void updateEditInactivePersonPersonalData(
   String? nickname,
   String? gender,
   DateTime? birthDate,
+  bool clearBirthDate = false,
   String? phone,
   String? email,
 }) {
@@ -97,6 +99,7 @@ void updateEditInactivePersonPersonalData(
     nickname: nickname,
     gender: gender,
     birthDate: birthDate,
+    clearBirthDate: clearBirthDate,
     phone: phone,
     email: email,
   );
@@ -156,6 +159,7 @@ EditInactivePersonFormState updateEditInactivePersonFormPersonalData(
   String? nickname,
   String? gender,
   DateTime? birthDate,
+  bool clearBirthDate = false,
   String? phone,
   String? email,
 }) {
@@ -164,6 +168,7 @@ EditInactivePersonFormState updateEditInactivePersonFormPersonalData(
     nickname: nickname,
     gender: gender,
     birthDate: birthDate,
+    clearBirthDate: clearBirthDate,
     phone: phone,
     email: email,
     isInitialized: true,
@@ -226,7 +231,7 @@ UpdateInactivePersonRequestModel buildUpdateInactivePersonRequest(
     nickname: _nullIfBlank(state.nickname),
     gender: state.gender!,
     birthDate: _formatApiDate(state.birthDate!),
-    phone: _nullIfBlank(state.phone),
+    phone: _nullIfBlank(normalizePhone(state.phone)),
     email: _nullIfBlank(state.email),
     address: state.address.toRequestOrNull(),
   );

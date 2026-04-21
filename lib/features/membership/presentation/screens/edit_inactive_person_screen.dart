@@ -1,3 +1,5 @@
+import 'package:client/core/presentation/forms/app_autofill_hints.dart';
+import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
@@ -7,6 +9,7 @@ import 'package:client/features/membership/domain/entities/member_profile_entity
 import 'package:client/features/membership/providers/edit_inactive_person_providers.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:toastification/toastification.dart';
@@ -35,6 +38,7 @@ class _EditInactivePersonScreenState
   late final TextEditingController _birthDateController;
   late final TextEditingController _phoneController;
   late final TextEditingController _emailController;
+  bool _controllersSeeded = false;
 
   @override
   void initState() {
@@ -145,7 +149,7 @@ class _EditInactivePersonScreenState
       );
     }
 
-    _syncControllers(formState);
+    _seedControllersIfNeeded(formState);
 
     return _ScaffoldFrame(
       title: 'Editar cadastro',
@@ -158,6 +162,7 @@ class _EditInactivePersonScreenState
             _field(
               controller: _fullNameController,
               label: 'Nome completo *',
+              autofillHints: AppAutofillHints.fullName,
               onChanged: (value) => updateEditInactivePersonPersonalData(
                 ref,
                 personId: widget.personId,
@@ -173,6 +178,7 @@ class _EditInactivePersonScreenState
             _field(
               controller: _nicknameController,
               label: 'Apelido',
+              autofillHints: AppAutofillHints.nickname,
               onChanged: (value) => updateEditInactivePersonPersonalData(
                 ref,
                 personId: widget.personId,
@@ -201,8 +207,8 @@ class _EditInactivePersonScreenState
               padding: const EdgeInsets.only(bottom: 16),
               child: TextFormField(
                 controller: _birthDateController,
-                readOnly: true,
                 decoration: _inputDecoration('Data de nascimento *').copyWith(
+                  hintText: 'DD/MM/AAAA',
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.calendar_today),
                     onPressed: isLoading
@@ -217,6 +223,9 @@ class _EditInactivePersonScreenState
                               lastDate: DateTime.now(),
                             );
                             if (picked != null) {
+                              _birthDateController.text = formatBrazilianDate(
+                                picked,
+                              );
                               updateEditInactivePersonPersonalData(
                                 ref,
                                 personId: widget.personId,
@@ -226,26 +235,62 @@ class _EditInactivePersonScreenState
                           },
                   ),
                 ),
-                validator: (_) =>
-                    formState.birthDate == null ? 'Campo obrigatorio' : null,
+                keyboardType: TextInputType.datetime,
+                autofillHints: AppAutofillHints.birthDate,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  const DateTextInputFormatter(),
+                ],
+                onChanged: (value) {
+                  final parsed = parseBrazilianDate(value);
+                  final isValidPastDate =
+                      parsed != null && !parsed.isAfter(DateTime.now());
+                  updateEditInactivePersonPersonalData(
+                    ref,
+                    personId: widget.personId,
+                    birthDate: isValidPastDate ? parsed : null,
+                    clearBirthDate: !isValidPastDate,
+                  );
+                },
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Campo obrigatorio';
+                  }
+                  final parsed = parseBrazilianDate(value);
+                  if (parsed == null) return 'Data invalida';
+                  if (parsed.isAfter(DateTime.now())) {
+                    return 'Data nao pode ser futura';
+                  }
+                  return null;
+                },
               ),
             ),
             _field(
               controller: _phoneController,
               label: 'Telefone',
+              hint: '(00) 00000-0000',
               keyboardType: TextInputType.phone,
               behavior: AppTextInputBehavior.plain,
+              autofillHints: AppAutofillHints.phone,
+              inputFormatters: const [BrazilianPhoneTextInputFormatter()],
               onChanged: (value) => updateEditInactivePersonPersonalData(
                 ref,
                 personId: widget.personId,
                 phone: value,
               ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) return null;
+                return isCompleteBrazilianPhone(value)
+                    ? null
+                    : 'Telefone invalido';
+              },
             ),
             _field(
               controller: _emailController,
               label: 'E-mail',
               keyboardType: TextInputType.emailAddress,
               behavior: AppTextInputBehavior.emailLike,
+              autofillHints: AppAutofillHints.email,
               onChanged: (value) => updateEditInactivePersonPersonalData(
                 ref,
                 personId: widget.personId,
@@ -294,16 +339,23 @@ class _EditInactivePersonScreenState
     );
   }
 
-  void _syncControllers(EditInactivePersonFormState formState) {
-    _sync(_fullNameController, formState.fullName);
-    _sync(_nicknameController, formState.nickname);
-    _sync(_birthDateController, _formatDate(formState.birthDate));
-    _sync(_phoneController, formState.phone);
-    _sync(_emailController, formState.email);
+  void _seedControllersIfNeeded(EditInactivePersonFormState formState) {
+    if (!formState.isInitialized || _controllersSeeded) return;
+    _setControllerValue(_fullNameController, formState.fullName);
+    _setControllerValue(_nicknameController, formState.nickname);
+    _setControllerValue(
+      _birthDateController,
+      formatBrazilianDate(formState.birthDate),
+    );
+    _setControllerValue(
+      _phoneController,
+      formatBrazilianPhone(formState.phone),
+    );
+    _setControllerValue(_emailController, formState.email);
+    _controllersSeeded = true;
   }
 
-  void _sync(TextEditingController controller, String value) {
-    if (controller.text == value) return;
+  void _setControllerValue(TextEditingController controller, String value) {
     controller.value = controller.value.copyWith(
       text: value,
       selection: TextSelection.collapsed(offset: value.length),
@@ -324,19 +376,24 @@ class _EditInactivePersonScreenState
     required TextEditingController controller,
     required String label,
     required ValueChanged<String> onChanged,
+    String? hint,
     TextInputType? keyboardType,
     AppTextInputBehavior behavior = AppTextInputBehavior.nameLike,
+    Iterable<String>? autofillHints,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
-        decoration: _inputDecoration(label),
+        decoration: _inputDecoration(label).copyWith(hintText: hint),
         keyboardType: keyboardType,
         textCapitalization: behavior.textCapitalization,
         autocorrect: behavior.autocorrect,
         enableSuggestions: behavior.enableSuggestions,
+        autofillHints: autofillHints,
+        inputFormatters: inputFormatters,
         onChanged: onChanged,
         validator: validator,
       ),
@@ -444,11 +501,4 @@ class _LoadError extends StatelessWidget {
       ),
     );
   }
-}
-
-String _formatDate(DateTime? date) {
-  if (date == null) return '';
-  final day = date.day.toString().padLeft(2, '0');
-  final month = date.month.toString().padLeft(2, '0');
-  return '$day/$month/${date.year}';
 }

@@ -24,11 +24,11 @@ void main() {
         churchName: 'Igreja Central',
         churchSlug: 'igreja-central',
         churchAcronym: 'IC',
-        churchPhone: '9999-0000',
+        churchPhone: '(11) 98765-4321',
         churchEmail: 'contato@igreja.dev',
         unitName: 'Sede',
         unitSlug: 'sede',
-        unitPhone: '1111',
+        unitPhone: '(85) 3333-4444',
         unitEmail: 'sede@igreja.dev',
         address: AddressFormState(
           zip: '60000-000',
@@ -44,7 +44,8 @@ void main() {
       expect(request, isNotNull);
       expect(request!.name, 'Igreja Central');
       expect(request.acronym, 'IC');
-      expect(request.phone, '9999-0000');
+      expect(request.phone, '11987654321');
+      expect(request.unit.phone, '8533334444');
       expect(request.unit.address.toJson(), {
         'zip': '60000-000',
         'country': null,

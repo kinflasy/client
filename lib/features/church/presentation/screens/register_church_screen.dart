@@ -1,3 +1,4 @@
+import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,12 +22,14 @@ ChurchStarterRequestModel? buildChurchStarterRequest(
     name: formState.churchName,
     slug: formState.churchSlug,
     acronym: formState.churchAcronym.isEmpty ? null : formState.churchAcronym,
-    phone: formState.churchPhone.isEmpty ? null : formState.churchPhone,
+    phone: formState.churchPhone.isEmpty
+        ? null
+        : normalizePhone(formState.churchPhone),
     email: formState.churchEmail,
     unit: UnitRequestModel(
       name: formState.unitName,
       slug: formState.unitSlug,
-      phone: formState.unitPhone,
+      phone: normalizePhone(formState.unitPhone),
       email: formState.unitEmail,
       address: address,
     ),
@@ -56,7 +59,9 @@ class _RegisterChurchScreenState extends ConsumerState<RegisterChurchScreen> {
       toastification.show(
         context: context,
         type: ToastificationType.error,
-        title: const Text('Preencha o endere\u00e7o da unidade antes de confirmar.'),
+        title: const Text(
+          'Preencha o endere\u00e7o da unidade antes de confirmar.',
+        ),
         autoCloseDuration: const Duration(seconds: 4),
       );
       return;
@@ -127,7 +132,8 @@ class _RegisterChurchScreenState extends ConsumerState<RegisterChurchScreen> {
                 ChurchInfoStep(formKey: _step1Key),
                 UnitInfoStep(
                   key: ValueKey(_currentStep >= 1),
-                  formKey: _step2Key,),
+                  formKey: _step2Key,
+                ),
                 AddressStep(formKey: _step3Key),
               ],
             ),

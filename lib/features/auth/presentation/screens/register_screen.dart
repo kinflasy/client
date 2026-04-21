@@ -1,3 +1,5 @@
+import 'package:client/core/presentation/forms/app_autofill_hints.dart';
+import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
@@ -69,7 +71,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return false;
     }
 
-    final parsedBirthDate = _parseBirthDate(_birthDateController.text);
+    final parsedBirthDate = parseBrazilianDate(_birthDateController.text);
     if (parsedBirthDate == null) {
       _showWarning('Informe uma data de nascimento v\u00e1lida');
       return false;
@@ -130,35 +132,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     setState(() {
       _birthDate = picked;
-      _birthDateController.text = _formatDisplayDate(picked);
+      _birthDateController.text = formatBrazilianDate(picked);
     });
-  }
-
-  DateTime? _parseBirthDate(String value) {
-    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length != 8) return null;
-
-    final day = int.tryParse(digits.substring(0, 2));
-    final month = int.tryParse(digits.substring(2, 4));
-    final year = int.tryParse(digits.substring(4, 8));
-    if (day == null || month == null || year == null) return null;
-
-    final parsed = DateTime.tryParse(
-      '${year.toString().padLeft(4, '0')}-'
-      '${month.toString().padLeft(2, '0')}-'
-      '${day.toString().padLeft(2, '0')}',
-    );
-    if (parsed == null) return null;
-    if (parsed.year != year || parsed.month != month || parsed.day != day) {
-      return null;
-    }
-    return parsed;
-  }
-
-  String _formatDisplayDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    return '$day/$month/${date.year}';
   }
 
   DateTime _today() {
@@ -207,6 +182,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 autocorrect: AppTextInputBehavior.nameLike.autocorrect,
                 enableSuggestions:
                     AppTextInputBehavior.nameLike.enableSuggestions,
+                autofillHints: AppAutofillHints.fullName,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
@@ -238,6 +214,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 autocorrect: AppTextInputBehavior.emailLike.autocorrect,
                 enableSuggestions:
                     AppTextInputBehavior.emailLike.enableSuggestions,
+                autofillHints: AppAutofillHints.email,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
@@ -270,13 +247,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 keyboardType: TextInputType.datetime,
+                autofillHints: AppAutofillHints.birthDate,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  const _DateTextInputFormatter(),
+                  const DateTextInputFormatter(),
                 ],
                 textInputAction: TextInputAction.next,
                 onChanged: (value) {
-                  final parsedBirthDate = _parseBirthDate(value);
+                  final parsedBirthDate = parseBrazilianDate(value);
                   _birthDate =
                       parsedBirthDate != null &&
                           !parsedBirthDate.isAfter(_today())
@@ -336,32 +314,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _DateTextInputFormatter extends TextInputFormatter {
-  const _DateTextInputFormatter();
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final buffer = StringBuffer();
-
-    for (var i = 0; i < digits.length && i < 8; i++) {
-      buffer.write(digits[i]);
-      if ((i == 1 || i == 3) && i != digits.length - 1) {
-        buffer.write('/');
-      }
-    }
-
-    final formatted = buffer.toString();
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

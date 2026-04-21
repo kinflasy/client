@@ -64,6 +64,7 @@ class RegisterMemberFormNotifier extends _$RegisterMemberFormNotifier {
     String? nickname,
     String? gender,
     DateTime? birthDate,
+    bool clearBirthDate = false,
     String? phone,
     String? email,
   }) {
@@ -72,6 +73,7 @@ class RegisterMemberFormNotifier extends _$RegisterMemberFormNotifier {
       nickname: nickname,
       gender: gender,
       birthDate: birthDate,
+      clearBirthDate: clearBirthDate,
       phone: phone,
       email: email,
     );

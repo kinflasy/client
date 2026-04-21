@@ -14,8 +14,8 @@ class AppTextInputBehavior {
 
   static const nameLike = AppTextInputBehavior._(
     textCapitalization: TextCapitalization.words,
-    autocorrect: false,
-    enableSuggestions: false,
+    autocorrect: true,
+    enableSuggestions: true,
   );
 
   static const plain = AppTextInputBehavior._(

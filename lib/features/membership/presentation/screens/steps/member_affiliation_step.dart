@@ -1,6 +1,8 @@
+import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/domain/enums/entry_mode.dart';
 import 'package:client/features/membership/providers/register_member_form_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class MemberAffiliationStep extends ConsumerStatefulWidget {
@@ -21,7 +23,7 @@ class _MemberAffiliationStepState extends ConsumerState<MemberAffiliationStep> {
     super.initState();
     final formState = ref.read(registerMemberFormProvider);
     _entryDateController = TextEditingController(
-      text: _formatDate(formState.entryDate),
+      text: formatBrazilianDate(formState.entryDate),
     );
   }
 
@@ -36,11 +38,6 @@ class _MemberAffiliationStepState extends ConsumerState<MemberAffiliationStep> {
     final formState = ref.watch(registerMemberFormProvider);
     final notifier = ref.read(registerMemberFormProvider.notifier);
 
-    final formattedEntryDate = _formatDate(formState.entryDate);
-    if (_entryDateController.text != formattedEntryDate) {
-      _entryDateController.text = formattedEntryDate;
-    }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Form(
@@ -53,18 +50,12 @@ class _MemberAffiliationStepState extends ConsumerState<MemberAffiliationStep> {
                 initialValue: formState.affiliation,
                 decoration: _inputDecoration('FiliaÃ§Ã£o *'),
                 items: const [
-                  DropdownMenuItem(
-                    value: 'VISITOR',
-                    child: Text('Visitante'),
-                  ),
+                  DropdownMenuItem(value: 'VISITOR', child: Text('Visitante')),
                   DropdownMenuItem(
                     value: 'CONGREGATED',
                     child: Text('Congregado'),
                   ),
-                  DropdownMenuItem(
-                    value: 'MEMBER',
-                    child: Text('Membro'),
-                  ),
+                  DropdownMenuItem(value: 'MEMBER', child: Text('Membro')),
                 ],
                 onChanged: (value) =>
                     notifier.updateAffiliationData(affiliation: value),
@@ -95,8 +86,8 @@ class _MemberAffiliationStepState extends ConsumerState<MemberAffiliationStep> {
               padding: const EdgeInsets.only(bottom: 16),
               child: TextFormField(
                 controller: _entryDateController,
-                readOnly: true,
                 decoration: _inputDecoration('Data de entrada').copyWith(
+                  hintText: 'DD/MM/AAAA',
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.calendar_today),
                     onPressed: () async {
@@ -107,11 +98,35 @@ class _MemberAffiliationStepState extends ConsumerState<MemberAffiliationStep> {
                         lastDate: DateTime.now(),
                       );
                       if (picked != null) {
+                        _entryDateController.text = formatBrazilianDate(picked);
                         notifier.updateAffiliationData(entryDate: picked);
                       }
                     },
                   ),
                 ),
+                keyboardType: TextInputType.datetime,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  const DateTextInputFormatter(),
+                ],
+                onChanged: (value) {
+                  final parsed = parseBrazilianDate(value);
+                  final isValidPastDate =
+                      parsed != null && !parsed.isAfter(DateTime.now());
+                  notifier.updateAffiliationData(
+                    entryDate: isValidPastDate ? parsed : null,
+                    clearEntryDate: !isValidPastDate,
+                  );
+                },
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return null;
+                  final parsed = parseBrazilianDate(value);
+                  if (parsed == null) return 'Data inv\u00e1lida';
+                  if (parsed.isAfter(DateTime.now())) {
+                    return 'Data n\u00e3o pode ser futura';
+                  }
+                  return null;
+                },
               ),
             ),
           ],
@@ -127,12 +142,5 @@ class _MemberAffiliationStepState extends ConsumerState<MemberAffiliationStep> {
       filled: true,
       fillColor: Colors.white,
     );
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    return '$day/$month/${date.year}';
   }
 }

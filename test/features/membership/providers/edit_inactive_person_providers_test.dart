@@ -13,7 +13,7 @@ void main() {
     nickname: 'Mari',
     gender: 'FEMALE',
     birthDate: DateTime(1995, 2, 3),
-    phone: '99999-1111',
+    phone: '(85) 99999-1111',
     email: 'maria@dev.com',
     addressDetails: AddressDetailsEntity(
       id: 'address-1',
@@ -75,5 +75,19 @@ void main() {
     expect(request.email, isNull);
     expect(request.address, isNull);
     expect(request.birthDate, '1995-02-03');
+  });
+
+  test('normalizes phone digits in payload', () {
+    final state = EditInactivePersonFormState(
+      fullName: 'Maria Souza',
+      gender: 'FEMALE',
+      birthDate: DateTime(1995, 2, 3),
+      phone: '(85) 99999-1111',
+      isInitialized: true,
+    );
+
+    final request = buildUpdateInactivePersonRequest(state);
+
+    expect(request.phone, '85999991111');
   });
 }

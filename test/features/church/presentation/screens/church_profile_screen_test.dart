@@ -3,15 +3,15 @@ import 'dart:async';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/data/datasources/church_events_api.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/presentation/screens/church_profile_screen.dart';
 import 'package:client/features/church/presentation/widgets/church_shared_widgets.dart';
-import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -151,9 +151,9 @@ void main() {
               },
             ]),
           ),
-          churchDepartmentsProvider.overrideWith(
+          departmentsProvider.overrideWith(
             (ref, unitId) async => const [
-              ChurchDepartmentEntity(
+              DepartmentEntity(
                 id: 'dept-1',
                 name: 'Louvor',
                 slug: 'louvor',
@@ -207,9 +207,7 @@ void main() {
             (ref) async => buildMemberProfile(),
           ),
           churchEventsApiProvider.overrideWithValue(_FakeChurchEventsApi([])),
-          churchDepartmentsProvider.overrideWith(
-            (ref, unitId) async => const [],
-          ),
+          departmentsProvider.overrideWith((ref, unitId) async => const []),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),
@@ -303,9 +301,7 @@ void main() {
             (ref) async => buildMemberProfile(),
           ),
           churchEventsApiProvider.overrideWithValue(_FakeChurchEventsApi([])),
-          churchDepartmentsProvider.overrideWith(
-            (ref, unitId) async => const [],
-          ),
+          departmentsProvider.overrideWith((ref, unitId) async => const []),
         ],
         child: const MaterialApp(home: ChurchProfileScreen()),
       ),

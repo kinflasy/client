@@ -1,9 +1,9 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/church/presentation/widgets/department_card.dart';
-import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/department/presentation/widgets/department_card.dart';
+import 'package:client/features/department/providers/department_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,7 +51,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
           icon: Icons.error_outline,
           title: error is Failure
               ? error.message
-              : 'Não foi possível carregar a unidade ativa.',
+              : 'NÃ£o foi possÃ­vel carregar a unidade ativa.',
         ),
         data: (membership) {
           final unitId = membership?.unitId;
@@ -60,15 +60,15 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
               icon: Icons.account_tree_outlined,
               title: 'Nenhuma unidade ativa encontrada.',
               subtitle:
-                  'Não foi possível identificar os departamentos para listar.',
+                  'NÃ£o foi possÃ­vel identificar os departamentos para listar.',
             );
           }
 
           final rawDepartmentsAsync = ref.watch(
-            churchDepartmentsProvider(unitId),
+            departmentsProvider(unitId),
           );
           final filteredDepartmentsAsync = ref.watch(
-            filteredChurchDepartmentsProvider(unitId),
+            filteredDepartmentsProvider(unitId),
           );
 
           return Column(
@@ -123,7 +123,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                     icon: Icons.groups_2_outlined,
                     title: error is Failure
                         ? error.message
-                        : 'Não foi possível carregar os departamentos.',
+                        : 'NÃ£o foi possÃ­vel carregar os departamentos.',
                     subtitle: 'Tente novamente em instantes.',
                   ),
                   data: (departments) => rawDepartmentsAsync.when(
@@ -133,7 +133,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                       icon: Icons.groups_2_outlined,
                       title: error is Failure
                           ? error.message
-                          : 'Não foi possível carregar os departamentos.',
+                          : 'NÃ£o foi possÃ­vel carregar os departamentos.',
                       subtitle: 'Tente novamente em instantes.',
                     ),
                     data: (rawDepartments) {
@@ -142,7 +142,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                           return const _InlineStatus(
                             icon: Icons.groups_outlined,
                             title: 'Nenhum departamento cadastrado.',
-                            subtitle: 'Adicione um departamento para começar.',
+                            subtitle: 'Adicione um departamento para comeÃ§ar.',
                           );
                         }
 

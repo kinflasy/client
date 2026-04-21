@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
-class ChurchDepartmentsApi {
-  ChurchDepartmentsApi(this._dio);
+class DepartmentApi {
+  DepartmentApi(this._dio);
 
   final Dio _dio;
 

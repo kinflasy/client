@@ -1,10 +1,10 @@
 import 'package:client/core/errors/failure.dart';
-import 'package:client/features/church/data/models/department_request_model.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
-import 'package:client/features/church/domain/repositories/church_department_repository.dart';
-import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
-import 'package:client/features/church_admin/presentation/screens/register_department_screen.dart';
+import 'package:client/features/department/data/models/department_request_model.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/domain/repositories/department_repository.dart';
+import 'package:client/features/department/presentation/screens/register_department_screen.dart';
+import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,11 +13,10 @@ import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockChurchDepartmentRepository extends Mock
-    implements ChurchDepartmentRepository {}
+class _MockDepartmentRepository extends Mock implements DepartmentRepository {}
 
 void main() {
-  late _MockChurchDepartmentRepository repository;
+  late _MockDepartmentRepository repository;
 
   setUpAll(() {
     registerFallbackValue(
@@ -53,7 +52,7 @@ void main() {
 
     return ProviderScope(
       overrides: [
-        churchDepartmentRepositoryProvider.overrideWithValue(repository),
+        departmentRepositoryProvider.overrideWithValue(repository),
         activeMembershipProvider.overrideWith(
           (ref) async => const MembershipEntity(
             id: 'membership-1',
@@ -67,7 +66,7 @@ void main() {
   }
 
   setUp(() {
-    repository = _MockChurchDepartmentRepository();
+    repository = _MockDepartmentRepository();
   });
 
   Future<void> selectType(WidgetTester tester, String label) async {
@@ -97,7 +96,7 @@ void main() {
   ) async {
     when(() => repository.createDepartment('unit-1', any())).thenAnswer(
       (_) async => const Right(
-        ChurchDepartmentEntity(
+        DepartmentEntity(
           id: 'dep-1',
           name: 'Louvor',
           slug: 'louvor',
@@ -134,7 +133,7 @@ void main() {
   testWidgets('keeps manual slug after user edits it', (tester) async {
     when(() => repository.createDepartment('unit-1', any())).thenAnswer(
       (_) async => const Right(
-        ChurchDepartmentEntity(
+        DepartmentEntity(
           id: 'dep-1',
           name: 'Ministerio Infantil',
           slug: 'kids-pontis',

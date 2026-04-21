@@ -163,16 +163,16 @@ class ChurchEventReadModel {
   final String? description;
 }
 
-class ChurchDepartmentReadModel {
-  const ChurchDepartmentReadModel({
+class DepartmentReadModel {
+  const DepartmentReadModel({
     required this.id,
     required this.name,
     this.slug,
     this.type,
   });
 
-  factory ChurchDepartmentReadModel.fromJson(Map<String, dynamic> json) {
-    return ChurchDepartmentReadModel(
+  factory DepartmentReadModel.fromJson(Map<String, dynamic> json) {
+    return DepartmentReadModel(
       id: (json['id'] ?? '').toString(),
       name: (json['name'] ?? 'Departamento').toString(),
       slug: json['slug']?.toString(),

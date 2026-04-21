@@ -2,9 +2,9 @@ import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
 import 'package:client/core/utils/slug_utils.dart';
-import 'package:client/features/church/data/models/department_request_model.dart';
-import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/department/data/models/department_request_model.dart';
+import 'package:client/features/department/providers/department_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -37,7 +37,7 @@ class _RegisterDepartmentScreenState
 
     final messenger = ScaffoldMessenger.of(context);
     final result = await ref
-        .read(registerDepartmentProvider.notifier)
+        .read(createDepartmentProvider.notifier)
         .create(
           unitId,
           DepartmentRequestModel(
@@ -54,8 +54,8 @@ class _RegisterDepartmentScreenState
         messenger.showSnackBar(SnackBar(content: Text(failure.message)));
       },
       (_) {
-        ref.invalidate(rawChurchDepartmentsProvider(unitId));
-        ref.invalidate(filteredChurchDepartmentsProvider(unitId));
+        ref.invalidate(rawDepartmentsProvider(unitId));
+        ref.invalidate(filteredDepartmentsProvider(unitId));
         messenger.showSnackBar(
           const SnackBar(content: Text('Departamento cadastrado com sucesso!')),
         );
@@ -67,7 +67,7 @@ class _RegisterDepartmentScreenState
   @override
   Widget build(BuildContext context) {
     final activeMembershipAsync = ref.watch(activeMembershipProvider);
-    final isLoading = ref.watch(registerDepartmentProvider).isLoading;
+    final isLoading = ref.watch(createDepartmentProvider).isLoading;
     final slugPreview = _slugController.text.trim();
 
     return Scaffold(

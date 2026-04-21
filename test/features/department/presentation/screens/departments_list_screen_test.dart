@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
-import 'package:client/features/church/providers/church_department_providers.dart';
+import 'package:client/features/church/presentation/screens/admin_panel_screen.dart';
 import 'package:client/features/church/providers/church_providers.dart';
-import 'package:client/features/church_admin/presentation/screens/admin_panel_screen.dart';
-import 'package:client/features/church_admin/presentation/screens/departments_list_screen.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/presentation/screens/departments_list_screen.dart';
+import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,8 +84,8 @@ void main() {
               affiliation: 'MEMBER',
             ),
           ),
-          churchDepartmentsProvider.overrideWith(
-            (ref, unitId) => Future<List<ChurchDepartmentEntity>>.error(
+          departmentsProvider.overrideWith(
+            (ref, unitId) => Future<List<DepartmentEntity>>.error(
               const NetworkFailure('Falha ao carregar departamentos'),
             ),
           ),
@@ -113,7 +113,7 @@ void main() {
               affiliation: 'MEMBER',
             ),
           ),
-          churchDepartmentsProvider.overrideWith((ref, unitId) async => []),
+          departmentsProvider.overrideWith((ref, unitId) async => []),
         ],
         child: const MaterialApp(home: DepartmentsListScreen()),
       ),
@@ -154,14 +154,14 @@ void main() {
               affiliation: 'MEMBER',
             ),
           ),
-          churchDepartmentsProvider.overrideWith(
+          departmentsProvider.overrideWith(
             (ref, unitId) async => const [
-              ChurchDepartmentEntity(
+              DepartmentEntity(
                 id: 'dept-2',
                 name: 'Secretaria',
                 type: 'ADMINISTRATIVE',
               ),
-              ChurchDepartmentEntity(
+              DepartmentEntity(
                 id: 'dept-1',
                 name: 'Ministério de Louvor',
                 slug: 'louvor',

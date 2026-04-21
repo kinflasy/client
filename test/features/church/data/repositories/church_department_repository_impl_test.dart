@@ -1,23 +1,23 @@
 import 'package:client/core/errors/failure.dart';
-import 'package:client/features/church/data/datasources/church_departments_api.dart';
-import 'package:client/features/church/data/models/department_request_model.dart';
-import 'package:client/features/church/data/repositories/church_department_repository_impl.dart';
+import 'package:client/features/department/data/datasources/department_api.dart';
+import 'package:client/features/department/data/models/department_request_model.dart';
+import 'package:client/features/department/data/repositories/department_repository_impl.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockChurchDepartmentsApi extends Mock implements ChurchDepartmentsApi {}
+class _MockDepartmentApi extends Mock implements DepartmentApi {}
 
 void main() {
-  late ChurchDepartmentRepositoryImpl repository;
-  late _MockChurchDepartmentsApi api;
+  late DepartmentRepositoryImpl repository;
+  late _MockDepartmentApi api;
 
   setUp(() {
-    api = _MockChurchDepartmentsApi();
-    repository = ChurchDepartmentRepositoryImpl(api);
+    api = _MockDepartmentApi();
+    repository = DepartmentRepositoryImpl(api);
   });
 
-  group('ChurchDepartmentRepositoryImpl.getDepartmentsByUnitId', () {
+  group('DepartmentRepositoryImpl.getDepartmentsByUnitId', () {
     test('returns department entities on success', () async {
       when(() => api.getDepartmentsByUnitId('unit-1')).thenAnswer(
         (_) async => [
@@ -43,9 +43,7 @@ void main() {
     });
 
     test('returns empty list when api has no departments', () async {
-      when(
-        () => api.getDepartmentsByUnitId('unit-1'),
-      ).thenAnswer((_) async => []);
+      when(() => api.getDepartmentsByUnitId('unit-1')).thenAnswer((_) async => []);
 
       final result = await repository.getDepartmentsByUnitId('unit-1');
 
@@ -76,10 +74,10 @@ void main() {
     });
   });
 
-  group('ChurchDepartmentRepositoryImpl.createDepartment', () {
+  group('DepartmentRepositoryImpl.createDepartment', () {
     test('maps validation failures from api', () async {
       const request = DepartmentRequestModel(
-        name: 'Recepção',
+        name: 'Recepcao',
         slug: 'recepcao',
         type: 'MINISTRY',
       );
@@ -94,7 +92,7 @@ void main() {
               path: '/v1/core/church/units/unit-1/departments',
             ),
             statusCode: 409,
-            data: {'message': 'Slug já usado'},
+            data: {'message': 'Slug ja usado'},
           ),
         ),
       );
@@ -104,7 +102,7 @@ void main() {
       expect(result.isLeft(), isTrue);
       result.match((failure) {
         expect(failure, isA<ValidationFailure>());
-        expect(failure.message, 'Slug já usado');
+        expect(failure.message, 'Slug ja usado');
       }, (_) => fail('expected failure'));
     });
   });

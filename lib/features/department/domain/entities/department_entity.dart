@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-class ChurchDepartmentEntity extends Equatable {
-  const ChurchDepartmentEntity({
+class DepartmentEntity extends Equatable {
+  const DepartmentEntity({
     required this.id,
     required this.name,
     this.slug,

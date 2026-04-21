@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/network/dio_client.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
-import 'package:client/features/church/providers/church_department_providers.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/data/datasources/member_profile_api.dart';
 import 'package:client/features/membership/data/repositories/member_profile_repository_impl.dart';
@@ -33,7 +33,7 @@ final memberProfileProvider =
         unitId: unitId,
         repository: ref.read(memberProfileRepositoryProvider),
         fetchDepartments: () async =>
-            ref.read(churchDepartmentsProvider(unitId).future),
+            ref.read(departmentsProvider(unitId).future),
       );
     });
 
@@ -41,7 +41,7 @@ Future<MemberProfileEntity> resolveMemberProfile({
   required String personId,
   required String unitId,
   required MemberProfileRepository repository,
-  required Future<List<ChurchDepartmentEntity>> Function() fetchDepartments,
+  required Future<List<DepartmentEntity>> Function() fetchDepartments,
 }) async {
   final personResult = await repository.getPersonProfile(personId);
   final person = personResult.fold(
@@ -98,8 +98,8 @@ Future<AddressDetailsEntity?> _loadAddress(
   return result.fold((_) => null, (address) => address.toEntity());
 }
 
-Future<List<ChurchDepartmentEntity>> _loadDepartments(
-  Future<List<ChurchDepartmentEntity>> Function() fetchDepartments,
+Future<List<DepartmentEntity>> _loadDepartments(
+  Future<List<DepartmentEntity>> Function() fetchDepartments,
 ) async {
   try {
     return await fetchDepartments();
@@ -111,7 +111,7 @@ Future<List<ChurchDepartmentEntity>> _loadDepartments(
 Future<List<MemberProfileIntegrationEntity>> _combineIntegrations({
   required MemberProfileRepository repository,
   required String membershipId,
-  required Future<List<ChurchDepartmentEntity>> Function() fetchDepartments,
+  required Future<List<DepartmentEntity>> Function() fetchDepartments,
 }) async {
   final integrationsResult = await repository.getIntegrations(membershipId);
   final integrations = integrationsResult.fold(

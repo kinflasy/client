@@ -1,8 +1,8 @@
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
 import 'package:client/features/church/presentation/widgets/church_profile_tabs.dart';
-import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/providers/department_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,9 +42,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          churchDepartmentsProvider.overrideWith(
-            (ref, unitId) async => const [],
-          ),
+          departmentsProvider.overrideWith((ref, unitId) async => const []),
           churchEventsProvider.overrideWith(
             (ref, unitId) async => const <ChurchEventEntity>[],
           ),
@@ -83,9 +81,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          churchDepartmentsProvider.overrideWith(
+          departmentsProvider.overrideWith(
             (ref, unitId) async => const [
-              ChurchDepartmentEntity(
+              DepartmentEntity(
                 id: 'dep-1',
                 name: 'Recepção',
                 slug: 'recepcao',
@@ -98,7 +96,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: Scaffold(body: ChurchDepartmentsTab(unitId: 'unit-1')),
+          home: Scaffold(body: DepartmentsTab(unitId: 'unit-1')),
         ),
       ),
     );

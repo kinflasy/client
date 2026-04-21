@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'church_department_providers.dart';
+part of 'department_providers.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -62,63 +62,63 @@ abstract class _$DepartmentSearchQuery extends $Notifier<String> {
   }
 }
 
-@ProviderFor(filteredChurchDepartments)
-final filteredChurchDepartmentsProvider = FilteredChurchDepartmentsFamily._();
+@ProviderFor(filteredDepartments)
+final filteredDepartmentsProvider = FilteredDepartmentsFamily._();
 
-final class FilteredChurchDepartmentsProvider
+final class FilteredDepartmentsProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<ChurchDepartmentEntity>>,
-          AsyncValue<List<ChurchDepartmentEntity>>,
-          AsyncValue<List<ChurchDepartmentEntity>>
+          AsyncValue<List<DepartmentEntity>>,
+          AsyncValue<List<DepartmentEntity>>,
+          AsyncValue<List<DepartmentEntity>>
         >
-    with $Provider<AsyncValue<List<ChurchDepartmentEntity>>> {
-  FilteredChurchDepartmentsProvider._({
-    required FilteredChurchDepartmentsFamily super.from,
+    with $Provider<AsyncValue<List<DepartmentEntity>>> {
+  FilteredDepartmentsProvider._({
+    required FilteredDepartmentsFamily super.from,
     required String super.argument,
   }) : super(
          retry: null,
-         name: r'filteredChurchDepartmentsProvider',
+         name: r'filteredDepartmentsProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$filteredChurchDepartmentsHash();
+  String debugGetCreateSourceHash() => _$filteredDepartmentsHash();
 
   @override
   String toString() {
-    return r'filteredChurchDepartmentsProvider'
+    return r'filteredDepartmentsProvider'
         ''
         '($argument)';
   }
 
   @$internal
   @override
-  $ProviderElement<AsyncValue<List<ChurchDepartmentEntity>>> $createElement(
+  $ProviderElement<AsyncValue<List<DepartmentEntity>>> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  AsyncValue<List<ChurchDepartmentEntity>> create(Ref ref) {
+  AsyncValue<List<DepartmentEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return filteredChurchDepartments(ref, argument);
+    return filteredDepartments(ref, argument);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(AsyncValue<List<ChurchDepartmentEntity>> value) {
+  Override overrideWithValue(AsyncValue<List<DepartmentEntity>> value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride:
-          $SyncValueProvider<AsyncValue<List<ChurchDepartmentEntity>>>(value),
+      providerOverride: $SyncValueProvider<AsyncValue<List<DepartmentEntity>>>(
+        value,
+      ),
     );
   }
 
   @override
   bool operator ==(Object other) {
-    return other is FilteredChurchDepartmentsProvider &&
-        other.argument == argument;
+    return other is FilteredDepartmentsProvider && other.argument == argument;
   }
 
   @override
@@ -127,27 +127,23 @@ final class FilteredChurchDepartmentsProvider
   }
 }
 
-String _$filteredChurchDepartmentsHash() =>
-    r'a9d675cac6eda5d6e3362fd072db1da6b6abc3cd';
+String _$filteredDepartmentsHash() =>
+    r'c657b3c840ee7408ef1b2db904f61ec081b93be9';
 
-final class FilteredChurchDepartmentsFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-          AsyncValue<List<ChurchDepartmentEntity>>,
-          String
-        > {
-  FilteredChurchDepartmentsFamily._()
+final class FilteredDepartmentsFamily extends $Family
+    with $FunctionalFamilyOverride<AsyncValue<List<DepartmentEntity>>, String> {
+  FilteredDepartmentsFamily._()
     : super(
         retry: null,
-        name: r'filteredChurchDepartmentsProvider',
+        name: r'filteredDepartmentsProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  FilteredChurchDepartmentsProvider call(String unitId) =>
-      FilteredChurchDepartmentsProvider._(argument: unitId, from: this);
+  FilteredDepartmentsProvider call(String unitId) =>
+      FilteredDepartmentsProvider._(argument: unitId, from: this);
 
   @override
-  String toString() => r'filteredChurchDepartmentsProvider';
+  String toString() => r'filteredDepartmentsProvider';
 }

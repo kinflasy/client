@@ -1,18 +1,17 @@
 import 'package:client/core/errors/failure.dart';
-import 'package:client/features/church/data/models/department_request_model.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
-import 'package:client/features/church/domain/repositories/church_department_repository.dart';
-import 'package:client/features/church/providers/church_department_providers.dart';
+import 'package:client/features/department/data/models/department_request_model.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/domain/repositories/department_repository.dart';
+import 'package:client/features/department/providers/department_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockChurchDepartmentRepository extends Mock
-    implements ChurchDepartmentRepository {}
+class _MockDepartmentRepository extends Mock implements DepartmentRepository {}
 
 void main() {
-  late _MockChurchDepartmentRepository repository;
+  late _MockDepartmentRepository repository;
   late ProviderContainer container;
 
   const request = DepartmentRequestModel(
@@ -22,11 +21,9 @@ void main() {
   );
 
   setUp(() {
-    repository = _MockChurchDepartmentRepository();
+    repository = _MockDepartmentRepository();
     container = ProviderContainer(
-      overrides: [
-        churchDepartmentRepositoryProvider.overrideWithValue(repository),
-      ],
+      overrides: [departmentRepositoryProvider.overrideWithValue(repository)],
     );
   });
 
@@ -37,7 +34,7 @@ void main() {
   test('create updates state to success when repository succeeds', () async {
     when(() => repository.createDepartment('unit-1', request)).thenAnswer(
       (_) async => const Right(
-        ChurchDepartmentEntity(
+        DepartmentEntity(
           id: 'dep-1',
           name: 'Recepcao',
           slug: 'recepcao',
@@ -47,14 +44,11 @@ void main() {
     );
 
     final result = await container
-        .read(registerDepartmentProvider.notifier)
+        .read(createDepartmentProvider.notifier)
         .create('unit-1', request);
 
     expect(result.isRight(), isTrue);
-    expect(
-      container.read(registerDepartmentProvider),
-      const AsyncData<void>(null),
-    );
+    expect(container.read(createDepartmentProvider), const AsyncData<void>(null));
   });
 
   test('create updates state to error when repository fails', () async {
@@ -63,11 +57,11 @@ void main() {
     );
 
     final result = await container
-        .read(registerDepartmentProvider.notifier)
+        .read(createDepartmentProvider.notifier)
         .create('unit-1', request);
 
     expect(result.isLeft(), isTrue);
-    final state = container.read(registerDepartmentProvider);
+    final state = container.read(createDepartmentProvider);
     expect(state.hasError, isTrue);
     expect(state.error, isA<ValidationFailure>());
   });

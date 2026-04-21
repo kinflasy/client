@@ -1,5 +1,5 @@
 import 'package:client/core/errors/failure.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/membership/data/models/address_model.dart';
 import 'package:client/features/membership/data/models/membership_model.dart';
 import 'package:client/features/membership/data/models/person_profile_model.dart';
@@ -139,7 +139,7 @@ void main() {
         unitId: 'unit-1',
         repository: repository,
         fetchDepartments: () async => const [
-          ChurchDepartmentEntity(
+          DepartmentEntity(
             id: 'dept-1',
             name: 'Louvor',
             type: 'MINISTRY',
@@ -251,7 +251,7 @@ void main() {
       unitId: 'unit-1',
       repository: repository,
       fetchDepartments: () async => const [
-        ChurchDepartmentEntity(id: 'dept-1', name: 'Midia'),
+        DepartmentEntity(id: 'dept-1', name: 'Midia'),
       ],
     );
 

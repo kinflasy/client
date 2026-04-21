@@ -2,7 +2,7 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/domain/enums/person_type.dart';
-import 'package:client/features/church_admin/presentation/screens/member_profile_screen.dart';
+import 'package:client/features/membership/presentation/screens/member_profile_screen.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:flutter/material.dart';

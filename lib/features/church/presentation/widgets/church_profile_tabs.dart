@@ -1,8 +1,8 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
 import 'package:client/features/church/presentation/widgets/department_card.dart';
-import 'package:client/features/church/providers/church_department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/department/providers/department_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,7 +60,7 @@ class ChurchProfileMemberTabView extends StatelessWidget {
       child: TabBarView(
         children: [
           ChurchEventsTab(unitId: unitId),
-          ChurchDepartmentsTab(unitId: unitId),
+          DepartmentsTab(unitId: unitId),
           const ChurchAnnouncementsTab(),
         ],
       ),
@@ -125,14 +125,14 @@ class ChurchEventsTab extends ConsumerWidget {
   }
 }
 
-class ChurchDepartmentsTab extends ConsumerWidget {
-  const ChurchDepartmentsTab({super.key, required this.unitId});
+class DepartmentsTab extends ConsumerWidget {
+  const DepartmentsTab({super.key, required this.unitId});
 
   final String unitId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final departmentsAsync = ref.watch(churchDepartmentsProvider(unitId));
+    final departmentsAsync = ref.watch(departmentsProvider(unitId));
     return departmentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(

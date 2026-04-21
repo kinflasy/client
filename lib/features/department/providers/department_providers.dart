@@ -1,33 +1,31 @@
+import 'package:client/core/errors/failure.dart';
 import 'package:client/core/network/dio_client.dart';
 import 'package:client/core/utils/string_utils.dart';
-import 'package:client/features/church/data/datasources/church_departments_api.dart';
-import 'package:client/features/church/data/repositories/church_department_repository_impl.dart';
-import 'package:client/features/church/data/models/department_request_model.dart';
-import 'package:client/features/church/domain/entities/church_department_entity.dart';
-import 'package:client/features/church/domain/repositories/church_department_repository.dart';
-import 'package:client/core/errors/failure.dart';
-import 'package:fpdart/fpdart.dart';
+import 'package:client/features/department/data/datasources/department_api.dart';
+import 'package:client/features/department/data/models/department_request_model.dart';
+import 'package:client/features/department/data/repositories/department_repository_impl.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/domain/repositories/department_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'church_department_providers.g.dart';
+part 'department_providers.g.dart';
 
-final churchDepartmentApiProvider = Provider<ChurchDepartmentsApi>(
-  (ref) => ChurchDepartmentsApi(ref.watch(dioClientProvider)),
+final departmentApiProvider = Provider<DepartmentApi>(
+  (ref) => DepartmentApi(ref.watch(dioClientProvider)),
 );
 
-final churchDepartmentRepositoryProvider = Provider<ChurchDepartmentRepository>(
-  (ref) =>
-      ChurchDepartmentRepositoryImpl(ref.watch(churchDepartmentApiProvider)),
+final departmentRepositoryProvider = Provider<DepartmentRepository>(
+  (ref) => DepartmentRepositoryImpl(ref.watch(departmentApiProvider)),
 );
 
-final rawChurchDepartmentsProvider =
-    FutureProvider.family<List<ChurchDepartmentEntity>, String>((
+final rawDepartmentsProvider = FutureProvider.family<List<DepartmentEntity>, String>((
       ref,
       unitId,
     ) async {
       final result = await ref
-          .read(churchDepartmentRepositoryProvider)
+          .read(departmentRepositoryProvider)
           .getDepartmentsByUnitId(unitId);
       return result.fold(
         (failure) => throw failure,
@@ -44,11 +42,11 @@ class DepartmentSearchQuery extends _$DepartmentSearchQuery {
 }
 
 @riverpod
-AsyncValue<List<ChurchDepartmentEntity>> filteredChurchDepartments(
+AsyncValue<List<DepartmentEntity>> filteredDepartments(
   Ref ref,
   String unitId,
 ) {
-  final rawAsync = ref.watch(rawChurchDepartmentsProvider(unitId));
+  final rawAsync = ref.watch(rawDepartmentsProvider(unitId));
   final query = ref.watch(departmentSearchQueryProvider);
 
   return rawAsync.whenData((departments) {
@@ -66,24 +64,24 @@ AsyncValue<List<ChurchDepartmentEntity>> filteredChurchDepartments(
   });
 }
 
-final churchDepartmentsProvider = rawChurchDepartmentsProvider;
+final departmentsProvider = rawDepartmentsProvider;
 
-final registerDepartmentProvider =
-    NotifierProvider<RegisterDepartmentNotifier, AsyncValue<void>>(
-      RegisterDepartmentNotifier.new,
+final createDepartmentProvider =
+    NotifierProvider<CreateDepartmentNotifier, AsyncValue<void>>(
+      CreateDepartmentNotifier.new,
     );
 
-class RegisterDepartmentNotifier extends Notifier<AsyncValue<void>> {
+class CreateDepartmentNotifier extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  Future<Either<Failure, ChurchDepartmentEntity>> create(
+  Future<Either<Failure, DepartmentEntity>> create(
     String unitId,
     DepartmentRequestModel request,
   ) async {
     state = const AsyncLoading();
     final result = await ref
-        .read(churchDepartmentRepositoryProvider)
+        .read(departmentRepositoryProvider)
         .createDepartment(unitId, request);
     state = result.fold(
       (failure) => AsyncError(failure, StackTrace.current),

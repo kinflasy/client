@@ -1,8 +1,8 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/features/church/providers/church_providers.dart';
-import 'package:client/features/church_admin/presentation/screens/steps/member_affiliation_step.dart';
-import 'package:client/features/church_admin/presentation/screens/steps/member_personal_data_step.dart';
 import 'package:client/features/membership/data/models/register_member_request_model.dart';
+import 'package:client/features/membership/presentation/screens/steps/member_affiliation_step.dart';
+import 'package:client/features/membership/presentation/screens/steps/member_personal_data_step.dart';
 import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:client/features/membership/providers/register_member_form_provider.dart';
 import 'package:client/features/membership/providers/register_member_providers.dart';
@@ -25,7 +25,7 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
 
   final _step1Key = GlobalKey<FormState>();
   final _step2Key = GlobalKey<FormState>();
-  final List<String> _stepTitles = ['Dados Pessoais', 'Vínculo com a Igreja'];
+  final List<String> _stepTitles = ['Dados Pessoais', 'VÃ­nculo com a Igreja'];
 
   bool _validateCurrentStep() {
     switch (_currentStep) {
@@ -112,7 +112,7 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
     toastification.show(
       context: context,
       type: ToastificationType.error,
-      title: const Text('Não foi possível cadastrar o membro.'),
+      title: const Text('NÃ£o foi possÃ­vel cadastrar o membro.'),
       autoCloseDuration: const Duration(seconds: 4),
     );
   }
@@ -264,7 +264,7 @@ class _NavigationButtons extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                  : Text(isLastStep ? 'Confirmar' : 'Próximo'),
+                  : Text(isLastStep ? 'Confirmar' : 'PrÃ³ximo'),
             ),
           ),
         ],

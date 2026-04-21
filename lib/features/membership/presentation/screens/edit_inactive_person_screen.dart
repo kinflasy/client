@@ -253,7 +253,7 @@ class _EditInactivePersonScreenState
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) return null;
-                final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+                final emailRegex = RegExp(r'^[^@]+@[^@]+\\.[^@]+$');
                 return emailRegex.hasMatch(value.trim())
                     ? null
                     : 'E-mail invalido';

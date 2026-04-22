@@ -1,9 +1,10 @@
 import 'package:client/core/presentation/forms/app_autofill_hints.dart';
 import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
+import 'package:client/core/presentation/widgets/app_email_text_form_field.dart';
+import 'package:client/core/presentation/widgets/app_phone_text_form_field.dart';
 import 'package:client/features/church/providers/register_church_form_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class UnitInfoStep extends ConsumerStatefulWidget {
@@ -66,33 +67,44 @@ class _UnitInfoStepState extends ConsumerState<UnitInfoStep> {
               validator: (v) =>
                   (v == null || v.isEmpty) ? 'Campo obrigat\u00f3rio' : null,
             ),
-            _field(
-              'Telefone *',
-              _phoneController,
-              (v) => notifier.update((s) => s.copyWith(unitPhone: v)),
-              hint: '(00) 00000-0000',
-              keyboardType: TextInputType.phone,
-              behavior: AppTextInputBehavior.plain,
-              autofillHints: AppAutofillHints.phone,
-              inputFormatters: const [BrazilianPhoneTextInputFormatter()],
-              validator: (v) => (v == null || v.isEmpty)
-                  ? 'Campo obrigat\u00f3rio'
-                  : isCompleteBrazilianPhone(v)
-                  ? null
-                  : 'Telefone inv\u00e1lido',
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: AppPhoneTextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Telefone *',
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.white,
+                  hintText: '(00) 00000-0000',
+                ),
+                onChanged: (v) =>
+                    notifier.update((s) => s.copyWith(unitPhone: v)),
+                validator: (v) => (v == null || v.isEmpty)
+                    ? 'Campo obrigat\u00f3rio'
+                    : isCompleteBrazilianPhone(v)
+                    ? null
+                    : 'Telefone inv\u00e1lido',
+              ),
             ),
-            _field(
-              'E-mail *',
-              _emailController,
-              (v) => notifier.update((s) => s.copyWith(unitEmail: v)),
-              keyboardType: TextInputType.emailAddress,
-              behavior: AppTextInputBehavior.emailLike,
-              autofillHints: AppAutofillHints.email,
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Campo obrigat\u00f3rio';
-                if (!v.contains('@')) return 'E-mail inv\u00e1lido';
-                return null;
-              },
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: AppEmailTextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'E-mail *',
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                onChanged: (v) =>
+                    notifier.update((s) => s.copyWith(unitEmail: v)),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Campo obrigat\u00f3rio';
+                  if (!v.contains('@')) return 'E-mail inv\u00e1lido';
+                  return null;
+                },
+              ),
             ),
           ],
         ),
@@ -108,7 +120,6 @@ class _UnitInfoStepState extends ConsumerState<UnitInfoStep> {
     TextInputType? keyboardType,
     AppTextInputBehavior behavior = AppTextInputBehavior.nameLike,
     Iterable<String>? autofillHints,
-    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Padding(
@@ -127,7 +138,6 @@ class _UnitInfoStepState extends ConsumerState<UnitInfoStep> {
         autocorrect: behavior.autocorrect,
         enableSuggestions: behavior.enableSuggestions,
         autofillHints: autofillHints,
-        inputFormatters: inputFormatters,
         onChanged: onChanged,
         validator: validator,
       ),

@@ -1,15 +1,16 @@
-import 'package:client/core/presentation/forms/app_autofill_hints.dart';
 import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
+import 'package:client/core/presentation/widgets/app_date_text_form_field.dart';
+import 'package:client/core/presentation/widgets/app_email_text_form_field.dart';
+import 'package:client/core/presentation/widgets/app_phone_text_form_field.dart';
 import 'package:client/core/presentation/widgets/address_form_section.dart';
 import 'package:client/features/church/presentation/widgets/church_shared_widgets.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/providers/edit_inactive_person_providers.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:toastification/toastification.dart';
@@ -162,7 +163,6 @@ class _EditInactivePersonScreenState
             _field(
               controller: _fullNameController,
               label: 'Nome completo *',
-              autofillHints: AppAutofillHints.fullName,
               onChanged: (value) => updateEditInactivePersonPersonalData(
                 ref,
                 personId: widget.personId,
@@ -178,7 +178,6 @@ class _EditInactivePersonScreenState
             _field(
               controller: _nicknameController,
               label: 'Apelido',
-              autofillHints: AppAutofillHints.nickname,
               onChanged: (value) => updateEditInactivePersonPersonalData(
                 ref,
                 personId: widget.personId,
@@ -205,42 +204,19 @@ class _EditInactivePersonScreenState
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: TextFormField(
+              child: AppDateTextFormField(
                 controller: _birthDateController,
-                decoration: _inputDecoration('Data de nascimento *').copyWith(
-                  hintText: 'DD/MM/AAAA',
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate:
-                                  formState.birthDate ??
-                                  DateTime(DateTime.now().year - 18),
-                              firstDate: DateTime(1900),
-                              lastDate: DateTime.now(),
-                            );
-                            if (picked != null) {
-                              _birthDateController.text = formatBrazilianDate(
-                                picked,
-                              );
-                              updateEditInactivePersonPersonalData(
-                                ref,
-                                personId: widget.personId,
-                                birthDate: picked,
-                              );
-                            }
-                          },
-                  ),
+                decoration: _inputDecoration('Data de nascimento *'),
+                enabled: !isLoading,
+                initialDate:
+                    formState.birthDate ?? DateTime(DateTime.now().year - 18),
+                firstDate: DateTime(1900),
+                lastDate: DateTime.now(),
+                onPicked: (picked) => updateEditInactivePersonPersonalData(
+                  ref,
+                  personId: widget.personId,
+                  birthDate: picked,
                 ),
-                keyboardType: TextInputType.datetime,
-                autofillHints: AppAutofillHints.birthDate,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  const DateTextInputFormatter(),
-                ],
                 onChanged: (value) {
                   final parsed = parseBrazilianDate(value);
                   final isValidPastDate =
@@ -265,44 +241,44 @@ class _EditInactivePersonScreenState
                 },
               ),
             ),
-            _field(
-              controller: _phoneController,
-              label: 'Telefone',
-              hint: '(00) 00000-0000',
-              keyboardType: TextInputType.phone,
-              behavior: AppTextInputBehavior.plain,
-              autofillHints: AppAutofillHints.phone,
-              inputFormatters: const [BrazilianPhoneTextInputFormatter()],
-              onChanged: (value) => updateEditInactivePersonPersonalData(
-                ref,
-                personId: widget.personId,
-                phone: value,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: AppPhoneTextFormField(
+                controller: _phoneController,
+                decoration: _inputDecoration(
+                  'Telefone',
+                ).copyWith(hintText: '(00) 00000-0000'),
+                onChanged: (value) => updateEditInactivePersonPersonalData(
+                  ref,
+                  personId: widget.personId,
+                  phone: value,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return null;
+                  return isCompleteBrazilianPhone(value)
+                      ? null
+                      : 'Telefone invalido';
+                },
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) return null;
-                return isCompleteBrazilianPhone(value)
-                    ? null
-                    : 'Telefone invalido';
-              },
             ),
-            _field(
-              controller: _emailController,
-              label: 'E-mail',
-              keyboardType: TextInputType.emailAddress,
-              behavior: AppTextInputBehavior.emailLike,
-              autofillHints: AppAutofillHints.email,
-              onChanged: (value) => updateEditInactivePersonPersonalData(
-                ref,
-                personId: widget.personId,
-                email: value,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: AppEmailTextFormField(
+                controller: _emailController,
+                decoration: _inputDecoration('E-mail'),
+                onChanged: (value) => updateEditInactivePersonPersonalData(
+                  ref,
+                  personId: widget.personId,
+                  email: value,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return null;
+                  final emailRegex = RegExp(r'^[^@]+@[^@]+\\.[^@]+$');
+                  return emailRegex.hasMatch(value.trim())
+                      ? null
+                      : 'E-mail invalido';
+                },
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) return null;
-                final emailRegex = RegExp(r'^[^@]+@[^@]+\\.[^@]+$');
-                return emailRegex.hasMatch(value.trim())
-                    ? null
-                    : 'E-mail invalido';
-              },
             ),
             const SizedBox(height: 8),
             _SectionTitle(title: 'Endereco'),
@@ -376,24 +352,17 @@ class _EditInactivePersonScreenState
     required TextEditingController controller,
     required String label,
     required ValueChanged<String> onChanged,
-    String? hint,
-    TextInputType? keyboardType,
     AppTextInputBehavior behavior = AppTextInputBehavior.nameLike,
-    Iterable<String>? autofillHints,
-    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
-        decoration: _inputDecoration(label).copyWith(hintText: hint),
-        keyboardType: keyboardType,
+        decoration: _inputDecoration(label),
         textCapitalization: behavior.textCapitalization,
         autocorrect: behavior.autocorrect,
         enableSuggestions: behavior.enableSuggestions,
-        autofillHints: autofillHints,
-        inputFormatters: inputFormatters,
         onChanged: onChanged,
         validator: validator,
       ),

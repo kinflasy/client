@@ -1,8 +1,8 @@
 import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/domain/enums/entry_mode.dart';
+import 'package:client/core/presentation/widgets/app_date_text_form_field.dart';
 import 'package:client/features/membership/providers/register_member_form_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class MemberAffiliationStep extends ConsumerStatefulWidget {
@@ -84,31 +84,14 @@ class _MemberAffiliationStepState extends ConsumerState<MemberAffiliationStep> {
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: TextFormField(
+              child: AppDateTextFormField(
                 controller: _entryDateController,
-                decoration: _inputDecoration('Data de entrada').copyWith(
-                  hintText: 'DD/MM/AAAA',
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: formState.entryDate ?? DateTime.now(),
-                        firstDate: DateTime(1900),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        _entryDateController.text = formatBrazilianDate(picked);
-                        notifier.updateAffiliationData(entryDate: picked);
-                      }
-                    },
-                  ),
-                ),
-                keyboardType: TextInputType.datetime,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  const DateTextInputFormatter(),
-                ],
+                decoration: _inputDecoration('Data de entrada'),
+                initialDate: formState.entryDate ?? DateTime.now(),
+                firstDate: DateTime(1900),
+                lastDate: DateTime.now(),
+                onPicked: (picked) =>
+                    notifier.updateAffiliationData(entryDate: picked),
                 onChanged: (value) {
                   final parsed = parseBrazilianDate(value);
                   final isValidPastDate =

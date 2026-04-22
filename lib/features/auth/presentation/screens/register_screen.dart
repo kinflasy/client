@@ -1,10 +1,10 @@
-import 'package:client/core/presentation/forms/app_autofill_hints.dart';
 import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
+import 'package:client/core/presentation/widgets/app_date_text_form_field.dart';
+import 'package:client/core/presentation/widgets/app_email_text_form_field.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:toastification/toastification.dart';
@@ -121,21 +121,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
-  Future<void> _pickBirthDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _birthDate ?? DateTime(_today().year - 18, 1, 1),
-      firstDate: DateTime(1900),
-      lastDate: _today(),
-    );
-    if (picked == null) return;
-
-    setState(() {
-      _birthDate = picked;
-      _birthDateController.text = formatBrazilianDate(picked);
-    });
-  }
-
   DateTime _today() {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);
@@ -182,7 +167,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 autocorrect: AppTextInputBehavior.nameLike.autocorrect,
                 enableSuggestions:
                     AppTextInputBehavior.nameLike.enableSuggestions,
-                autofillHints: AppAutofillHints.fullName,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
@@ -201,20 +185,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
-              TextField(
+              AppEmailTextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
                   labelText: 'E-mail *',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
-                keyboardType: TextInputType.emailAddress,
-                textCapitalization:
-                    AppTextInputBehavior.emailLike.textCapitalization,
-                autocorrect: AppTextInputBehavior.emailLike.autocorrect,
-                enableSuggestions:
-                    AppTextInputBehavior.emailLike.enableSuggestions,
-                autofillHints: AppAutofillHints.email,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
@@ -234,25 +211,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     : (value) => setState(() => _selectedGender = value),
               ),
               const SizedBox(height: 16),
-              TextField(
+              AppDateTextFormField(
                 controller: _birthDateController,
                 decoration: InputDecoration(
                   labelText: 'Data de nascimento *',
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.cake_outlined),
-                  hintText: 'DD/MM/AAAA',
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.calendar_today_outlined),
-                    onPressed: isLoading ? null : _pickBirthDate,
-                  ),
                 ),
-                keyboardType: TextInputType.datetime,
-                autofillHints: AppAutofillHints.birthDate,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  const DateTextInputFormatter(),
-                ],
+                enabled: !isLoading,
+                initialDate: _birthDate ?? DateTime(_today().year - 18, 1, 1),
+                firstDate: DateTime(1900),
+                lastDate: _today(),
                 textInputAction: TextInputAction.next,
+                onPicked: (picked) => _birthDate = picked,
                 onChanged: (value) {
                   final parsedBirthDate = parseBrazilianDate(value);
                   _birthDate =

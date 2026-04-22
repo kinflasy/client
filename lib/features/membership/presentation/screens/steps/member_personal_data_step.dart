@@ -1,9 +1,10 @@
-import 'package:client/core/presentation/forms/app_autofill_hints.dart';
 import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
+import 'package:client/core/presentation/widgets/app_date_text_form_field.dart';
+import 'package:client/core/presentation/widgets/app_email_text_form_field.dart';
+import 'package:client/core/presentation/widgets/app_phone_text_form_field.dart';
 import 'package:client/features/membership/providers/register_member_form_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class MemberPersonalDataStep extends ConsumerStatefulWidget {
@@ -63,7 +64,6 @@ class _MemberPersonalDataStepState
               controller: _fullNameController,
               onChanged: (value) =>
                   notifier.updatePersonalData(fullName: value),
-              autofillHints: AppAutofillHints.fullName,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Campo obrigat\u00f3rio';
@@ -76,7 +76,6 @@ class _MemberPersonalDataStepState
               controller: _nicknameController,
               onChanged: (value) =>
                   notifier.updatePersonalData(nickname: value),
-              autofillHints: AppAutofillHints.nickname,
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -95,34 +94,15 @@ class _MemberPersonalDataStepState
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: TextFormField(
+              child: AppDateTextFormField(
                 controller: _birthDateController,
-                decoration: _inputDecoration('Data de nascimento *').copyWith(
-                  hintText: 'DD/MM/AAAA',
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate:
-                            formState.birthDate ??
-                            DateTime(DateTime.now().year - 18),
-                        firstDate: DateTime(1900),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        _birthDateController.text = formatBrazilianDate(picked);
-                        notifier.updatePersonalData(birthDate: picked);
-                      }
-                    },
-                  ),
-                ),
-                keyboardType: TextInputType.datetime,
-                autofillHints: AppAutofillHints.birthDate,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  const DateTextInputFormatter(),
-                ],
+                decoration: _inputDecoration('Data de nascimento *'),
+                initialDate:
+                    formState.birthDate ?? DateTime(DateTime.now().year - 18),
+                firstDate: DateTime(1900),
+                lastDate: DateTime.now(),
+                onPicked: (picked) =>
+                    notifier.updatePersonalData(birthDate: picked),
                 onChanged: (value) {
                   final parsed = parseBrazilianDate(value);
                   final isValidPastDate =
@@ -145,36 +125,36 @@ class _MemberPersonalDataStepState
                 },
               ),
             ),
-            _field(
-              label: 'Telefone',
-              controller: _phoneController,
-              hint: '(00) 00000-0000',
-              keyboardType: TextInputType.phone,
-              behavior: AppTextInputBehavior.plain,
-              autofillHints: AppAutofillHints.phone,
-              inputFormatters: const [BrazilianPhoneTextInputFormatter()],
-              onChanged: (value) => notifier.updatePersonalData(phone: value),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) return null;
-                return isCompleteBrazilianPhone(value)
-                    ? null
-                    : 'Telefone inv\u00e1lido';
-              },
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: AppPhoneTextFormField(
+                controller: _phoneController,
+                decoration: _inputDecoration(
+                  'Telefone',
+                ).copyWith(hintText: '(00) 00000-0000'),
+                onChanged: (value) => notifier.updatePersonalData(phone: value),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return null;
+                  return isCompleteBrazilianPhone(value)
+                      ? null
+                      : 'Telefone inv\u00e1lido';
+                },
+              ),
             ),
-            _field(
-              label: 'E-mail',
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              behavior: AppTextInputBehavior.emailLike,
-              autofillHints: AppAutofillHints.email,
-              onChanged: (value) => notifier.updatePersonalData(email: value),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) return null;
-                final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-                return emailRegex.hasMatch(value.trim())
-                    ? null
-                    : 'E-mail inv\u00e1lido';
-              },
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: AppEmailTextFormField(
+                controller: _emailController,
+                decoration: _inputDecoration('E-mail'),
+                onChanged: (value) => notifier.updatePersonalData(email: value),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return null;
+                  final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+                  return emailRegex.hasMatch(value.trim())
+                      ? null
+                      : 'E-mail inv\u00e1lido';
+                },
+              ),
             ),
           ],
         ),
@@ -186,24 +166,17 @@ class _MemberPersonalDataStepState
     required String label,
     required TextEditingController controller,
     required void Function(String) onChanged,
-    String? hint,
-    TextInputType? keyboardType,
     AppTextInputBehavior behavior = AppTextInputBehavior.nameLike,
-    Iterable<String>? autofillHints,
-    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
-        decoration: _inputDecoration(label).copyWith(hintText: hint),
-        keyboardType: keyboardType,
+        decoration: _inputDecoration(label),
         textCapitalization: behavior.textCapitalization,
         autocorrect: behavior.autocorrect,
         enableSuggestions: behavior.enableSuggestions,
-        autofillHints: autofillHints,
-        inputFormatters: inputFormatters,
         onChanged: onChanged,
         validator: validator,
       ),

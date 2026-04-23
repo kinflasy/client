@@ -23,6 +23,20 @@ class DepartmentApi {
     return response.data ?? <String, dynamic>{};
   }
 
+  Future<Map<String, dynamic>> getDepartmentById(String departmentId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/v1/core/church/unit/departments/$departmentId',
+    );
+    return response.data ?? <String, dynamic>{};
+  }
+
+  Future<List<dynamic>> getParticipants(String departmentId) async {
+    final response = await _dio.get<List<dynamic>>(
+      '/v1/core/church/unit/departments/$departmentId/integrants',
+    );
+    return response.data ?? <dynamic>[];
+  }
+
   Future<Map<String, dynamic>> getDepartmentExtension(
     String departmentId,
     String extension,

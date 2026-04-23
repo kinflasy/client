@@ -160,8 +160,13 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                         itemCount: departments.length,
                         separatorBuilder: (context, index) =>
                             const SizedBox(height: 12),
-                        itemBuilder: (context, index) =>
-                            DepartmentCard(department: departments[index]),
+                        itemBuilder: (context, index) => DepartmentCard(
+                          department: departments[index],
+                          onTap: () => context.pushNamed(
+                            AppRoutes.departmentDetailName,
+                            pathParameters: {'id': departments[index].id},
+                          ),
+                        ),
                       );
                     },
                   ),

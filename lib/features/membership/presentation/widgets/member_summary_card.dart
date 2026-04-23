@@ -1,0 +1,84 @@
+import 'package:client/core/config/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+
+class MemberSummaryCard extends StatelessWidget {
+  const MemberSummaryCard({
+    super.key,
+    required this.fullName,
+    required this.affiliation,
+    required this.gender,
+    this.birthDate,
+    this.onTap,
+  });
+
+  final String fullName;
+  final String affiliation;
+  final String gender;
+  final DateTime? birthDate;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final age = calculateAge(birthDate);
+    final translatedAffiliation = translateAffiliation(affiliation);
+    final subtitle = age == null
+        ? translatedAffiliation
+        : '$translatedAffiliation · $age anos';
+    final isMale = gender.toUpperCase() == 'MALE';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        leading: CircleAvatar(
+          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+          child: Icon(
+            isMale ? Icons.person : Icons.person_2,
+            color: AppColors.primary,
+          ),
+        ),
+        title: Text(
+          fullName,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+      ),
+    );
+  }
+}
+
+int? calculateAge(DateTime? birthDate) {
+  if (birthDate == null) return null;
+
+  final now = DateTime.now();
+  var age = now.year - birthDate.year;
+
+  final hadBirthdayThisYear =
+      now.month > birthDate.month ||
+      (now.month == birthDate.month && now.day >= birthDate.day);
+
+  if (!hadBirthdayThisYear) {
+    age--;
+  }
+
+  return age < 0 ? null : age;
+}
+
+String translateAffiliation(String affiliation) {
+  return switch (affiliation.toUpperCase()) {
+    'MEMBER' => 'Membros',
+    'CONGREGATED' => 'Congregados',
+    'VISITOR' => 'Visitantes',
+    _ => affiliation,
+  };
+}

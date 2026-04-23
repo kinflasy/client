@@ -6,6 +6,7 @@ class AppRoutes {
   static const homeFeed = '/home/feed';
   static const homeCalendar = '/home/calendar';
   static const homeChurch = '/home/church';
+  static const homeChurchDepartmentDetail = '/home/church/departamentos/:id';
   static const homeMenu = '/home/menu';
   static const registerChurch = '/register-church';
   static const churchSearch = '/church-search';
@@ -19,6 +20,7 @@ class AppRoutes {
   static const adminMembersRegister = '/admin/membros/cadastrar';
   static const adminDepartments = '/admin/departamentos';
   static const adminDepartmentsRegister = '/admin/departamentos/cadastrar';
+  static const departmentDetail = '/departamentos/:id';
 
   static const splashName = 'splash';
   static const loginName = 'login';
@@ -26,6 +28,7 @@ class AppRoutes {
   static const homeFeedName = 'home-feed';
   static const homeCalendarName = 'home-calendar';
   static const homeChurchName = 'home-church';
+  static const homeChurchDepartmentDetailName = 'home-church-department-detail';
   static const homeMenuName = 'home-menu';
   static const registerChurchName = 'register-church';
   static const churchSearchName = 'church-search';
@@ -38,4 +41,5 @@ class AppRoutes {
   static const adminMembersRegisterName = 'admin-members-register';
   static const adminDepartmentsName = 'admin-departments';
   static const adminDepartmentsRegisterName = 'admin-departments-register';
+  static const departmentDetailName = 'department-detail';
 }

@@ -3,9 +3,14 @@ import 'package:client/features/department/domain/entities/department_entity.dar
 import 'package:flutter/material.dart';
 
 class DepartmentCard extends StatelessWidget {
-  const DepartmentCard({super.key, required this.department});
+  const DepartmentCard({
+    super.key,
+    required this.department,
+    this.onTap,
+  });
 
   final DepartmentEntity department;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +21,7 @@ class DepartmentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: ListTile(
+        onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         leading: CircleAvatar(
           backgroundColor: const Color(0xFFE8F0FE),

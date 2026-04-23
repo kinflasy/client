@@ -2,8 +2,8 @@ import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/providers/church_providers.dart';
-import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
 import 'package:client/features/membership/providers/unit_member_providers.dart';
+import 'package:client/features/membership/presentation/widgets/member_summary_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -66,7 +66,8 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
             return const _InlineStatus(
               icon: Icons.people_outline,
               title: 'Nenhuma unidade ativa encontrada.',
-              subtitle: 'NÃ£o foi possÃ­vel identificar os membros para listar.',
+              subtitle:
+                  'NÃ£o foi possÃ­vel identificar os membros para listar.',
             );
           }
 
@@ -139,8 +140,21 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
                       itemCount: members.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 12),
-                      itemBuilder: (context, index) =>
-                          _MemberCard(member: members[index]),
+                      itemBuilder: (context, index) {
+                        final member = members[index];
+
+                        return MemberSummaryCard(
+                          fullName: member.fullName,
+                          affiliation: member.affiliation,
+                          gender: member.gender,
+                          birthDate: member.birthDate,
+                          onTap: () => context.pushNamed(
+                            AppRoutes.peopleDetailName,
+                            pathParameters: {'id': member.personId},
+                            extra: member,
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -467,53 +481,6 @@ class _SectionTitle extends StatelessWidget {
         fontSize: 16,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
-      ),
-    );
-  }
-}
-
-class _MemberCard extends StatelessWidget {
-  const _MemberCard({required this.member});
-
-  final UnitMemberEntity member;
-
-  @override
-  Widget build(BuildContext context) {
-    final age = calculateAge(member.birthDate);
-    final affiliation = _translateAffiliation(member.affiliation);
-    final subtitle = age == null ? affiliation : '$affiliation Â· $age anos';
-    final isMale = member.gender.toUpperCase() == 'MALE';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: ListTile(
-        onTap: () => context.pushNamed(
-          AppRoutes.peopleDetailName,
-          pathParameters: {'id': member.personId},
-          extra: member,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-          child: Icon(
-            isMale ? Icons.person : Icons.person_2,
-            color: AppColors.primary,
-          ),
-        ),
-        title: Text(
-          member.fullName,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
       ),
     );
   }

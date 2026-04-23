@@ -9,6 +9,7 @@ import 'package:client/features/church/presentation/screens/church_search_screen
 import 'package:client/features/church/presentation/screens/register_church_screen.dart';
 import 'package:client/features/church/presentation/screens/church_tab_screen.dart';
 import 'package:client/features/church/presentation/screens/admin_panel_screen.dart';
+import 'package:client/features/department/presentation/screens/department_screen.dart';
 import 'package:client/features/department/presentation/screens/departments_list_screen.dart';
 import 'package:client/features/department/presentation/screens/register_department_screen.dart';
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
@@ -35,6 +36,7 @@ final _protectedRoutes = <String>{
   AppRoutes.homeFeed,
   AppRoutes.homeCalendar,
   AppRoutes.homeChurch,
+  AppRoutes.homeChurchDepartmentDetail,
   AppRoutes.homeMenu,
   AppRoutes.registerChurch,
   AppRoutes.churchSearch,
@@ -48,6 +50,7 @@ final _protectedRoutes = <String>{
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
+  AppRoutes.departmentDetail,
 };
 
 final _membershipRequiredRoutes = <String>{};
@@ -184,6 +187,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.homeChurch,
                 name: AppRoutes.homeChurchName,
                 builder: (context, state) => const ChurchTabScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'departamentos/:id',
+                    name: AppRoutes.homeChurchDepartmentDetailName,
+                    builder: (context, state) {
+                      final departmentId = state.pathParameters['id']!;
+                      return DepartmentScreen(
+                        departmentId: departmentId,
+                        showBackButton: true,
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -258,6 +274,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.adminDepartmentsRegisterName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RegisterDepartmentScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.departmentDetail,
+        name: AppRoutes.departmentDetailName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final departmentId = state.pathParameters['id']!;
+          return DepartmentScreen(
+            departmentId: departmentId,
+            showBackButton: true,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.peopleList,

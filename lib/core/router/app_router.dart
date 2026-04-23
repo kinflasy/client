@@ -1,4 +1,5 @@
 import 'package:client/core/router/app_routes.dart';
+import 'package:client/features/auth/presentation/screens/edit_logged_user_screen.dart';
 import 'package:client/features/auth/presentation/screens/login_screen.dart';
 import 'package:client/features/auth/presentation/screens/register_screen.dart';
 import 'package:client/features/auth/presentation/screens/splash_screen.dart';
@@ -38,6 +39,7 @@ final _protectedRoutes = <String>{
   AppRoutes.homeChurch,
   AppRoutes.homeChurchDepartmentDetail,
   AppRoutes.homeMenu,
+  AppRoutes.homeMenuEditProfile,
   AppRoutes.registerChurch,
   AppRoutes.churchSearch,
   AppRoutes.churchProfile,
@@ -210,6 +212,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.homeMenu,
                 name: AppRoutes.homeMenuName,
                 builder: (context, state) => const MenuScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'editar-informacoes',
+                    name: AppRoutes.homeMenuEditProfileName,
+                    builder: (context, state) => const EditLoggedUserScreen(),
+                  ),
+                ],
               ),
             ],
           ),

@@ -17,4 +17,7 @@ abstract class AuthApi {
 
   @GET('/v1/core/users/identify')
   Future<UserModel> getLoggedUser();
+
+  @PUT('/v1/core/users')
+  Future<UserModel> updateLoggedUser(@Body() UpdateLoggedUserRequestModel body);
 }

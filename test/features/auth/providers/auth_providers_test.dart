@@ -1,4 +1,5 @@
 import 'package:client/core/errors/failure.dart';
+import 'package:client/features/auth/data/datasources/auth_request_models.dart';
 import 'package:client/features/auth/domain/entities/user_entity.dart';
 import 'package:client/features/auth/domain/repositories/auth_repository.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
@@ -8,6 +9,9 @@ import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
+
+class _FakeUpdateLoggedUserRequestModel extends Fake
+    implements UpdateLoggedUserRequestModel {}
 
 void main() {
   late _MockAuthRepository repository;
@@ -27,6 +31,10 @@ void main() {
     container = ProviderContainer(
       overrides: [authRepositoryProvider.overrideWithValue(repository)],
     );
+  });
+
+  setUpAll(() {
+    registerFallbackValue(_FakeUpdateLoggedUserRequestModel());
   });
 
   tearDown(() {
@@ -103,4 +111,36 @@ void main() {
       ).called(1);
     },
   );
+
+  test('updateLoggedUser publishes updated authenticated user', () async {
+    when(() => repository.updateLoggedUser(any())).thenAnswer(
+      (_) async => const Right(
+        UserEntity(
+          id: 'user-123',
+          username: 'lisa',
+          fullName: 'Lisa Atualizada',
+          nickname: 'Lili',
+          email: 'novo@example.com',
+        ),
+      ),
+    );
+
+    final result = await container
+        .read(authProvider.notifier)
+        .updateLoggedUser(
+          const UpdateLoggedUserRequestModel(
+            fullName: 'Lisa Atualizada',
+            nickname: 'Lili',
+            gender: 'FEMALE',
+            birthDate: '1998-04-09',
+            email: 'novo@example.com',
+          ),
+        );
+
+    expect(result.isRight(), isTrue);
+    final state = container.read(authProvider);
+    expect(state, isA<AsyncData<UserEntity?>>());
+    expect(state.value?.fullName, 'Lisa Atualizada');
+    expect(state.value?.nickname, 'Lili');
+  });
 }

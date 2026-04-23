@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:client/core/network/dio_client.dart';
+import 'package:client/core/errors/failure.dart';
 import 'package:client/core/storage/secure_storage.dart';
 import 'package:client/features/auth/data/datasources/auth_api.dart';
+import 'package:client/features/auth/data/datasources/auth_request_models.dart';
 import 'package:client/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:client/features/auth/domain/entities/user_entity.dart';
 import 'package:client/features/auth/domain/repositories/auth_repository.dart';
@@ -82,6 +85,22 @@ class AuthNotifier extends _$AuthNotifier {
   Future<void> signOut() async {
     await ref.read(signOutUsecaseProvider).call();
     state = const AsyncData(null);
+  }
+
+  Future<Either<Failure, UserEntity>> updateLoggedUser(
+    UpdateLoggedUserRequestModel request,
+  ) async {
+    final previousState = state;
+    final result = await ref
+        .read(authRepositoryProvider)
+        .updateLoggedUser(request);
+
+    result.fold(
+      (_) => state = previousState,
+      (user) => state = AsyncData(user),
+    );
+
+    return result;
   }
 }
 

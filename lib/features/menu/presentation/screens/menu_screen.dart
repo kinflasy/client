@@ -17,21 +17,25 @@ class MenuScreen extends ConsumerWidget {
     final authAsync = ref.watch(authProvider);
     final hasMembership = ref.watch(hasMembershipProvider);
 
-    final quickActions = const [
-      MenuQuickActionData(
+    final quickActions = [
+      const MenuQuickActionData(
         icon: Icons.notifications_none_rounded,
-        label: 'NotificaÃ§Ãµes',
+        label: 'Notificações',
         onTap: null,
         badgeCount: null,
       ),
       MenuQuickActionData(
         icon: Icons.edit_outlined,
-        label: 'Editar informaÃ§Ãµes',
+        label: 'Editar informações',
+        onTap: () => context.pushNamed(AppRoutes.homeMenuEditProfileName),
       ),
-      MenuQuickActionData(icon: Icons.church_outlined, label: 'Minhas igrejas'),
-      MenuQuickActionData(
+      const MenuQuickActionData(
+        icon: Icons.church_outlined,
+        label: 'Minhas igrejas',
+      ),
+      const MenuQuickActionData(
         icon: Icons.settings_outlined,
-        label: 'ConfiguraÃ§Ãµes',
+        label: 'Configurações',
       ),
     ];
 
@@ -40,8 +44,8 @@ class MenuScreen extends ConsumerWidget {
         icon: Icons.groups_2_outlined,
         title: 'Meus departamentos',
         semanticsHint: hasMembership
-            ? 'Ãrea preparada para futura navegaÃ§Ã£o'
-            : 'IndisponÃ­vel sem vÃ­nculo com igreja',
+            ? 'Área preparada para futura navegação'
+            : 'Indisponível sem vínculo com igreja',
         isEnabled: hasMembership,
       ),
       MenuGridCardData(

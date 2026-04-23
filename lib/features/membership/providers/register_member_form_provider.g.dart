@@ -43,7 +43,7 @@ final class RegisterMemberFormNotifierProvider
 }
 
 String _$registerMemberFormNotifierHash() =>
-    r'80764263a8e9754441ac5d76deea4554282c5b03';
+    r'004097e735a5bf1c404f8940d8adcbf884b55786';
 
 abstract class _$RegisterMemberFormNotifier
     extends $Notifier<RegisterMemberFormState> {

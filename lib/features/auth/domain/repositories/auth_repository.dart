@@ -1,3 +1,4 @@
+import 'package:client/features/auth/data/datasources/auth_request_models.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/auth/domain/entities/user_entity.dart';
@@ -20,4 +21,8 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> signOut();
 
   Future<UserEntity?> getCurrentUser();
+
+  Future<Either<Failure, UserEntity>> updateLoggedUser(
+    UpdateLoggedUserRequestModel request,
+  );
 }

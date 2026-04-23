@@ -1,16 +1,12 @@
+import 'package:client/core/address/address_request_model.dart';
+
 class LoginRequestModel {
   final String username;
   final String password;
 
-  const LoginRequestModel({
-    required this.username,
-    required this.password,
-  });
+  const LoginRequestModel({required this.username, required this.password});
 
-  Map<String, dynamic> toJson() => {
-        'username': username,
-        'password': password,
-      };
+  Map<String, dynamic> toJson() => {'username': username, 'password': password};
 }
 
 class LoginResponseModel {
@@ -46,13 +42,43 @@ class RegisterRequestModel {
   });
 
   Map<String, dynamic> toJson() => {
-        'fullName': fullName,
-        'username': username,
-        'email': email,
-        'password': password,
-        'gender': gender,
-        'birthDate': birthDate,
-        if (nickname != null) 'nickname': nickname,
-        if (phone != null) 'phone': phone,
-      };
+    'fullName': fullName,
+    'username': username,
+    'email': email,
+    'password': password,
+    'gender': gender,
+    'birthDate': birthDate,
+    if (nickname != null) 'nickname': nickname,
+    if (phone != null) 'phone': phone,
+  };
+}
+
+class UpdateLoggedUserRequestModel {
+  const UpdateLoggedUserRequestModel({
+    required this.fullName,
+    required this.gender,
+    required this.birthDate,
+    this.nickname,
+    this.phone,
+    this.email,
+    this.address,
+  });
+
+  final String fullName;
+  final String? nickname;
+  final String gender;
+  final String birthDate;
+  final String? phone;
+  final String? email;
+  final AddressRequestModel? address;
+
+  Map<String, dynamic> toJson() => {
+    'fullName': fullName,
+    if (nickname != null) 'nickname': nickname,
+    'gender': gender,
+    'birthDate': birthDate,
+    if (phone != null) 'phone': phone,
+    if (email != null) 'email': email,
+    if (address != null) 'address': address!.toJson(),
+  };
 }

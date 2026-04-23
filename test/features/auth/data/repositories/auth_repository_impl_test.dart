@@ -16,6 +16,9 @@ class _FakeLoginRequestModel extends Fake implements LoginRequestModel {}
 
 class _FakeRegisterRequestModel extends Fake implements RegisterRequestModel {}
 
+class _FakeUpdateLoggedUserRequestModel extends Fake
+    implements UpdateLoggedUserRequestModel {}
+
 void main() {
   late _MockAuthApi api;
   late _MockSecureStorage storage;
@@ -24,6 +27,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_FakeLoginRequestModel());
     registerFallbackValue(_FakeRegisterRequestModel());
+    registerFallbackValue(_FakeUpdateLoggedUserRequestModel());
   });
 
   setUp(() {
@@ -270,6 +274,62 @@ void main() {
       expect(captured.password, 'secret');
       expect(captured.gender, 'FEMALE');
       expect(captured.birthDate, '1998-04-09');
+    });
+  });
+
+  group('updateLoggedUser', () {
+    test('returns updated user when api succeeds', () async {
+      when(() => api.updateLoggedUser(any())).thenAnswer(
+        (_) async => const UserModel(
+          id: 'user-123',
+          username: 'lisa',
+          email: 'novo@example.com',
+          fullName: 'Lisa Atualizada',
+          nickname: 'Lili',
+        ),
+      );
+
+      final result = await repository.updateLoggedUser(
+        const UpdateLoggedUserRequestModel(
+          fullName: 'Lisa Atualizada',
+          nickname: 'Lili',
+          gender: 'FEMALE',
+          birthDate: '1998-04-09',
+          phone: '85999991111',
+          email: 'novo@example.com',
+        ),
+      );
+
+      expect(result.isRight(), isTrue);
+      final user = result.getRight().toNullable();
+      expect(user?.fullName, 'Lisa Atualizada');
+      expect(user?.email, 'novo@example.com');
+    });
+
+    test('returns validation failure for 422 with backend message', () async {
+      when(() => api.updateLoggedUser(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/v1/core/users'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/v1/core/users'),
+            statusCode: 422,
+            data: {'message': 'E-mail já está em uso'},
+          ),
+        ),
+      );
+
+      final result = await repository.updateLoggedUser(
+        const UpdateLoggedUserRequestModel(
+          fullName: 'Lisa Atualizada',
+          gender: 'FEMALE',
+          birthDate: '1998-04-09',
+        ),
+      );
+
+      expect(result.isLeft(), isTrue);
+      final failure = result.getLeft().toNullable();
+      expect(failure, isA<ValidationFailure>());
+      expect(failure?.message, 'E-mail já está em uso');
     });
   });
 }

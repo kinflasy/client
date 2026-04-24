@@ -146,7 +146,7 @@ class _ProfileContent extends StatelessWidget {
             if (hasIdentity)
               SliverToBoxAdapter(
                 child: _InfoSection(
-                  title: 'Vinculo',
+                  title: 'Vínculo',
                   children: [
                     if (_hasText(profile.affiliation))
                       _InfoRow(
@@ -164,7 +164,7 @@ class _ProfileContent extends StatelessWidget {
             if (profile.integrations.isNotEmpty)
               SliverToBoxAdapter(
                 child: _InfoSection(
-                  title: 'Integracoes',
+                  title: 'Integrações',
                   children: profile.integrations
                       .map(
                         (integration) => _InfoRow(

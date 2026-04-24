@@ -21,15 +21,15 @@ class HomeScreen extends StatelessWidget {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
+            icon: Icon(Icons.home_rounded),
             label: 'Início',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
+            icon: Icon(Icons.calendar_today_rounded),
             label: 'Agenda',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.church_outlined),
+            icon: Icon(Icons.church_rounded),
             label: 'Igreja',
           ),
           BottomNavigationBarItem(

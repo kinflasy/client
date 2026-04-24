@@ -142,6 +142,7 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
               affiliation: participant.affiliation,
               gender: participant.gender,
               birthDate: participant.birthDate,
+              age: participant.age,
             );
           },
         );

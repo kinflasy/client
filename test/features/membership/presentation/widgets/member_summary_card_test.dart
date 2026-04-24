@@ -52,4 +52,23 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('prefers provided age over birthDate calculation', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MemberSummaryCard(
+            fullName: 'Ana Lima',
+            affiliation: 'MEMBER',
+            gender: 'FEMALE',
+            birthDate: DateTime(2000, 1, 1),
+            age: 99,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Ana Lima'), findsOneWidget);
+    expect(find.text('Membros · 99 anos'), findsOneWidget);
+  });
 }

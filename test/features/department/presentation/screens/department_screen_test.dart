@@ -39,6 +39,7 @@ void main() {
           fullName: 'Maria Silva',
           affiliation: 'MEMBER',
           gender: 'FEMALE',
+          age: 34,
         ),
       ]),
     );
@@ -65,6 +66,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Maria Silva'), findsOneWidget);
+    expect(find.text('Membros · 34 anos'), findsOneWidget);
   });
 
   testWidgets('shows inline error when department detail fails', (tester) async {

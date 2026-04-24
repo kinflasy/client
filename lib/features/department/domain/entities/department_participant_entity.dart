@@ -7,6 +7,7 @@ class DepartmentParticipantEntity extends Equatable {
     required this.affiliation,
     required this.gender,
     this.birthDate,
+    this.age,
   });
 
   final String personId;
@@ -14,6 +15,7 @@ class DepartmentParticipantEntity extends Equatable {
   final String affiliation;
   final String gender;
   final DateTime? birthDate;
+  final int? age;
 
   @override
   List<Object?> get props => [
@@ -22,5 +24,6 @@ class DepartmentParticipantEntity extends Equatable {
     affiliation,
     gender,
     birthDate,
+    age,
   ];
 }

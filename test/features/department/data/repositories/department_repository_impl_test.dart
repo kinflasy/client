@@ -59,22 +59,41 @@ void main() {
   });
 
   group('DepartmentRepositoryImpl.getParticipants', () {
-    test('returns participants on success', () async {
+    test('returns participants from nested integration payload on success', () async {
       when(() => api.getParticipants('dep-1')).thenAnswer(
         (_) async => [
           {
-            'personId': 'person-1',
-            'fullName': 'Maria Silva',
-            'affiliation': 'MEMBER',
-            'gender': 'FEMALE',
-            'birthDate': '1990-05-12T00:00:00.000Z',
+            'id': 'integration-1',
+            'department': {'id': 'dep-1'},
+            'membership': {
+              'id': 'membership-1',
+              'unitId': 'unit-1',
+              'affiliation': 'MEMBER',
+              'person': {
+                'id': 'person-1',
+                'fullName': 'Maria Silva',
+                'gender': 'FEMALE',
+                'birthDate': '1990-05-12T00:00:00.000Z',
+                'age': 34,
+              },
+            },
+            'type': 'LEADER',
           },
           {
-            'personId': 'person-2',
-            'fullName': 'Joao Souza',
-            'affiliation': 'CONGREGATED',
-            'gender': 'MALE',
-            'birthDate': '',
+            'id': 'integration-2',
+            'department': {'id': 'dep-1'},
+            'membership': {
+              'id': 'membership-2',
+              'unitId': 'unit-1',
+              'affiliation': 'CONGREGATED',
+              'person': {
+                'id': 'person-2',
+                'fullName': 'Joao Souza',
+                'gender': 'MALE',
+                'birthDate': '',
+              },
+            },
+            'type': 'OBSERVER',
           },
         ],
       );
@@ -85,10 +104,72 @@ void main() {
       result.match((_) => fail('expected success'), (participants) {
         expect(participants, hasLength(2));
         expect(participants.first.fullName, 'Maria Silva');
-        expect(participants.first.birthDate, DateTime.parse('1990-05-12T00:00:00.000Z'));
+        expect(
+          participants.first.birthDate,
+          DateTime.parse('1990-05-12T00:00:00.000Z'),
+        );
+        expect(participants.first.age, 34);
         expect(participants.last.personId, 'person-2');
         expect(participants.last.birthDate, isNull);
+        expect(participants.last.age, isNull);
       });
+    });
+
+    test('keeps birthDate when age is absent', () async {
+      when(() => api.getParticipants('dep-1')).thenAnswer(
+        (_) async => [
+          {
+            'id': 'integration-1',
+            'membership': {
+              'id': 'membership-1',
+              'affiliation': 'MEMBER',
+              'person': {
+                'id': 'person-1',
+                'fullName': 'Maria Silva',
+                'gender': 'FEMALE',
+                'birthDate': '1990-05-12',
+              },
+            },
+            'type': 'LEADER',
+          },
+        ],
+      );
+
+      final result = await repository.getParticipants('dep-1');
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (participants) {
+        expect(participants, hasLength(1));
+        expect(participants.first.age, isNull);
+        expect(participants.first.birthDate, DateTime.parse('1990-05-12'));
+      });
+    });
+
+    test('discards items without membership person id', () async {
+      when(() => api.getParticipants('dep-1')).thenAnswer(
+        (_) async => [
+          {
+            'id': 'integration-1',
+            'membership': {
+              'id': 'membership-1',
+              'affiliation': 'MEMBER',
+              'person': {
+                'fullName': 'Maria Silva',
+                'gender': 'FEMALE',
+              },
+            },
+            'type': 'LEADER',
+          },
+        ],
+      );
+
+      final result = await repository.getParticipants('dep-1');
+
+      expect(result.isRight(), isTrue);
+      result.match(
+        (_) => fail('expected success'),
+        (participants) => expect(participants, isEmpty),
+      );
     });
 
     test('returns empty list when api has no participants', () async {

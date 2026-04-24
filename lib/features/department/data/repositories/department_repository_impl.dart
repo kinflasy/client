@@ -121,17 +121,34 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
   DepartmentParticipantEntity _mapParticipantJsonToEntity(
     Map<String, dynamic> json,
   ) {
+    final membership = _readMap(json['membership']);
+    final person = _readMap(membership['person']);
+
     return DepartmentParticipantEntity(
-      personId: json['personId'] as String? ?? '',
-      fullName: json['fullName'] as String? ?? '',
-      affiliation: json['affiliation'] as String? ?? '',
-      gender: json['gender'] as String? ?? '',
-      birthDate: _parseDate(json['birthDate']),
+      personId: person['id'] as String? ?? '',
+      fullName: person['fullName'] as String? ?? '',
+      affiliation: membership['affiliation'] as String? ?? '',
+      gender: person['gender'] as String? ?? '',
+      birthDate: _parseDate(person['birthDate']),
+      age: _parseInt(person['age']),
     );
   }
 
   DateTime? _parseDate(Object? value) {
     if (value is! String || value.isEmpty) return null;
     return DateTime.tryParse(value);
+  }
+
+  Map<String, dynamic> _readMap(Object? value) {
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return const <String, dynamic>{};
+  }
+
+  int? _parseInt(Object? value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 }

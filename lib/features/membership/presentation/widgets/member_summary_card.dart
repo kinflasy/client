@@ -8,6 +8,7 @@ class MemberSummaryCard extends StatelessWidget {
     required this.affiliation,
     required this.gender,
     this.birthDate,
+    this.age,
     this.onTap,
   });
 
@@ -15,15 +16,16 @@ class MemberSummaryCard extends StatelessWidget {
   final String affiliation;
   final String gender;
   final DateTime? birthDate;
+  final int? age;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final age = calculateAge(birthDate);
+    final resolvedAge = age ?? calculateAge(birthDate);
     final translatedAffiliation = translateAffiliation(affiliation);
-    final subtitle = age == null
+    final subtitle = resolvedAge == null
         ? translatedAffiliation
-        : '$translatedAffiliation · $age anos';
+        : '$translatedAffiliation · $resolvedAge anos';
     final isMale = gender.toUpperCase() == 'MALE';
 
     return Container(

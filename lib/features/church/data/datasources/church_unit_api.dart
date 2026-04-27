@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:client/features/membership/data/models/join_membership_request_model.dart';
 
 class ChurchUnitApi {
   ChurchUnitApi(this._dio);
@@ -21,5 +22,12 @@ class ChurchUnitApi {
         .whereType<Map>()
         .map((item) => Map<String, dynamic>.from(item))
         .toList();
+  }
+
+  Future<void> joinUnit(String unitId, JoinMembershipRequestModel body) async {
+    await _dio.post<void>(
+      '/v1/core/church/units/$unitId/join',
+      data: body.toJson(),
+    );
   }
 }

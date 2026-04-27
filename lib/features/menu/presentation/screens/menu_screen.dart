@@ -1,4 +1,5 @@
 import 'package:client/core/router/app_routes.dart';
+import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:client/features/menu/presentation/widgets/menu_card_grid.dart';
@@ -91,27 +92,15 @@ class MenuScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Sair'),
-        content: const Text('Tem certeza que deseja sair da sua conta?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Sair', style: TextStyle(color: colorScheme.error)),
-          ),
-        ],
-      ),
+    final confirmed = await showActionConfirmationDialog(
+      context,
+      title: 'Sair',
+      message: 'Tem certeza que deseja sair da sua conta?',
+      confirmLabel: 'Sair',
+      isDestructive: true,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       await ref.read(authProvider.notifier).signOut();
     }
   }

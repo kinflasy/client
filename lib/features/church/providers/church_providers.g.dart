@@ -63,3 +63,56 @@ abstract class _$CreateChurchNotifier
     element.handleCreate(ref, build);
   }
 }
+
+@ProviderFor(JoinChurchUnitNotifier)
+final joinChurchUnitProvider = JoinChurchUnitNotifierProvider._();
+
+final class JoinChurchUnitNotifierProvider
+    extends $NotifierProvider<JoinChurchUnitNotifier, AsyncValue<void>> {
+  JoinChurchUnitNotifierProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'joinChurchUnitProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$joinChurchUnitNotifierHash();
+
+  @$internal
+  @override
+  JoinChurchUnitNotifier create() => JoinChurchUnitNotifier();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AsyncValue<void> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AsyncValue<void>>(value),
+    );
+  }
+}
+
+String _$joinChurchUnitNotifierHash() =>
+    r'6f36c9f693ea6d59944e828471e0bc2b67512557';
+
+abstract class _$JoinChurchUnitNotifier extends $Notifier<AsyncValue<void>> {
+  AsyncValue<void> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<void>, AsyncValue<void>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<void>, AsyncValue<void>>,
+              AsyncValue<void>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

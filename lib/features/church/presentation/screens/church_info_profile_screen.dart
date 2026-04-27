@@ -1,10 +1,16 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/domain/enums/affiliation.dart';
+import 'package:client/core/domain/session_permissions.dart';
+import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/presentation/widgets/church_profile_cover_header.dart';
 import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/membership/domain/entities/pending_membership_entity.dart';
+import 'package:client/features/membership/providers/membership_providers.dart';
+import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,18 +34,36 @@ class ChurchInfoProfileScreen extends ConsumerWidget {
         message: 'Não foi possível carregar o perfil da igreja.',
         onRetry: () => ref.invalidate(publicChurchUnitProfileProvider(unitId)),
       ),
-      data: (profile) => _ProfileContent(profile: profile),
+      data: (profile) => _ProfileContent(profile: profile, unitId: unitId),
     );
   }
 }
 
-class _ProfileContent extends StatelessWidget {
-  const _ProfileContent({required this.profile});
+class _ProfileContent extends ConsumerStatefulWidget {
+  const _ProfileContent({required this.profile, required this.unitId});
 
   final PublicChurchUnitProfileEntity profile;
+  final String unitId;
+
+  @override
+  ConsumerState<_ProfileContent> createState() => _ProfileContentState();
+}
+
+class _ProfileContentState extends ConsumerState<_ProfileContent> {
+  final MenuController _menuController = MenuController();
 
   @override
   Widget build(BuildContext context) {
+    final permissionsAsync = ref.watch(sessionPermissionsProvider);
+    final pendingForUnit = ref.watch(
+      pendingMembershipForUnitProvider(widget.unitId),
+    );
+    final joinState = ref.watch(joinChurchUnitProvider);
+
+    final permissions = permissionsAsync.whenOrNull(data: (value) => value);
+    final canShowJoinMenu = _canShowJoinMenu(permissions);
+    final isSubmittingJoin = joinState.isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
@@ -47,25 +71,170 @@ class _ProfileContent extends StatelessWidget {
           slivers: [
             SliverToBoxAdapter(
               child: ChurchProfileCoverHeader(
-                unit: profile.unit,
-                fallbackChurch: profile.church,
+                unit: widget.profile.unit,
+                fallbackChurch: widget.profile.church,
                 showBackButton: true,
+                topBar: canShowJoinMenu
+                    ? _ProfileActionBar(
+                        menuController: _menuController,
+                        pendingMembership: pendingForUnit,
+                        isSubmittingJoin: isSubmittingJoin,
+                        onJoinRequested: _handleJoinRequest,
+                        onVisitorSelected: _showVisitorUnavailableSnackBar,
+                      )
+                    : null,
               ),
             ),
             SliverToBoxAdapter(
               child: _IdentitySection(
-                unit: profile.unit,
-                fallbackChurch: profile.church,
+                unit: widget.profile.unit,
+                fallbackChurch: widget.profile.church,
               ),
             ),
             const SliverToBoxAdapter(
               child: Divider(height: 1, color: AppColors.background),
             ),
-            SliverToBoxAdapter(child: _InfoSection(unit: profile.unit)),
-            SliverToBoxAdapter(child: _AffiliationSection(profile: profile)),
+            SliverToBoxAdapter(child: _InfoSection(unit: widget.profile.unit)),
+            SliverToBoxAdapter(
+              child: _AffiliationSection(profile: widget.profile),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  bool _canShowJoinMenu(SessionPermissions? permissions) {
+    if (permissions == null) return false;
+    if (!permissions.isAuthenticated) return false;
+    if (!permissions.hasMembership) return true;
+
+    return permissions.affiliation == Affiliation.visitor ||
+        permissions.affiliation == Affiliation.congregated;
+  }
+
+  Future<void> _handleJoinRequest(String affiliation) async {
+    final confirmed = await showActionConfirmationDialog(
+      context,
+      title: _joinDialogTitle(affiliation),
+      message: _joinDialogMessage(affiliation),
+      confirmLabel: 'Confirmar',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    final result = await ref
+        .read(joinChurchUnitProvider.notifier)
+        .join(widget.unitId, affiliation);
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) => ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(failure.message))),
+      (_) => ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_joinSuccessMessage(affiliation)))),
+    );
+  }
+
+  void _showVisitorUnavailableSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('A entrada como visitante ainda não está disponível.'),
+      ),
+    );
+  }
+
+  String _joinDialogTitle(String affiliation) {
+    return switch (affiliation) {
+      'CONGREGATED' => 'Solicitar vínculo como congregado',
+      'MEMBER' => 'Solicitar vínculo como membro',
+      _ => 'Solicitar vínculo',
+    };
+  }
+
+  String _joinDialogMessage(String affiliation) {
+    return switch (affiliation) {
+      'CONGREGATED' =>
+        'Deseja solicitar vínculo como congregado nesta unidade?',
+      'MEMBER' => 'Deseja solicitar vínculo como membro nesta unidade?',
+      _ => 'Deseja solicitar vínculo nesta unidade?',
+    };
+  }
+
+  String _joinSuccessMessage(String affiliation) {
+    return switch (affiliation) {
+      'CONGREGATED' =>
+        'Solicitação de vínculo como congregado enviada com sucesso.',
+      'MEMBER' => 'Solicitação de vínculo como membro enviada com sucesso.',
+      _ => 'Solicitação de vínculo enviada com sucesso.',
+    };
+  }
+}
+
+class _ProfileActionBar extends StatelessWidget {
+  const _ProfileActionBar({
+    required this.menuController,
+    required this.pendingMembership,
+    required this.isSubmittingJoin,
+    required this.onJoinRequested,
+    required this.onVisitorSelected,
+  });
+
+  static const menuButtonKey = ValueKey('church-info-profile-join-menu-button');
+
+  final MenuController menuController;
+  final PendingMembershipEntity? pendingMembership;
+  final bool isSubmittingJoin;
+  final Future<void> Function(String affiliation) onJoinRequested;
+  final VoidCallback onVisitorSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCongregatedPending =
+        pendingMembership?.matchesAffiliation('CONGREGATED') ?? false;
+    final isMemberPending =
+        pendingMembership?.matchesAffiliation('MEMBER') ?? false;
+
+    return Row(
+      children: [
+        const Spacer(),
+        MenuAnchor(
+          controller: menuController,
+          menuChildren: [
+            MenuItemButton(
+              onPressed: isSubmittingJoin || isCongregatedPending
+                  ? null
+                  : () => onJoinRequested('CONGREGATED'),
+              child: const Text('Vincular-se como congregado'),
+            ),
+            MenuItemButton(
+              onPressed: isSubmittingJoin || isMemberPending
+                  ? null
+                  : () => onJoinRequested('MEMBER'),
+              child: const Text('Vincular-se como membro'),
+            ),
+            MenuItemButton(
+              onPressed: onVisitorSelected,
+              child: const Text('Entrar como visitante'),
+            ),
+          ],
+          child: IconButton(
+            key: menuButtonKey,
+            tooltip: 'Mais opções',
+            onPressed: () {
+              if (menuController.isOpen) {
+                menuController.close();
+                return;
+              }
+              menuController.open();
+            },
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 }

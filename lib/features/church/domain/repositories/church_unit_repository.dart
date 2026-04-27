@@ -8,4 +8,5 @@ abstract class ChurchUnitRepository {
   Future<Either<Failure, List<ChurchUnitEntity>>> getUnitsByChurchId(
     String churchId,
   );
+  Future<Either<Failure, void>> joinUnit(String unitId, String affiliation);
 }

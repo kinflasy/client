@@ -1,15 +1,23 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/church/data/datasources/church_unit_api.dart';
 import 'package:client/features/church/data/repositories/church_unit_repository_impl.dart';
+import 'package:client/features/membership/data/models/join_membership_request_model.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockChurchUnitApi extends Mock implements ChurchUnitApi {}
 
+class _FakeJoinMembershipRequestModel extends Fake
+    implements JoinMembershipRequestModel {}
+
 void main() {
   late ChurchUnitRepositoryImpl repository;
   late _MockChurchUnitApi api;
+
+  setUpAll(() {
+    registerFallbackValue(_FakeJoinMembershipRequestModel());
+  });
 
   setUp(() {
     api = _MockChurchUnitApi();
@@ -122,5 +130,50 @@ void main() {
       (failure) => expect(failure, isA<NotFoundFailure>()),
       (_) => fail('expected failure'),
     );
+  });
+
+  test('joins unit on success', () async {
+    when(
+      () =>
+          api.joinUnit('unit-1', any(that: isA<JoinMembershipRequestModel>())),
+    ).thenAnswer((_) async {});
+
+    final result = await repository.joinUnit('unit-1', 'CONGREGATED');
+
+    expect(result.isRight(), isTrue);
+    verify(
+      () => api.joinUnit(
+        'unit-1',
+        any(
+          that: isA<JoinMembershipRequestModel>().having(
+            (request) => request.affiliation,
+            'affiliation',
+            'CONGREGATED',
+          ),
+        ),
+      ),
+    ).called(1);
+  });
+
+  test('maps join errors into NetworkFailure', () async {
+    when(
+      () =>
+          api.joinUnit('unit-1', any(that: isA<JoinMembershipRequestModel>())),
+    ).thenThrow(
+      DioException(
+        requestOptions: RequestOptions(
+          path: '/v1/core/church/units/unit-1/join',
+        ),
+        message: 'timeout',
+      ),
+    );
+
+    final result = await repository.joinUnit('unit-1', 'MEMBER');
+
+    expect(result.isLeft(), isTrue);
+    result.match((failure) {
+      expect(failure, isA<NetworkFailure>());
+      expect(failure.message, 'timeout');
+    }, (_) => fail('expected failure'));
   });
 }

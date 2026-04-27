@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:client/features/membership/data/models/join_membership_request_model.dart';
 
 import '../../../../core/errors/failure.dart';
 import '../../domain/entities/church_unit_entity.dart';
@@ -47,6 +48,28 @@ class ChurchUnitRepositoryImpl implements ChurchUnitRepository {
       }
       return Left(
         NetworkFailure(e.message ?? 'Erro ao buscar unidades da igreja.'),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> joinUnit(
+    String unitId,
+    String affiliation,
+  ) async {
+    try {
+      await _api.joinUnit(
+        unitId,
+        JoinMembershipRequestModel(affiliation: affiliation),
+      );
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(
+        NetworkFailure(
+          e.message ?? 'Erro ao solicitar vinculo para a unidade.',
+        ),
       );
     } catch (e) {
       return Left(UnknownFailure(e.toString()));

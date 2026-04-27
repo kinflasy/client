@@ -270,3 +270,27 @@ class CreateChurchNotifier extends _$CreateChurchNotifier {
     return result;
   }
 }
+
+@riverpod
+class JoinChurchUnitNotifier extends _$JoinChurchUnitNotifier {
+  @override
+  AsyncValue<void> build() => const AsyncData(null);
+
+  Future<Either<Failure, void>> join(String unitId, String affiliation) async {
+    state = const AsyncLoading();
+    final result = await ref
+        .read(churchUnitRepositoryProvider)
+        .joinUnit(unitId, affiliation);
+    state = result.fold(
+      (failure) => AsyncError(failure, StackTrace.current),
+      (_) => const AsyncData(null),
+    );
+
+    if (result.isRight()) {
+      ref.invalidate(myPendingMembershipsProvider);
+      ref.invalidate(publicChurchUnitProfileProvider(unitId));
+    }
+
+    return result;
+  }
+}

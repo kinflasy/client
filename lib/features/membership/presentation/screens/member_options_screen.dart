@@ -28,10 +28,11 @@ class MemberOptionsScreen extends StatelessWidget {
             onTap: () => context.push(AppRoutes.peopleList),
           ),
           const SizedBox(height: 12),
-          const _MemberOptionItem(
+          _MemberOptionItem(
             icon: Icons.link,
             title: 'Solicitações de vínculo',
             subtitle: 'Gerencie pedidos de entrada na sua unidade.',
+            onTap: () => context.push(AppRoutes.adminMembershipRequests),
           ),
           const SizedBox(height: 12),
           const _MemberOptionItem(
@@ -123,9 +124,7 @@ class _AddMemberItemState extends State<_AddMemberItem> {
     return MenuAnchor(
       controller: _menuController,
       menuChildren: [
-        const MenuItemButton(
-          child: Text('Usuário do Pontis'),
-        ),
+        const MenuItemButton(child: Text('Usuário do Pontis')),
         MenuItemButton(
           onPressed: () => context.push(AppRoutes.adminMembersRegister),
           child: const Text('Pessoa sem conta'),

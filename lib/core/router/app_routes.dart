@@ -18,6 +18,7 @@ class AppRoutes {
   static const peopleEdit = '/people/:id/edit';
   static const adminPanel = '/admin/gestao';
   static const adminMembers = '/admin/membros';
+  static const adminMembershipRequests = '/admin/membros/solicitacoes';
   static const adminMembersRegister = '/admin/membros/cadastrar';
   static const adminDepartments = '/admin/departamentos';
   static const adminDepartmentsRegister = '/admin/departamentos/cadastrar';
@@ -40,6 +41,7 @@ class AppRoutes {
   static const peopleEditName = 'people-edit';
   static const adminPanelName = 'admin-panel';
   static const adminMembersName = 'admin-members';
+  static const adminMembershipRequestsName = 'admin-membership-requests';
   static const adminMembersRegisterName = 'admin-members-register';
   static const adminDepartmentsName = 'admin-departments';
   static const adminDepartmentsRegisterName = 'admin-departments-register';

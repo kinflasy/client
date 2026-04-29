@@ -30,4 +30,27 @@ class ChurchUnitApi {
       data: body.toJson(),
     );
   }
+
+  Future<List<Map<String, dynamic>>> getPendingMembers(String unitId) async {
+    final response = await _dio.get<List<dynamic>>(
+      '/v1/core/church/units/$unitId/members/pending',
+    );
+    final data = response.data ?? <dynamic>[];
+    return data
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
+  Future<void> confirmPendingMember(String unitId, String personId) async {
+    await _dio.post<void>(
+      '/v1/core/church/units/$unitId/member/$personId/confirm',
+    );
+  }
+
+  Future<void> rejectPendingMember(String unitId, String personId) async {
+    await _dio.post<void>(
+      '/v1/core/church/units/$unitId/member/$personId/reject',
+    );
+  }
 }

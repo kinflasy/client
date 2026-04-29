@@ -2,7 +2,9 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/features/church/data/models/church_read_models.dart';
 import 'package:client/features/department/data/datasources/department_api.dart';
 import 'package:client/features/department/data/models/department_request_model.dart';
+import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/domain/entities/department_participant_entity.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
@@ -58,6 +60,46 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, DepartmentDetailEntity>> getDepartmentById(
+    String departmentId,
+  ) async {
+    try {
+      final json = await _api.getDepartmentById(departmentId);
+      final department = _mapDetailJsonToEntity(json);
+      return Right(department);
+    } on DioException catch (e) {
+      return Left(
+        NetworkFailure(e.message ?? 'Erro ao carregar departamento.'),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<DepartmentParticipantEntity>>> getParticipants(
+    String departmentId,
+  ) async {
+    try {
+      final jsonList = await _api.getParticipants(departmentId);
+      final participants = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(_mapParticipantJsonToEntity)
+          .where((participant) => participant.personId.isNotEmpty)
+          .toList();
+
+      return Right(participants);
+    } on DioException catch (e) {
+      return Left(
+        NetworkFailure(e.message ?? 'Erro ao carregar participantes.'),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
   DepartmentEntity _mapModelToEntity(DepartmentReadModel model) {
     return DepartmentEntity(
       id: model.id,
@@ -65,5 +107,48 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
       slug: model.slug,
       type: model.type,
     );
+  }
+
+  DepartmentDetailEntity _mapDetailJsonToEntity(Map<String, dynamic> json) {
+    return DepartmentDetailEntity(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      slug: json['slug'] as String?,
+      type: json['type'] as String?,
+    );
+  }
+
+  DepartmentParticipantEntity _mapParticipantJsonToEntity(
+    Map<String, dynamic> json,
+  ) {
+    final membership = _readMap(json['membership']);
+    final person = _readMap(membership['person']);
+
+    return DepartmentParticipantEntity(
+      personId: person['id'] as String? ?? '',
+      fullName: person['fullName'] as String? ?? '',
+      affiliation: membership['affiliation'] as String? ?? '',
+      gender: person['gender'] as String? ?? '',
+      birthDate: _parseDate(person['birthDate']),
+      age: _parseInt(person['age']),
+    );
+  }
+
+  DateTime? _parseDate(Object? value) {
+    if (value is! String || value.isEmpty) return null;
+    return DateTime.tryParse(value);
+  }
+
+  Map<String, dynamic> _readMap(Object? value) {
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return const <String, dynamic>{};
+  }
+
+  int? _parseInt(Object? value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 }

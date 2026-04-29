@@ -1,4 +1,5 @@
 import 'package:client/core/router/app_routes.dart';
+import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:client/features/menu/presentation/widgets/menu_card_grid.dart';
@@ -17,21 +18,25 @@ class MenuScreen extends ConsumerWidget {
     final authAsync = ref.watch(authProvider);
     final hasMembership = ref.watch(hasMembershipProvider);
 
-    final quickActions = const [
-      MenuQuickActionData(
+    final quickActions = [
+      const MenuQuickActionData(
         icon: Icons.notifications_none_rounded,
-        label: 'NotificaÃ§Ãµes',
+        label: 'Notificações',
         onTap: null,
         badgeCount: null,
       ),
       MenuQuickActionData(
         icon: Icons.edit_outlined,
-        label: 'Editar informaÃ§Ãµes',
+        label: 'Editar informações',
+        onTap: () => context.pushNamed(AppRoutes.homeMenuEditProfileName),
       ),
-      MenuQuickActionData(icon: Icons.church_outlined, label: 'Minhas igrejas'),
-      MenuQuickActionData(
+      const MenuQuickActionData(
+        icon: Icons.church_outlined,
+        label: 'Minhas igrejas',
+      ),
+      const MenuQuickActionData(
         icon: Icons.settings_outlined,
-        label: 'ConfiguraÃ§Ãµes',
+        label: 'Configurações',
       ),
     ];
 
@@ -40,8 +45,8 @@ class MenuScreen extends ConsumerWidget {
         icon: Icons.groups_2_outlined,
         title: 'Meus departamentos',
         semanticsHint: hasMembership
-            ? 'Ãrea preparada para futura navegaÃ§Ã£o'
-            : 'IndisponÃ­vel sem vÃ­nculo com igreja',
+            ? 'Área preparada para futura navegação'
+            : 'Indisponível sem vínculo com igreja',
         isEnabled: hasMembership,
       ),
       MenuGridCardData(
@@ -87,27 +92,15 @@ class MenuScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Sair'),
-        content: const Text('Tem certeza que deseja sair da sua conta?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Sair', style: TextStyle(color: colorScheme.error)),
-          ),
-        ],
-      ),
+    final confirmed = await showActionConfirmationDialog(
+      context,
+      title: 'Sair',
+      message: 'Tem certeza que deseja sair da sua conta?',
+      confirmLabel: 'Sair',
+      isDestructive: true,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       await ref.read(authProvider.notifier).signOut();
     }
   }

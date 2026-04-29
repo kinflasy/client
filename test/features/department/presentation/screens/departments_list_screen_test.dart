@@ -200,4 +200,55 @@ void main() {
 
     expect(find.text('register department'), findsOneWidget);
   });
+
+  testWidgets('navigates to standalone department detail from admin list', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: AppRoutes.adminDepartments,
+      routes: [
+        GoRoute(
+          path: AppRoutes.adminDepartments,
+          builder: (context, state) => const DepartmentsListScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.departmentDetail,
+          name: AppRoutes.departmentDetailName,
+          builder: (context, state) =>
+              const Scaffold(body: Text('department detail')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          activeMembershipProvider.overrideWith(
+            (ref) async => const MembershipEntity(
+              id: 'membership-1',
+              unitId: 'unit-1',
+              affiliation: 'MEMBER',
+            ),
+          ),
+          departmentsProvider.overrideWith(
+            (ref, unitId) async => const [
+              DepartmentEntity(
+                id: 'dept-1',
+                name: 'Ministerio de Louvor',
+                slug: 'louvor',
+                type: 'MINISTRY',
+              ),
+            ],
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ministerio de Louvor'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('department detail'), findsOneWidget);
+  });
 }

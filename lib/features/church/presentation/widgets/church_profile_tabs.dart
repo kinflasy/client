@@ -1,10 +1,12 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/presentation/widgets/department_card.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class ChurchProfileTabBarDelegate extends SliverPersistentHeaderDelegate {
   const ChurchProfileTabBarDelegate({this.isVisitorMode = false});
@@ -153,8 +155,13 @@ class DepartmentsTab extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           itemCount: departments.length,
           separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) =>
-              DepartmentCard(department: departments[index]),
+          itemBuilder: (context, index) => DepartmentCard(
+            department: departments[index],
+            onTap: () => context.pushNamed(
+              AppRoutes.homeChurchDepartmentDetailName,
+              pathParameters: {'id': departments[index].id},
+            ),
+          ),
         );
       },
     );

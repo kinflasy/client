@@ -6,7 +6,9 @@ class AppRoutes {
   static const homeFeed = '/home/feed';
   static const homeCalendar = '/home/calendar';
   static const homeChurch = '/home/church';
+  static const homeChurchDepartmentDetail = '/home/church/departamentos/:id';
   static const homeMenu = '/home/menu';
+  static const homeMenuEditProfile = '/home/menu/editar-informacoes';
   static const registerChurch = '/register-church';
   static const churchSearch = '/church-search';
   static const churchProfile = '/church/:id';
@@ -16,9 +18,11 @@ class AppRoutes {
   static const peopleEdit = '/people/:id/edit';
   static const adminPanel = '/admin/gestao';
   static const adminMembers = '/admin/membros';
+  static const adminMembershipRequests = '/admin/membros/solicitacoes';
   static const adminMembersRegister = '/admin/membros/cadastrar';
   static const adminDepartments = '/admin/departamentos';
   static const adminDepartmentsRegister = '/admin/departamentos/cadastrar';
+  static const departmentDetail = '/departamentos/:id';
 
   static const splashName = 'splash';
   static const loginName = 'login';
@@ -26,7 +30,9 @@ class AppRoutes {
   static const homeFeedName = 'home-feed';
   static const homeCalendarName = 'home-calendar';
   static const homeChurchName = 'home-church';
+  static const homeChurchDepartmentDetailName = 'home-church-department-detail';
   static const homeMenuName = 'home-menu';
+  static const homeMenuEditProfileName = 'home-menu-edit-profile';
   static const registerChurchName = 'register-church';
   static const churchSearchName = 'church-search';
   static const churchProfileName = 'church-profile';
@@ -35,7 +41,9 @@ class AppRoutes {
   static const peopleEditName = 'people-edit';
   static const adminPanelName = 'admin-panel';
   static const adminMembersName = 'admin-members';
+  static const adminMembershipRequestsName = 'admin-membership-requests';
   static const adminMembersRegisterName = 'admin-members-register';
   static const adminDepartmentsName = 'admin-departments';
   static const adminDepartmentsRegisterName = 'admin-departments-register';
+  static const departmentDetailName = 'department-detail';
 }

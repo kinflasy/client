@@ -1,4 +1,5 @@
 import 'package:client/core/router/app_routes.dart';
+import 'package:client/features/auth/presentation/screens/edit_logged_user_screen.dart';
 import 'package:client/features/auth/presentation/screens/login_screen.dart';
 import 'package:client/features/auth/presentation/screens/register_screen.dart';
 import 'package:client/features/auth/presentation/screens/splash_screen.dart';
@@ -9,10 +10,12 @@ import 'package:client/features/church/presentation/screens/church_search_screen
 import 'package:client/features/church/presentation/screens/register_church_screen.dart';
 import 'package:client/features/church/presentation/screens/church_tab_screen.dart';
 import 'package:client/features/church/presentation/screens/admin_panel_screen.dart';
+import 'package:client/features/department/presentation/screens/department_screen.dart';
 import 'package:client/features/department/presentation/screens/departments_list_screen.dart';
 import 'package:client/features/department/presentation/screens/register_department_screen.dart';
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
 import 'package:client/features/membership/presentation/screens/edit_inactive_person_screen.dart';
+import 'package:client/features/membership/presentation/screens/admin_membership_requests_screen.dart';
 import 'package:client/features/membership/presentation/screens/member_options_screen.dart';
 import 'package:client/features/membership/presentation/screens/member_profile_screen.dart';
 import 'package:client/features/membership/presentation/screens/members_list_screen.dart';
@@ -35,19 +38,23 @@ final _protectedRoutes = <String>{
   AppRoutes.homeFeed,
   AppRoutes.homeCalendar,
   AppRoutes.homeChurch,
+  AppRoutes.homeChurchDepartmentDetail,
   AppRoutes.homeMenu,
+  AppRoutes.homeMenuEditProfile,
   AppRoutes.registerChurch,
   AppRoutes.churchSearch,
   AppRoutes.churchProfile,
   AppRoutes.churchPublicProfile,
   AppRoutes.adminPanel,
   AppRoutes.adminMembers,
+  AppRoutes.adminMembershipRequests,
   AppRoutes.adminMembersRegister,
   AppRoutes.adminDepartments,
   AppRoutes.adminDepartmentsRegister,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
+  AppRoutes.departmentDetail,
 };
 
 final _membershipRequiredRoutes = <String>{};
@@ -57,6 +64,7 @@ final _memberRoutes = <String>{AppRoutes.adminPanel};
 final _unitAdminRoutes = <String>{
   AppRoutes.adminPanel,
   AppRoutes.adminMembers,
+  AppRoutes.adminMembershipRequests,
   AppRoutes.adminMembersRegister,
   AppRoutes.adminDepartments,
   AppRoutes.adminDepartmentsRegister,
@@ -184,6 +192,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.homeChurch,
                 name: AppRoutes.homeChurchName,
                 builder: (context, state) => const ChurchTabScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'departamentos/:id',
+                    name: AppRoutes.homeChurchDepartmentDetailName,
+                    builder: (context, state) {
+                      final departmentId = state.pathParameters['id']!;
+                      return DepartmentScreen(
+                        departmentId: departmentId,
+                        showBackButton: true,
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -194,6 +215,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.homeMenu,
                 name: AppRoutes.homeMenuName,
                 builder: (context, state) => const MenuScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'editar-informacoes',
+                    name: AppRoutes.homeMenuEditProfileName,
+                    builder: (context, state) => const EditLoggedUserScreen(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -242,6 +270,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const MemberOptionsScreen(),
       ),
       GoRoute(
+        path: AppRoutes.adminMembershipRequests,
+        name: AppRoutes.adminMembershipRequestsName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AdminMembershipRequestsScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.adminMembersRegister,
         name: AppRoutes.adminMembersRegisterName,
         parentNavigatorKey: _rootNavigatorKey,
@@ -258,6 +292,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.adminDepartmentsRegisterName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RegisterDepartmentScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.departmentDetail,
+        name: AppRoutes.departmentDetailName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final departmentId = state.pathParameters['id']!;
+          return DepartmentScreen(
+            departmentId: departmentId,
+            showBackButton: true,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.peopleList,

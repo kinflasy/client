@@ -1,5 +1,6 @@
 import 'package:client/features/membership/data/models/join_membership_request_model.dart';
 import 'package:client/features/membership/data/models/pending_unit_membership_model.dart';
+import 'package:client/features/membership/data/models/update_pending_membership_request_model.dart';
 import 'package:client/features/membership/domain/entities/pending_unit_membership_entity.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
@@ -115,6 +116,24 @@ class ChurchUnitRepositoryImpl implements ChurchUnitRepository {
     return _runPendingMembershipAction(
       () => _api.confirmPendingMember(unitId, personId),
       fallbackMessage: 'Erro ao aprovar solicitacao de vinculo.',
+    );
+  }
+
+  @override
+  Future<Either<Failure, void>> updatePendingMember(
+    String unitId,
+    String personId,
+    String affiliation,
+  ) async {
+    return _runPendingMembershipAction(
+      () => _api.updatePendingMember(
+        unitId,
+        UpdatePendingMembershipRequestModel(
+          personId: personId,
+          affiliation: affiliation,
+        ),
+      ),
+      fallbackMessage: 'Erro ao atualizar solicitacao de vinculo.',
     );
   }
 

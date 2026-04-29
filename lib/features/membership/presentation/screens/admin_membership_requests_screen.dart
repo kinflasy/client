@@ -57,6 +57,7 @@ class _PendingRequestsBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final requestsAsync = ref.watch(pendingUnitMembershipsProvider(unitId));
     final actionState = ref.watch(pendingUnitMembershipActionProvider);
+    final isBusy = actionState.isLoading;
 
     return requestsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -106,7 +107,7 @@ class _PendingRequestsBody extends ConsumerWidget {
                   final request = requests[index];
                   return _PendingMembershipCard(
                     request: request,
-                    isLoading: actionState.isLoading,
+                    isLoading: isBusy,
                     onApprove: () => _handleApprove(context, ref, request),
                     onReject: () => _handleReject(context, ref, request),
                   );
@@ -124,19 +125,37 @@ class _PendingRequestsBody extends ConsumerWidget {
     WidgetRef ref,
     PendingUnitMembershipEntity request,
   ) async {
+    final actionState = ref.read(pendingUnitMembershipActionProvider);
+    if (actionState.isLoading) return;
+
+    final selectedAffiliation = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      builder: (sheetContext) => _ApproveMembershipSheet(
+        isLoading: actionState.isLoading,
+        onMemberSelected: () => Navigator.of(sheetContext).pop('MEMBER'),
+        onCongregatedSelected: () =>
+            Navigator.of(sheetContext).pop('CONGREGATED'),
+      ),
+    );
+
+    if (selectedAffiliation == null || !context.mounted) return;
+
+    final affiliationLabel = _translateAffiliation(selectedAffiliation);
     final confirmed = await showActionConfirmationDialog(
       context,
       title: 'Aprovar solicitação',
       message:
-          'Deseja aprovar a solicitação de vínculo de ${_displayName(request)}?',
-      confirmLabel: 'Aprovar',
+          'Deseja aceitar ${_displayName(request)} como $affiliationLabel nesta unidade?',
+      confirmLabel: 'Confirmar',
     );
 
     if (!confirmed || !context.mounted) return;
 
     final result = await ref
         .read(pendingUnitMembershipActionProvider.notifier)
-        .confirm(unitId, request.personId);
+        .approveWithAffiliation(unitId, request.personId, selectedAffiliation);
 
     if (!context.mounted) return;
 
@@ -178,6 +197,133 @@ class _PendingRequestsBody extends ConsumerWidget {
       ).showSnackBar(SnackBar(content: Text(failure.message))),
       (_) => ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Solicitação rejeitada com sucesso.')),
+      ),
+    );
+  }
+}
+
+class _ApproveMembershipSheet extends StatelessWidget {
+  const _ApproveMembershipSheet({
+    required this.isLoading,
+    required this.onMemberSelected,
+    required this.onCongregatedSelected,
+  });
+
+  final bool isLoading;
+  final VoidCallback onMemberSelected;
+  final VoidCallback onCongregatedSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.textSecondary.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Como deseja aceitar esta solicitação?',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Escolha a filiação final que será aplicada antes da confirmação.',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              _ApproveOptionTile(
+                icon: Icons.person,
+                title: 'Aceitar como membro',
+                subtitle: 'Confirma a solicitação com filiação de membro.',
+                onTap: isLoading ? null : onMemberSelected,
+              ),
+              const SizedBox(height: 12),
+              _ApproveOptionTile(
+                icon: Icons.groups_2_outlined,
+                title: 'Aceitar como congregado',
+                subtitle: 'Confirma a solicitação com filiação de congregado.',
+                onTap: isLoading ? null : onCongregatedSelected,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ApproveOptionTile extends StatelessWidget {
+  const _ApproveOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.background,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -13,6 +13,11 @@ abstract class ChurchUnitRepository {
   Future<Either<Failure, List<PendingUnitMembershipEntity>>> getPendingMembers(
     String unitId,
   );
+  Future<Either<Failure, void>> updatePendingMember(
+    String unitId,
+    String personId,
+    String affiliation,
+  );
   Future<Either<Failure, void>> confirmPendingMember(
     String unitId,
     String personId,

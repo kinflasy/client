@@ -34,6 +34,9 @@ void main() {
       () => repository.confirmPendingMember('unit-1', 'person-1'),
     ).thenAnswer((_) async => const Right(null));
     when(
+      () => repository.updatePendingMember('unit-1', 'person-1', any()),
+    ).thenAnswer((_) async => const Right(null));
+    when(
       () => repository.rejectPendingMember('unit-1', 'person-1'),
     ).thenAnswer((_) async => const Right(null));
   });
@@ -178,18 +181,55 @@ void main() {
     verifyNever(() => repository.getPendingMembers('unit-1'));
   });
 
-  testWidgets('opens confirmation dialog to approve request', (tester) async {
+  testWidgets('opens bottom sheet with the two approval options', (
+    tester,
+  ) async {
     await pumpScreen(tester);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Aprovar'));
     await tester.pumpAndSettle();
 
+    expect(
+      find.text('Como deseja aceitar esta solicita\u00e7\u00e3o?'),
+      findsOneWidget,
+    );
+    expect(find.text('Aceitar como membro'), findsOneWidget);
+    expect(find.text('Aceitar como congregado'), findsOneWidget);
+  });
+
+  testWidgets('opens confirmation dialog after choosing member option', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Aprovar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Aceitar como membro'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Aprovar solicita\u00e7\u00e3o'), findsOneWidget);
     expect(
-      find.text(
-        'Deseja aprovar a solicita\u00e7\u00e3o de v\u00ednculo de Maria Clara?',
-      ),
+      find.text('Deseja aceitar Maria Clara como membro nesta unidade?'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('opens confirmation dialog after choosing congregated option', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Aprovar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Aceitar como congregado'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Aprovar solicita\u00e7\u00e3o'), findsOneWidget);
+    expect(
+      find.text('Deseja aceitar Maria Clara como congregado nesta unidade?'),
       findsOneWidget,
     );
   });
@@ -210,7 +250,7 @@ void main() {
     );
   });
 
-  testWidgets('approving a request refreshes the list', (tester) async {
+  testWidgets('approving as member refreshes the list', (tester) async {
     var reads = 0;
     when(() => repository.getPendingMembers('unit-1')).thenAnswer((_) async {
       reads++;
@@ -234,7 +274,9 @@ void main() {
 
     await tester.tap(find.text('Aprovar'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Aprovar').last);
+    await tester.tap(find.text('Aceitar como membro'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Confirmar').last);
     await tester.pump();
     await tester.pumpAndSettle();
 
@@ -248,10 +290,148 @@ void main() {
     );
     expect(find.text('Maria Clara'), findsNothing);
     verify(
+      () => repository.updatePendingMember('unit-1', 'person-1', 'MEMBER'),
+    ).called(1);
+    verify(
       () => repository.confirmPendingMember('unit-1', 'person-1'),
     ).called(1);
     expect(reads, 2);
   });
+
+  testWidgets('approving as congregated refreshes the list', (tester) async {
+    var reads = 0;
+    when(() => repository.getPendingMembers('unit-1')).thenAnswer((_) async {
+      reads++;
+      if (reads == 1) {
+        return const Right([
+          PendingUnitMembershipEntity(
+            id: 'pending-1',
+            personId: 'person-1',
+            unitId: 'unit-1',
+            affiliation: 'CONGREGATED',
+            fullName: 'Maria Clara',
+          ),
+        ]);
+      }
+
+      return const Right([]);
+    });
+
+    await pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Aprovar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Aceitar como congregado'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Confirmar').last);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Solicita\u00e7\u00e3o aprovada com sucesso.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Nenhuma solicita\u00e7\u00e3o pendente.'),
+      findsOneWidget,
+    );
+    verify(
+      () => repository.updatePendingMember('unit-1', 'person-1', 'CONGREGATED'),
+    ).called(1);
+    verify(
+      () => repository.confirmPendingMember('unit-1', 'person-1'),
+    ).called(1);
+    expect(reads, 2);
+  });
+
+  testWidgets('shows update failure message without confirming or refreshing', (
+    tester,
+  ) async {
+    var reads = 0;
+    when(() => repository.getPendingMembers('unit-1')).thenAnswer((_) async {
+      reads++;
+      return const Right([
+        PendingUnitMembershipEntity(
+          id: 'pending-1',
+          personId: 'person-1',
+          unitId: 'unit-1',
+          affiliation: 'CONGREGATED',
+          fullName: 'Maria Clara',
+        ),
+      ]);
+    });
+    when(
+      () => repository.updatePendingMember('unit-1', 'person-1', 'MEMBER'),
+    ).thenAnswer(
+      (_) async =>
+          const Left(NetworkFailure('Falha ao atualizar a pendência.')),
+    );
+
+    await pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Aprovar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Aceitar como membro'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Confirmar').last);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Falha ao atualizar a pendência.'), findsOneWidget);
+    expect(find.text('Maria Clara'), findsOneWidget);
+    verifyNever(() => repository.confirmPendingMember('unit-1', 'person-1'));
+    expect(reads, 1);
+  });
+
+  testWidgets(
+    'shows confirm failure message without success snackbar or refresh',
+    (tester) async {
+      var reads = 0;
+      when(() => repository.getPendingMembers('unit-1')).thenAnswer((_) async {
+        reads++;
+        return const Right([
+          PendingUnitMembershipEntity(
+            id: 'pending-1',
+            personId: 'person-1',
+            unitId: 'unit-1',
+            affiliation: 'CONGREGATED',
+            fullName: 'Maria Clara',
+          ),
+        ]);
+      });
+      when(
+        () => repository.updatePendingMember('unit-1', 'person-1', 'MEMBER'),
+      ).thenAnswer((_) async => const Right(null));
+      when(
+        () => repository.confirmPendingMember('unit-1', 'person-1'),
+      ).thenAnswer(
+        (_) async => const Left(
+          NetworkFailure('Falha ao concluir a aprovação da solicitação.'),
+        ),
+      );
+
+      await pumpScreen(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Aprovar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Aceitar como membro'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Confirmar').last);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Falha ao concluir a aprovação da solicitação.'),
+        findsOneWidget,
+      );
+      expect(find.text('Solicitação aprovada com sucesso.'), findsNothing);
+      expect(find.text('Maria Clara'), findsOneWidget);
+      expect(reads, 1);
+    },
+  );
 
   testWidgets('rejecting a request refreshes the list', (tester) async {
     var reads = 0;

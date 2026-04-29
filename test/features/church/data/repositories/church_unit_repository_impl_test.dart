@@ -2,6 +2,7 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/features/church/data/datasources/church_unit_api.dart';
 import 'package:client/features/church/data/repositories/church_unit_repository_impl.dart';
 import 'package:client/features/membership/data/models/join_membership_request_model.dart';
+import 'package:client/features/membership/data/models/update_pending_membership_request_model.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,12 +12,16 @@ class _MockChurchUnitApi extends Mock implements ChurchUnitApi {}
 class _FakeJoinMembershipRequestModel extends Fake
     implements JoinMembershipRequestModel {}
 
+class _FakeUpdatePendingMembershipRequestModel extends Fake
+    implements UpdatePendingMembershipRequestModel {}
+
 void main() {
   late ChurchUnitRepositoryImpl repository;
   late _MockChurchUnitApi api;
 
   setUpAll(() {
     registerFallbackValue(_FakeJoinMembershipRequestModel());
+    registerFallbackValue(_FakeUpdatePendingMembershipRequestModel());
   });
 
   setUp(() {
@@ -277,6 +282,37 @@ void main() {
     verify(() => api.confirmPendingMember('unit-1', 'person-1')).called(1);
   });
 
+  test('updates pending member on success', () async {
+    when(
+      () => api.updatePendingMember(
+        'unit-1',
+        any(that: isA<UpdatePendingMembershipRequestModel>()),
+      ),
+    ).thenAnswer((_) async {});
+
+    final result = await repository.updatePendingMember(
+      'unit-1',
+      'person-1',
+      'MEMBER',
+    );
+
+    expect(result.isRight(), isTrue);
+    verify(
+      () => api.updatePendingMember(
+        'unit-1',
+        any(
+          that: isA<UpdatePendingMembershipRequestModel>()
+              .having((request) => request.personId, 'personId', 'person-1')
+              .having(
+                (request) => request.affiliation,
+                'affiliation',
+                'MEMBER',
+              ),
+        ),
+      ),
+    ).called(1);
+  });
+
   test('rejects pending member on success', () async {
     when(
       () => api.rejectPendingMember('unit-1', 'person-1'),
@@ -331,6 +367,40 @@ void main() {
     result.match((failure) {
       expect(failure, isA<NetworkFailure>());
       expect(failure.message, 'timeout');
+    }, (_) => fail('expected failure'));
+  });
+
+  test('maps update pending member errors into NetworkFailure', () async {
+    when(
+      () => api.updatePendingMember(
+        'unit-1',
+        any(that: isA<UpdatePendingMembershipRequestModel>()),
+      ),
+    ).thenThrow(
+      DioException(
+        requestOptions: RequestOptions(
+          path: '/v1/core/church/units/unit-1/pending-members',
+        ),
+        response: Response(
+          requestOptions: RequestOptions(
+            path: '/v1/core/church/units/unit-1/pending-members',
+          ),
+          statusCode: 400,
+          data: {'message': 'Filiação inválida para esta solicitação.'},
+        ),
+      ),
+    );
+
+    final result = await repository.updatePendingMember(
+      'unit-1',
+      'person-1',
+      'MEMBER',
+    );
+
+    expect(result.isLeft(), isTrue);
+    result.match((failure) {
+      expect(failure, isA<NetworkFailure>());
+      expect(failure.message, 'Filiação inválida para esta solicitação.');
     }, (_) => fail('expected failure'));
   });
 

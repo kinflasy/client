@@ -105,6 +105,27 @@ class PendingUnitMembershipActionNotifier extends AsyncNotifier<void> {
     );
   }
 
+  Future<Either<Failure, void>> approveWithAffiliation(
+    String unitId,
+    String personId,
+    String affiliation,
+  ) {
+    return _runAction(
+      unitId: unitId,
+      action: (repository) async {
+        final updateResult = await repository.updatePendingMember(
+          unitId,
+          personId,
+          affiliation,
+        );
+        if (updateResult.isLeft()) {
+          return updateResult;
+        }
+        return repository.confirmPendingMember(unitId, personId);
+      },
+    );
+  }
+
   Future<Either<Failure, void>> _runAction({
     required String unitId,
     required Future<Either<Failure, void>> Function(

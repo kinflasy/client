@@ -151,15 +151,19 @@ void main() {
               },
             ]),
           ),
-          departmentsProvider.overrideWith(
-            (ref, unitId) async => const [
-              DepartmentEntity(
-                id: 'dept-1',
-                name: 'Louvor',
-                slug: 'louvor',
-                type: 'MINISTRY',
-              ),
-            ],
+          segmentedDepartmentsProvider.overrideWith(
+            (ref, unitId) async => const SegmentedDepartments(
+              myDepartments: [],
+              generalDepartments: [
+                DepartmentEntity(
+                  id: 'dept-1',
+                  name: 'Louvor',
+                  slug: 'louvor',
+                  type: 'MINISTRY',
+                ),
+              ],
+              administrativeDepartments: [],
+            ),
           ),
         ],
         child: const MaterialApp(home: ChurchProfileScreen()),
@@ -207,7 +211,13 @@ void main() {
             (ref) async => buildMemberProfile(),
           ),
           churchEventsApiProvider.overrideWithValue(_FakeChurchEventsApi([])),
-          departmentsProvider.overrideWith((ref, unitId) async => const []),
+          segmentedDepartmentsProvider.overrideWith(
+            (ref, unitId) async => const SegmentedDepartments(
+              myDepartments: [],
+              generalDepartments: [],
+              administrativeDepartments: [],
+            ),
+          ),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),
@@ -301,7 +311,13 @@ void main() {
             (ref) async => buildMemberProfile(),
           ),
           churchEventsApiProvider.overrideWithValue(_FakeChurchEventsApi([])),
-          departmentsProvider.overrideWith((ref, unitId) async => const []),
+          segmentedDepartmentsProvider.overrideWith(
+            (ref, unitId) async => const SegmentedDepartments(
+              myDepartments: [],
+              generalDepartments: [],
+              administrativeDepartments: [],
+            ),
+          ),
         ],
         child: const MaterialApp(home: ChurchProfileScreen()),
       ),

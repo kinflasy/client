@@ -6,6 +6,8 @@ class AppRoutes {
   static const homeFeed = '/home/feed';
   static const homeCalendar = '/home/calendar';
   static const homeChurch = '/home/church';
+  static const homeChurchDepartmentsCategory =
+      '/home/church/departamentos/categoria/:category';
   static const homeChurchDepartmentDetail = '/home/church/departamentos/:id';
   static const homeMenu = '/home/menu';
   static const homeMenuEditProfile = '/home/menu/editar-informacoes';
@@ -30,6 +32,8 @@ class AppRoutes {
   static const homeFeedName = 'home-feed';
   static const homeCalendarName = 'home-calendar';
   static const homeChurchName = 'home-church';
+  static const homeChurchDepartmentsCategoryName =
+      'home-church-departments-category';
   static const homeChurchDepartmentDetailName = 'home-church-department-detail';
   static const homeMenuName = 'home-menu';
   static const homeMenuEditProfileName = 'home-menu-edit-profile';

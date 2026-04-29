@@ -3,7 +3,9 @@ import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/fga/fga_relations.dart';
 import 'package:client/core/fga/fga_service.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
+import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
+import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -28,6 +30,13 @@ Future<SessionPermissions> sessionPermissions(Ref ref) async {
 
   return resolveSessionPermissions(
     memberships: memberships,
+    loadIntegrations: () async {
+      try {
+        return await ref.read(myDepartmentIntegrationsProvider.future);
+      } catch (_) {
+        return const <IntegrationEntity>[];
+      }
+    },
     checkUnitAdmin: (unitId) => ref
         .read(fgaServiceProvider)
         .check(object: FgaObject.unit(unitId), relation: FgaRelation.admin),
@@ -56,6 +65,7 @@ Affiliation? _mapAffiliation(String value) {
 
 Future<SessionPermissions> resolveSessionPermissions({
   required List<MembershipEntity> memberships,
+  required Future<List<IntegrationEntity>> Function() loadIntegrations,
   required Future<bool> Function(String unitId) checkUnitAdmin,
 }) async {
   if (memberships.isEmpty) {
@@ -79,12 +89,19 @@ Future<SessionPermissions> resolveSessionPermissions({
     isUnitAdmin = false;
   }
 
+  List<IntegrationEntity> integrations;
+  try {
+    integrations = await loadIntegrations();
+  } catch (_) {
+    integrations = const [];
+  }
+
   return SessionPermissions(
     isAuthenticated: true,
     affiliation: isUnitAdmin ? Affiliation.unitAdmin : affiliation,
     activeUnitId: activeMembership.unitId,
     hasMembership: true,
-    integrations: const [],
+    integrations: integrations,
     isUnitAdmin: isUnitAdmin,
   );
 }

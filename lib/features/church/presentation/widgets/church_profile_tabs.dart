@@ -1,9 +1,12 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_event_entity.dart';
 import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/presentation/widgets/department_card.dart';
 import 'package:client/features/department/providers/department_providers.dart';
+import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -134,15 +137,37 @@ class DepartmentsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final departmentsAsync = ref.watch(departmentsProvider(unitId));
+    final departmentsAsync = ref.watch(segmentedDepartmentsProvider(unitId));
+    final permissionsAsync = ref.watch(sessionPermissionsProvider);
     return departmentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(
         icon: Icons.groups_2_outlined,
         title: 'Não foi possível carregar os departamentos.',
       ),
-      data: (departments) {
-        if (departments.isEmpty) {
+      data: (segmentedDepartments) {
+        final sections = <_DepartmentSection>[
+          if (segmentedDepartments.myDepartments.isNotEmpty)
+            _DepartmentSection(
+              category: DepartmentCategory.my,
+              title: 'Meus departamentos',
+              departments: segmentedDepartments.myDepartments,
+            ),
+          if (segmentedDepartments.generalDepartments.isNotEmpty)
+            _DepartmentSection(
+              category: DepartmentCategory.general,
+              title: 'Geral',
+              departments: segmentedDepartments.generalDepartments,
+            ),
+          if (segmentedDepartments.administrativeDepartments.isNotEmpty)
+            _DepartmentSection(
+              category: DepartmentCategory.administrative,
+              title: 'Administrativo',
+              departments: segmentedDepartments.administrativeDepartments,
+            ),
+        ];
+
+        if (sections.isEmpty) {
           return const _InlineStatus(
             icon: Icons.groups_outlined,
             title: 'Nenhum departamento encontrado.',
@@ -153,17 +178,92 @@ class DepartmentsTab extends ConsumerWidget {
 
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          itemCount: departments.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) => DepartmentCard(
-            department: departments[index],
-            onTap: () => context.pushNamed(
-              AppRoutes.homeChurchDepartmentDetailName,
-              pathParameters: {'id': departments[index].id},
-            ),
+          itemCount: sections.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 24),
+          itemBuilder: (context, index) => _DepartmentSectionContent(
+            category: sections[index].category,
+            title: sections[index].title,
+            departments: sections[index].departments,
+            permissionsAsync: permissionsAsync,
           ),
         );
       },
+    );
+  }
+}
+
+class _DepartmentSection {
+  const _DepartmentSection({
+    required this.category,
+    required this.title,
+    required this.departments,
+  });
+
+  final DepartmentCategory category;
+  final String title;
+  final List<DepartmentEntity> departments;
+}
+
+class _DepartmentSectionContent extends StatelessWidget {
+  const _DepartmentSectionContent({
+    required this.category,
+    required this.title,
+    required this.departments,
+    required this.permissionsAsync,
+  });
+
+  final DepartmentCategory category;
+  final String title;
+  final List<DepartmentEntity> departments;
+  final AsyncValue<SessionPermissions> permissionsAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => context.pushNamed(
+            AppRoutes.homeChurchDepartmentsCategoryName,
+            pathParameters: {'category': departmentCategoryPathValue(category)},
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: departments.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final department = departments[index];
+            final canOpen = permissionsAsync.whenOrNull(
+              data: (permissions) => permissions.canObserveDept(department.id),
+            );
+
+            return DepartmentCard(
+              department: department,
+              onTap: canOpen == true
+                  ? () => context.pushNamed(
+                      AppRoutes.homeChurchDepartmentDetailName,
+                      pathParameters: {'id': department.id},
+                    )
+                  : null,
+            );
+          },
+        ),
+      ],
     );
   }
 }

@@ -10,6 +10,7 @@ import 'package:client/features/church/presentation/screens/church_search_screen
 import 'package:client/features/church/presentation/screens/register_church_screen.dart';
 import 'package:client/features/church/presentation/screens/church_tab_screen.dart';
 import 'package:client/features/church/presentation/screens/admin_panel_screen.dart';
+import 'package:client/features/department/presentation/screens/department_category_list_screen.dart';
 import 'package:client/features/department/presentation/screens/department_screen.dart';
 import 'package:client/features/department/presentation/screens/departments_list_screen.dart';
 import 'package:client/features/department/presentation/screens/register_department_screen.dart';
@@ -38,6 +39,7 @@ final _protectedRoutes = <String>{
   AppRoutes.homeFeed,
   AppRoutes.homeCalendar,
   AppRoutes.homeChurch,
+  AppRoutes.homeChurchDepartmentsCategory,
   AppRoutes.homeChurchDepartmentDetail,
   AppRoutes.homeMenu,
   AppRoutes.homeMenuEditProfile,
@@ -99,16 +101,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
       final currentPath = state.matchedLocation;
+      final routePath = state.fullPath ?? currentPath;
 
       if (authState.isLoading) {
-        final isAuthRoute = _isAuthRoute(currentPath);
+        final isAuthRoute = _isAuthRoute(routePath);
         return isAuthRoute ? null : AppRoutes.splash;
       }
 
       final isLoggedIn = authState.value != null;
-      final isAuthRoute = _isAuthRoute(currentPath);
-      final isSystemRoute = _isSystemRoute(currentPath);
-      final isProtectedRoute = _isProtectedRoute(currentPath);
+      final isAuthRoute = _isAuthRoute(routePath);
+      final isSystemRoute = _isSystemRoute(routePath);
+      final isProtectedRoute = _isProtectedRoute(routePath);
 
       if (!isLoggedIn && currentPath == AppRoutes.splash) {
         return AppRoutes.login;
@@ -125,18 +128,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         final permissions = permissionsAsync.asData?.value;
 
         if (permissions != null) {
-          if (_membershipRequiredRoutes.contains(currentPath) &&
+          if (_membershipRequiredRoutes.contains(routePath) &&
               !permissions.hasMembership) {
             return AppRoutes.homeFeed;
           }
 
-          if (_memberRoutes.contains(currentPath) && !permissions.isMember) {
+          if (_memberRoutes.contains(routePath) && !permissions.isMember) {
             return AppRoutes.homeFeed;
           }
 
-          if (_unitAdminRoutes.contains(currentPath) &&
+          if (_unitAdminRoutes.contains(routePath) &&
               !permissions.isUnitAdmin) {
             return AppRoutes.homeFeed;
+          }
+
+          final isDepartmentDetailRoute =
+              routePath == AppRoutes.homeChurchDepartmentDetail ||
+              routePath == AppRoutes.departmentDetail;
+          if (isDepartmentDetailRoute) {
+            final departmentId = state.pathParameters['id'];
+            if (departmentId != null &&
+                !permissions.canObserveDept(departmentId)) {
+              return AppRoutes.homeFeed;
+            }
           }
         }
       }
@@ -193,6 +207,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 name: AppRoutes.homeChurchName,
                 builder: (context, state) => const ChurchTabScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'departamentos/categoria/:category',
+                    name: AppRoutes.homeChurchDepartmentsCategoryName,
+                    builder: (context, state) {
+                      final category = state.pathParameters['category']!;
+                      return DepartmentCategoryListScreen(category: category);
+                    },
+                  ),
                   GoRoute(
                     path: 'departamentos/:id',
                     name: AppRoutes.homeChurchDepartmentDetailName,

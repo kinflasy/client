@@ -90,6 +90,47 @@ void main() {
   });
 
   test(
+    'loadMembershipIntegrations returns integrations from repository',
+    () async {
+      final repository = _FakeMemberProfileRepository(
+        personResult: Right(
+          PersonProfileModel.fromJson({
+            'type': 'USER',
+            'id': 'person-0',
+            'fullName': 'Teste',
+            'gender': 'FEMALE',
+          }),
+        ),
+        membershipResult: Right(
+          ActiveMembershipModel.fromJson({
+            'id': 'membership-0',
+            'unitId': 'unit-1',
+            'personId': 'person-0',
+            'affiliation': 'MEMBER',
+          }),
+        ),
+        integrationsResult: Right([
+          const IntegrationEntity(
+            id: 'integration-1',
+            membershipId: 'membership-0',
+            departmentId: 'dept-1',
+            departmentType: 'MINISTRY',
+            integrationType: IntegrationType.integrant,
+          ),
+        ]),
+      );
+
+      final integrations = await loadMembershipIntegrations(
+        repository: repository,
+        membershipId: 'membership-0',
+      );
+
+      expect(integrations, hasLength(1));
+      expect(integrations.single.departmentId, 'dept-1');
+    },
+  );
+
+  test(
     'resolveMemberProfile prioritizes backend age and resolves department names',
     () async {
       final repository = _FakeMemberProfileRepository(
@@ -139,11 +180,7 @@ void main() {
         unitId: 'unit-1',
         repository: repository,
         fetchDepartments: () async => const [
-          DepartmentEntity(
-            id: 'dept-1',
-            name: 'Louvor',
-            type: 'MINISTRY',
-          ),
+          DepartmentEntity(id: 'dept-1', name: 'Louvor', type: 'MINISTRY'),
         ],
       );
 

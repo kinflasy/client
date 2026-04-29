@@ -3,6 +3,7 @@ import 'package:client/core/presentation/widgets/app_tab_bar.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/membership/presentation/widgets/member_summary_card.dart';
+import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,6 +31,10 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
     final departmentAsync = ref.watch(
       departmentDetailProvider(widget.departmentId),
     );
+    final permissionsAsync = ref.watch(sessionPermissionsProvider);
+    final accessDenied = permissionsAsync.whenOrNull(
+      data: (permissions) => !permissions.canObserveDept(widget.departmentId),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -40,43 +45,50 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
       ),
-      body: departmentAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => const _InlineStatus(
-          icon: Icons.groups_2_outlined,
-          title: 'Nao foi possivel carregar o departamento.',
-          subtitle: 'Tente novamente em instantes.',
-        ),
-        data: (_) => Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppTabBar(
-                tabs: _tabs,
-                selectedIndex: _selectedTabIndex,
-                onTabChanged: (index) {
-                  setState(() {
-                    _selectedTabIndex = index;
-                  });
-                },
+      body: accessDenied == true
+          ? const _InlineStatus(
+              icon: Icons.lock_outline,
+              title: 'Voce nao tem permissao para abrir este departamento.',
+              subtitle:
+                  'Se precisar de acesso, fale com a lideranca da unidade.',
+            )
+          : departmentAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) => const _InlineStatus(
+                icon: Icons.groups_2_outlined,
+                title: 'Nao foi possivel carregar o departamento.',
+                subtitle: 'Tente novamente em instantes.',
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: IndexedStack(
-                  index: _selectedTabIndex,
+              data: (_) => Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _DepartmentEventsPlaceholder(),
-                    _DepartmentParticipantsTab(
-                      departmentId: widget.departmentId,
+                    AppTabBar(
+                      tabs: _tabs,
+                      selectedIndex: _selectedTabIndex,
+                      onTabChanged: (index) {
+                        setState(() {
+                          _selectedTabIndex = index;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: IndexedStack(
+                        index: _selectedTabIndex,
+                        children: [
+                          const _DepartmentEventsPlaceholder(),
+                          _DepartmentParticipantsTab(
+                            departmentId: widget.departmentId,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
@@ -152,11 +164,7 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
 }
 
 class _InlineStatus extends StatelessWidget {
-  const _InlineStatus({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-  });
+  const _InlineStatus({required this.icon, required this.title, this.subtitle});
 
   final IconData icon;
   final String title;

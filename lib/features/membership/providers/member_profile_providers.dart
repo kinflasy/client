@@ -7,6 +7,7 @@ import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/data/datasources/member_profile_api.dart';
 import 'package:client/features/membership/data/repositories/member_profile_repository_impl.dart';
+import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
 import 'package:client/features/membership/providers/unit_member_providers.dart';
@@ -19,6 +20,17 @@ final memberProfileApiProvider = Provider<MemberProfileApi>(
 final memberProfileRepositoryProvider = Provider<MemberProfileRepository>(
   (ref) => MemberProfileRepositoryImpl(ref.watch(memberProfileApiProvider)),
 );
+
+final myDepartmentIntegrationsProvider =
+    FutureProvider<List<IntegrationEntity>>((ref) async {
+      final membership = await ref.watch(activeMembershipProvider.future);
+      if (membership == null) return const [];
+
+      return loadMembershipIntegrations(
+        repository: ref.read(memberProfileRepositoryProvider),
+        membershipId: membership.id,
+      );
+    });
 
 final memberProfileProvider =
     FutureProvider.family<MemberProfileEntity, String>((ref, personId) async {
@@ -108,16 +120,29 @@ Future<List<DepartmentEntity>> _loadDepartments(
   }
 }
 
+Future<List<IntegrationEntity>> loadMembershipIntegrations({
+  required MemberProfileRepository repository,
+  required String membershipId,
+}) async {
+  final integrationsResult = await repository.getIntegrations(membershipId);
+  return integrationsResult.fold((failure) => throw failure, (value) => value);
+}
+
 Future<List<MemberProfileIntegrationEntity>> _combineIntegrations({
   required MemberProfileRepository repository,
   required String membershipId,
   required Future<List<DepartmentEntity>> Function() fetchDepartments,
 }) async {
-  final integrationsResult = await repository.getIntegrations(membershipId);
-  final integrations = integrationsResult.fold(
-    (_) => const [],
-    (value) => value,
-  );
+  List<IntegrationEntity> integrations;
+  try {
+    integrations = await loadMembershipIntegrations(
+      repository: repository,
+      membershipId: membershipId,
+    );
+  } catch (_) {
+    return const [];
+  }
+
   if (integrations.isEmpty) return const [];
 
   final departments = await _loadDepartments(fetchDepartments);

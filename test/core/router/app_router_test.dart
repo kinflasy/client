@@ -9,6 +9,7 @@ import 'package:client/features/church/domain/repositories/church_unit_repositor
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/domain/entities/my_departments_unit_group.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
 import 'package:client/features/department/providers/department_providers.dart';
@@ -133,6 +134,22 @@ void main() {
             affiliation: 'MEMBER',
           ),
         ),
+        myDepartmentsByUnitProvider.overrideWith(
+          (ref) async => const [
+            MyDepartmentsUnitGroup(
+              unitId: 'unit-1',
+              unitName: 'Igreja Batista Betel',
+              departments: [
+                DepartmentEntity(
+                  id: 'dep-2',
+                  name: 'Midia',
+                  slug: 'midia',
+                  type: 'MINISTRY',
+                ),
+              ],
+            ),
+          ],
+        ),
       ],
     );
   });
@@ -203,6 +220,26 @@ void main() {
       expect(find.text('Buscar departamento por nome'), findsOneWidget);
     },
   );
+
+  testWidgets('shell my departments menu screen keeps bottom navigation visible',
+      (tester) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    router.go('/home/menu/meus-departamentos');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.text('Meus departamentos'), findsOneWidget);
+    expect(find.text('Igreja Batista Betel'), findsOneWidget);
+  });
 
   testWidgets(
     'user without integration is redirected away from department detail',

@@ -1,11 +1,18 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/network/dio_client.dart';
 import 'package:client/core/utils/string_utils.dart';
+import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/data/datasources/department_api.dart';
 import 'package:client/features/department/data/models/department_request_model.dart';
 import 'package:client/features/department/data/repositories/department_repository_impl.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/domain/entities/my_departments_unit_group.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
+import 'package:client/features/membership/domain/entities/integration_entity.dart';
+import 'package:client/features/membership/domain/entities/membership_entity.dart';
+import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
+import 'package:client/features/membership/providers/member_profile_providers.dart';
+import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,6 +108,33 @@ AsyncValue<List<DepartmentEntity>> filteredDepartments(Ref ref, String unitId) {
 }
 
 final departmentsProvider = rawDepartmentsProvider;
+
+final myDepartmentsByUnitProvider =
+    FutureProvider<List<MyDepartmentsUnitGroup>>((ref) async {
+      final memberships = await ref.watch(membershipProvider.future);
+      if (memberships.isEmpty) return const [];
+
+      final repository = ref.read(memberProfileRepositoryProvider);
+      final integrationsByUnitId = await _loadIntegrationsByUnit(
+        memberships: memberships,
+        repository: repository,
+      );
+
+      if (integrationsByUnitId.isEmpty) return const [];
+
+      final groups = await Future.wait(
+        integrationsByUnitId.entries.map(
+          (entry) => _buildMyDepartmentsUnitGroup(
+            ref: ref,
+            unitId: entry.key,
+            integrations: entry.value,
+          ),
+        ),
+      );
+
+      return groups.whereType<MyDepartmentsUnitGroup>().toList()
+        ..sort((a, b) => a.unitName.compareTo(b.unitName));
+    });
 
 final segmentedDepartmentsProvider =
     FutureProvider.family<SegmentedDepartments, String>((ref, unitId) async {
@@ -247,4 +281,78 @@ List<DepartmentEntity> _filterDepartmentsByQuery(
 
   filtered.sort((a, b) => a.name.compareTo(b.name));
   return filtered;
+}
+
+Future<Map<String, List<IntegrationEntity>>> _loadIntegrationsByUnit({
+  required List<MembershipEntity> memberships,
+  required MemberProfileRepository repository,
+}) async {
+  final entries = await Future.wait(
+    memberships.map((membership) async {
+      try {
+        final integrations = await loadMembershipIntegrations(
+          repository: repository,
+          membershipId: membership.id,
+        );
+        return MapEntry(membership.unitId, integrations);
+      } catch (_) {
+        return MapEntry(membership.unitId, const <IntegrationEntity>[]);
+      }
+    }),
+  );
+
+  final integrationsByUnitId = <String, List<IntegrationEntity>>{};
+  for (final entry in entries) {
+    final existing = integrationsByUnitId.putIfAbsent(entry.key, () => []);
+    existing.addAll(entry.value);
+  }
+
+  integrationsByUnitId.removeWhere((_, integrations) => integrations.isEmpty);
+  return integrationsByUnitId;
+}
+
+Future<MyDepartmentsUnitGroup?> _buildMyDepartmentsUnitGroup({
+  required Ref ref,
+  required String unitId,
+  required List<IntegrationEntity> integrations,
+}) async {
+  final departmentIds = integrations.map((item) => item.departmentId).toSet();
+  if (departmentIds.isEmpty) return null;
+
+  final departments = await ref.read(departmentsProvider(unitId).future);
+  final myDepartments = departments
+      .where((department) => departmentIds.contains(department.id))
+      .toList()
+    ..sort((a, b) => a.name.compareTo(b.name));
+
+  if (myDepartments.isEmpty) return null;
+
+  String unitName = 'Unidade';
+  final unitResult = await ref.read(churchUnitRepositoryProvider).getUnitById(
+    unitId,
+  );
+  final resolvedUnitName = await unitResult.fold<Future<String?>>(
+    (_) async => null,
+    (unit) async {
+      final directName = unit.name?.trim();
+      if (directName != null && directName.isNotEmpty) {
+        return directName;
+      }
+
+      final churchResult = await ref
+          .read(churchRepositoryProvider)
+          .getChurchById(unit.churchId);
+      return churchResult.fold((_) => null, (church) => church.name.trim());
+    },
+  );
+
+  if (resolvedUnitName != null && resolvedUnitName.isNotEmpty) {
+    unitName = resolvedUnitName;
+  }
+
+  return MyDepartmentsUnitGroup(
+    unitId: unitId,
+    unitName: unitName,
+    departments: myDepartments,
+  );
 }

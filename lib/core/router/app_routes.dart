@@ -10,6 +10,7 @@ class AppRoutes {
       '/home/church/departamentos/categoria/:category';
   static const homeChurchDepartmentDetail = '/home/church/departamentos/:id';
   static const homeMenu = '/home/menu';
+  static const homeMenuMyDepartments = '/home/menu/meus-departamentos';
   static const homeMenuEditProfile = '/home/menu/editar-informacoes';
   static const registerChurch = '/register-church';
   static const churchSearch = '/church-search';
@@ -36,6 +37,7 @@ class AppRoutes {
       'home-church-departments-category';
   static const homeChurchDepartmentDetailName = 'home-church-department-detail';
   static const homeMenuName = 'home-menu';
+  static const homeMenuMyDepartmentsName = 'home-menu-my-departments';
   static const homeMenuEditProfileName = 'home-menu-edit-profile';
   static const registerChurchName = 'register-church';
   static const churchSearchName = 'church-search';

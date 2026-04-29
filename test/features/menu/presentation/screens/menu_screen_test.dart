@@ -42,6 +42,12 @@ void main() {
               const Scaffold(body: Text('Editar perfil')),
         ),
         GoRoute(
+          path: AppRoutes.homeMenuMyDepartments,
+          name: AppRoutes.homeMenuMyDepartmentsName,
+          builder: (context, state) =>
+              const Scaffold(body: Text('Meus departamentos screen')),
+        ),
+        GoRoute(
           path: AppRoutes.registerChurch,
           name: AppRoutes.registerChurchName,
           builder: (context, state) =>
@@ -139,6 +145,18 @@ void main() {
       expect(inkWell.onTap, isNull);
     },
   );
+
+  testWidgets('navigates to my departments screen when user has membership', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildApp(hasMembership: true));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Meus departamentos'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Meus departamentos screen'), findsOneWidget);
+  });
 
   testWidgets('navigates to register church screen', (tester) async {
     await tester.pumpWidget(buildApp());

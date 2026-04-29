@@ -45,9 +45,12 @@ class MenuScreen extends ConsumerWidget {
         icon: Icons.groups_2_outlined,
         title: 'Meus departamentos',
         semanticsHint: hasMembership
-            ? 'Área preparada para futura navegação'
+            ? 'Abre os departamentos em que você participa'
             : 'Indisponível sem vínculo com igreja',
         isEnabled: hasMembership,
+        onTap: hasMembership
+            ? () => context.pushNamed(AppRoutes.homeMenuMyDepartmentsName)
+            : null,
       ),
       MenuGridCardData(
         icon: Icons.add_business_outlined,

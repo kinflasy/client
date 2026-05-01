@@ -2,6 +2,7 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/features/church/data/models/church_read_models.dart';
 import 'package:client/features/department/data/datasources/department_api.dart';
 import 'package:client/features/department/data/models/department_request_model.dart';
+import 'package:client/features/department/data/models/integration_request_model.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
@@ -94,6 +95,30 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
     } on DioException catch (e) {
       return Left(
         NetworkFailure(e.message ?? 'Erro ao carregar participantes.'),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> addParticipant(
+    String departmentId,
+    IntegrationRequestModel request,
+  ) async {
+    try {
+      await _api.addParticipant(departmentId, request.toJson());
+      return const Right(unit);
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 400 || statusCode == 403 || statusCode == 409) {
+        final message =
+            _readMap(e.response?.data)['message'] as String? ??
+            'Não foi possível adicionar este participante.';
+        return Left(ValidationFailure(message));
+      }
+      return Left(
+        NetworkFailure(e.message ?? 'Erro ao adicionar participante.'),
       );
     } catch (e) {
       return Left(UnknownFailure(e.toString()));

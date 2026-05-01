@@ -1,11 +1,13 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/presentation/widgets/app_tab_bar.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/membership/presentation/widgets/member_summary_card.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class DepartmentScreen extends ConsumerStatefulWidget {
   const DepartmentScreen({
@@ -35,6 +37,11 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
     final accessDenied = permissionsAsync.whenOrNull(
       data: (permissions) => !permissions.canObserveDept(widget.departmentId),
     );
+    final canManageParticipants =
+        permissionsAsync.whenOrNull(
+          data: (permissions) => permissions.canManageDept(widget.departmentId),
+        ) ??
+        false;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -48,15 +55,15 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
       body: accessDenied == true
           ? const _InlineStatus(
               icon: Icons.lock_outline,
-              title: 'Voce nao tem permissao para abrir este departamento.',
+              title: 'Você não tem permissão para abrir este departamento.',
               subtitle:
-                  'Se precisar de acesso, fale com a lideranca da unidade.',
+                  'Se precisar de acesso, fale com a liderança da unidade.',
             )
           : departmentAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stackTrace) => const _InlineStatus(
                 icon: Icons.groups_2_outlined,
-                title: 'Nao foi possivel carregar o departamento.',
+                title: 'Não foi possível carregar o departamento.',
                 subtitle: 'Tente novamente em instantes.',
               ),
               data: (_) => Padding(
@@ -81,6 +88,7 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
                           const _DepartmentEventsPlaceholder(),
                           _DepartmentParticipantsTab(
                             departmentId: widget.departmentId,
+                            canManageParticipants: canManageParticipants,
                           ),
                         ],
                       ),
@@ -110,15 +118,19 @@ class _DepartmentEventsPlaceholder extends StatelessWidget {
       icon: Icons.event_note_outlined,
       title: 'Eventos do departamento em breve.',
       subtitle:
-          'Nesta primeira versao, esta aba vai comecar com conteudo mockado.',
+          'Nesta primeira versão, esta aba vai começar com conteúdo mockado.',
     );
   }
 }
 
 class _DepartmentParticipantsTab extends ConsumerWidget {
-  const _DepartmentParticipantsTab({required this.departmentId});
+  const _DepartmentParticipantsTab({
+    required this.departmentId,
+    required this.canManageParticipants,
+  });
 
   final String departmentId;
+  final bool canManageParticipants;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -130,35 +142,78 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(
         icon: Icons.group_off_outlined,
-        title: 'Nao foi possivel carregar os participantes.',
+        title: 'Não foi possível carregar os participantes.',
         subtitle: 'Tente novamente em instantes.',
       ),
       data: (participants) {
+        final addButton = _AddParticipantsButton(departmentId: departmentId);
+
         if (participants.isEmpty) {
-          return const _InlineStatus(
-            icon: Icons.groups_outlined,
-            title: 'Nenhum participante encontrado.',
-            subtitle:
-                'Quando houver pessoas vinculadas a este departamento, elas aparecerao aqui.',
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (canManageParticipants) ...[
+                addButton,
+                const SizedBox(height: 16),
+              ],
+              const Expanded(
+                child: _InlineStatus(
+                  icon: Icons.groups_outlined,
+                  title: 'Nenhum participante encontrado.',
+                  subtitle:
+                      'Quando houver pessoas vinculadas a este departamento, elas aparecerão aqui.',
+                ),
+              ),
+            ],
           );
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 24),
-          itemCount: participants.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final participant = participants[index];
-            return MemberSummaryCard(
-              fullName: participant.fullName,
-              affiliation: participant.affiliation,
-              gender: participant.gender,
-              birthDate: participant.birthDate,
-              age: participant.age,
-            );
-          },
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (canManageParticipants) ...[
+              addButton,
+              const SizedBox(height: 16),
+            ],
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.only(bottom: 24),
+                itemCount: participants.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final participant = participants[index];
+                  return MemberSummaryCard(
+                    fullName: participant.fullName,
+                    affiliation: participant.affiliation,
+                    gender: participant.gender,
+                    birthDate: participant.birthDate,
+                    age: participant.age,
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
+    );
+  }
+}
+
+class _AddParticipantsButton extends StatelessWidget {
+  const _AddParticipantsButton({required this.departmentId});
+
+  final String departmentId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      onPressed: () => context.pushNamed(
+        AppRoutes.departmentParticipantsAddName,
+        pathParameters: {'id': departmentId},
+      ),
+      icon: const Icon(Icons.person_add_alt_1),
+      label: const Text('Adicionar participantes'),
     );
   }
 }

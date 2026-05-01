@@ -12,6 +12,7 @@ import 'package:client/features/church/presentation/screens/church_tab_screen.da
 import 'package:client/features/church/presentation/screens/admin_panel_screen.dart';
 import 'package:client/features/department/presentation/screens/department_category_list_screen.dart';
 import 'package:client/features/department/presentation/screens/my_departments_menu_screen.dart';
+import 'package:client/features/department/presentation/screens/department_participants_selection_screen.dart';
 import 'package:client/features/department/presentation/screens/department_screen.dart';
 import 'package:client/features/department/presentation/screens/departments_list_screen.dart';
 import 'package:client/features/department/presentation/screens/register_department_screen.dart';
@@ -59,6 +60,7 @@ final _protectedRoutes = <String>{
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
   AppRoutes.departmentDetail,
+  AppRoutes.departmentParticipantsAdd,
 };
 
 final _membershipRequiredRoutes = <String>{};
@@ -146,7 +148,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
           final isDepartmentDetailRoute =
               routePath == AppRoutes.homeChurchDepartmentDetail ||
-              routePath == AppRoutes.departmentDetail;
+              routePath == AppRoutes.departmentDetail ||
+              routePath == AppRoutes.departmentParticipantsAdd;
           if (isDepartmentDetailRoute) {
             final departmentId = state.pathParameters['id'];
             if (departmentId != null &&
@@ -332,6 +335,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return DepartmentScreen(
             departmentId: departmentId,
             showBackButton: true,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.departmentParticipantsAdd,
+        name: AppRoutes.departmentParticipantsAddName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final departmentId = state.pathParameters['id']!;
+          return DepartmentParticipantsSelectionScreen(
+            departmentId: departmentId,
           );
         },
       ),

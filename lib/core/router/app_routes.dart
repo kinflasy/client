@@ -26,6 +26,8 @@ class AppRoutes {
   static const adminDepartments = '/admin/departamentos';
   static const adminDepartmentsRegister = '/admin/departamentos/cadastrar';
   static const departmentDetail = '/departamentos/:id';
+  static const departmentParticipantsAdd =
+      '/departamentos/:id/participantes/adicionar';
 
   static const splashName = 'splash';
   static const loginName = 'login';
@@ -52,4 +54,5 @@ class AppRoutes {
   static const adminDepartmentsName = 'admin-departments';
   static const adminDepartmentsRegisterName = 'admin-departments-register';
   static const departmentDetailName = 'department-detail';
+  static const departmentParticipantsAddName = 'department-participants-add';
 }

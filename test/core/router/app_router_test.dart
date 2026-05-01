@@ -15,6 +15,7 @@ import 'package:client/features/department/domain/repositories/department_reposi
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
+import 'package:client/features/membership/providers/unit_member_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -150,6 +151,7 @@ void main() {
             ),
           ],
         ),
+        rawUnitMembersProvider.overrideWith((ref, unitId) async => const []),
       ],
     );
   });
@@ -199,6 +201,27 @@ void main() {
     expect(find.text('Louvor'), findsOneWidget);
   });
 
+  testWidgets('department participants add route opens outside shell', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    router.go('/departamentos/dep-1/participantes/adicionar');
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(BottomNavigationBar), findsNothing);
+    expect(find.text('Pesquisar nome ou apelido...'), findsOneWidget);
+  });
+
   testWidgets(
     'shell department category list keeps bottom navigation visible',
     (tester) async {
@@ -221,25 +244,27 @@ void main() {
     },
   );
 
-  testWidgets('shell my departments menu screen keeps bottom navigation visible',
-      (tester) async {
-    final router = container.read(appRouterProvider);
+  testWidgets(
+    'shell my departments menu screen keeps bottom navigation visible',
+    (tester) async {
+      final router = container.read(appRouterProvider);
 
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp.router(routerConfig: router),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    router.go('/home/menu/meus-departamentos');
-    await tester.pumpAndSettle();
+      router.go('/home/menu/meus-departamentos');
+      await tester.pumpAndSettle();
 
-    expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Meus departamentos'), findsOneWidget);
-    expect(find.text('Igreja Batista Betel'), findsOneWidget);
-  });
+      expect(find.byType(BottomNavigationBar), findsOneWidget);
+      expect(find.text('Meus departamentos'), findsOneWidget);
+      expect(find.text('Igreja Batista Betel'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'user without integration is redirected away from department detail',

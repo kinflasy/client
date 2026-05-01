@@ -1,5 +1,6 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/department/data/datasources/department_api.dart';
+import 'package:client/features/department/data/models/integration_request_model.dart';
 import 'package:client/features/department/data/repositories/department_repository_impl.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,61 +60,64 @@ void main() {
   });
 
   group('DepartmentRepositoryImpl.getParticipants', () {
-    test('returns participants from nested integration payload on success', () async {
-      when(() => api.getParticipants('dep-1')).thenAnswer(
-        (_) async => [
-          {
-            'id': 'integration-1',
-            'department': {'id': 'dep-1'},
-            'membership': {
-              'id': 'membership-1',
-              'unitId': 'unit-1',
-              'affiliation': 'MEMBER',
-              'person': {
-                'id': 'person-1',
-                'fullName': 'Maria Silva',
-                'gender': 'FEMALE',
-                'birthDate': '1990-05-12T00:00:00.000Z',
-                'age': 34,
+    test(
+      'returns participants from nested integration payload on success',
+      () async {
+        when(() => api.getParticipants('dep-1')).thenAnswer(
+          (_) async => [
+            {
+              'id': 'integration-1',
+              'department': {'id': 'dep-1'},
+              'membership': {
+                'id': 'membership-1',
+                'unitId': 'unit-1',
+                'affiliation': 'MEMBER',
+                'person': {
+                  'id': 'person-1',
+                  'fullName': 'Maria Silva',
+                  'gender': 'FEMALE',
+                  'birthDate': '1990-05-12T00:00:00.000Z',
+                  'age': 34,
+                },
               },
+              'type': 'LEADER',
             },
-            'type': 'LEADER',
-          },
-          {
-            'id': 'integration-2',
-            'department': {'id': 'dep-1'},
-            'membership': {
-              'id': 'membership-2',
-              'unitId': 'unit-1',
-              'affiliation': 'CONGREGATED',
-              'person': {
-                'id': 'person-2',
-                'fullName': 'Joao Souza',
-                'gender': 'MALE',
-                'birthDate': '',
+            {
+              'id': 'integration-2',
+              'department': {'id': 'dep-1'},
+              'membership': {
+                'id': 'membership-2',
+                'unitId': 'unit-1',
+                'affiliation': 'CONGREGATED',
+                'person': {
+                  'id': 'person-2',
+                  'fullName': 'Joao Souza',
+                  'gender': 'MALE',
+                  'birthDate': '',
+                },
               },
+              'type': 'OBSERVER',
             },
-            'type': 'OBSERVER',
-          },
-        ],
-      );
-
-      final result = await repository.getParticipants('dep-1');
-
-      expect(result.isRight(), isTrue);
-      result.match((_) => fail('expected success'), (participants) {
-        expect(participants, hasLength(2));
-        expect(participants.first.fullName, 'Maria Silva');
-        expect(
-          participants.first.birthDate,
-          DateTime.parse('1990-05-12T00:00:00.000Z'),
+          ],
         );
-        expect(participants.first.age, 34);
-        expect(participants.last.personId, 'person-2');
-        expect(participants.last.birthDate, isNull);
-        expect(participants.last.age, isNull);
-      });
-    });
+
+        final result = await repository.getParticipants('dep-1');
+
+        expect(result.isRight(), isTrue);
+        result.match((_) => fail('expected success'), (participants) {
+          expect(participants, hasLength(2));
+          expect(participants.first.fullName, 'Maria Silva');
+          expect(
+            participants.first.birthDate,
+            DateTime.parse('1990-05-12T00:00:00.000Z'),
+          );
+          expect(participants.first.age, 34);
+          expect(participants.last.personId, 'person-2');
+          expect(participants.last.birthDate, isNull);
+          expect(participants.last.age, isNull);
+        });
+      },
+    );
 
     test('keeps birthDate when age is absent', () async {
       when(() => api.getParticipants('dep-1')).thenAnswer(
@@ -153,10 +157,7 @@ void main() {
             'membership': {
               'id': 'membership-1',
               'affiliation': 'MEMBER',
-              'person': {
-                'fullName': 'Maria Silva',
-                'gender': 'FEMALE',
-              },
+              'person': {'fullName': 'Maria Silva', 'gender': 'FEMALE'},
             },
             'type': 'LEADER',
           },
@@ -200,6 +201,75 @@ void main() {
       result.match((failure) {
         expect(failure, isA<NetworkFailure>());
         expect(failure.message, 'offline');
+      }, (_) => fail('expected failure'));
+    });
+  });
+
+  group('DepartmentRepositoryImpl.addParticipant', () {
+    test('sends payload and returns unit on success', () async {
+      when(
+        () => api.addParticipant('dep-1', any()),
+      ).thenAnswer((_) async => <String, dynamic>{});
+
+      final result = await repository.addParticipant(
+        'dep-1',
+        const IntegrationRequestModel(membershipId: 'membership-1'),
+      );
+
+      expect(result.isRight(), isTrue);
+      final captured = verify(
+        () => api.addParticipant('dep-1', captureAny()),
+      ).captured.single;
+      expect(captured, {'membershipId': 'membership-1', 'type': 'INTEGRANT'});
+    });
+
+    test('maps dio failure into NetworkFailure', () async {
+      when(() => api.addParticipant('dep-1', any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(
+            path: '/v1/core/church/unit/departments/dep-1/integrants',
+          ),
+          message: 'offline',
+        ),
+      );
+
+      final result = await repository.addParticipant(
+        'dep-1',
+        const IntegrationRequestModel(membershipId: 'membership-1'),
+      );
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<NetworkFailure>());
+        expect(failure.message, 'offline');
+      }, (_) => fail('expected failure'));
+    });
+
+    test('maps conflict into ValidationFailure with backend message', () async {
+      when(() => api.addParticipant('dep-1', any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(
+            path: '/v1/core/church/unit/departments/dep-1/integrants',
+          ),
+          response: Response(
+            requestOptions: RequestOptions(
+              path: '/v1/core/church/unit/departments/dep-1/integrants',
+            ),
+            statusCode: 409,
+            data: {'message': 'Participante já vinculado.'},
+          ),
+        ),
+      );
+
+      final result = await repository.addParticipant(
+        'dep-1',
+        const IntegrationRequestModel(membershipId: 'membership-1'),
+      );
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<ValidationFailure>());
+        expect(failure.message, 'Participante já vinculado.');
       }, (_) => fail('expected failure'));
     });
   });

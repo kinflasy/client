@@ -1,3 +1,4 @@
+import 'package:client/core/address/address_form_state.dart';
 import 'package:client/core/address/address_request_model.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/church/data/models/church_request_model.dart';
@@ -212,6 +213,119 @@ void main() {
       isA<AsyncError<void>>(),
     );
   });
+
+  test(
+    'createEditChurchUnitInfoFormStateFromUnit initializes with unit data',
+    () {
+      final unit = ChurchUnitEntity(
+        id: 'unit-1',
+        churchId: 'church-1',
+        name: 'Filial Centro',
+        slug: 'filial-centro',
+        phone: '(85) 99999-0000',
+        email: 'centro@igreja.dev',
+        type: 'BRANCH',
+      );
+
+      final state = createEditChurchUnitInfoFormStateFromUnit(unit);
+
+      expect(state.name, 'Filial Centro');
+      expect(state.slug, 'filial-centro');
+      expect(state.phone, '(85) 99999-0000');
+      expect(state.email, 'centro@igreja.dev');
+      expect(state.isInitialized, isTrue);
+    },
+  );
+
+  test('createEditChurchUnitInfoFormStateFromUnit handles null fields', () {
+    final unit = const ChurchUnitEntity(id: 'unit-1', churchId: 'church-1');
+
+    final state = createEditChurchUnitInfoFormStateFromUnit(unit);
+
+    expect(state.name, '');
+    expect(state.slug, '');
+    expect(state.phone, '');
+    expect(state.email, '');
+    expect(state.isInitialized, isTrue);
+  });
+
+  test(
+    'createEditChurchUnitInfoFormStateFromUnit falls back to church identity',
+    () {
+      const unit = ChurchUnitEntity(
+        id: 'unit-1',
+        churchId: 'church-1',
+        name: ' ',
+        slug: null,
+        phone: null,
+        email: '',
+      );
+
+      final state = createEditChurchUnitInfoFormStateFromUnit(
+        unit,
+        fallbackChurch: _church,
+      );
+
+      expect(state.name, 'Igreja Central');
+      expect(state.slug, 'igreja-central');
+      expect(state.phone, '');
+      expect(state.email, 'contato@igreja.dev');
+    },
+  );
+
+  test('buildEditChurchUnitInfoRequest builds request with form state', () {
+    const formState = EditChurchUnitInfoFormState(
+      name: 'Filial',
+      slug: 'filial',
+      phone: '(85) 99999-0000',
+      email: 'filial@igreja.dev',
+      address: AddressFormState(city: 'Fortaleza', state: 'CE'),
+      isInitialized: true,
+    );
+
+    final result = buildEditChurchUnitInfoRequest(formState, currentUnit);
+
+    expect(result.name, 'Filial');
+    expect(result.slug, 'filial');
+    expect(result.phone, '(85) 99999-0000');
+    expect(result.email, 'filial@igreja.dev');
+    expect(result.type, 'BRANCH');
+    expect(result.address.city, 'Fortaleza');
+  });
+
+  test('buildEditChurchUnitInfoRequest preserves unit type', () {
+    const formState = EditChurchUnitInfoFormState(
+      name: 'Filial',
+      slug: 'filial',
+      phone: '(85) 99999-0000',
+      email: 'filial@igreja.dev',
+    );
+
+    final result = buildEditChurchUnitInfoRequest(formState, currentUnit);
+
+    expect(result.type, 'BRANCH');
+  });
+
+  test(
+    'buildEditChurchUnitInfoRequest falls back to MAIN when type is absent',
+    () {
+      const formState = EditChurchUnitInfoFormState(
+        name: 'Sede',
+        slug: 'sede',
+        phone: '(85) 99999-0000',
+        email: 'sede@igreja.dev',
+      );
+
+      final unitWithoutType = const ChurchUnitEntity(
+        id: 'unit-1',
+        churchId: 'church-1',
+      );
+
+      final result = buildEditChurchUnitInfoRequest(formState, unitWithoutType);
+
+      expect(result.type, 'MAIN');
+    },
+  );
 }
 
 CurrentChurchProfileEntity _currentProfile(ChurchUnitEntity unit) {

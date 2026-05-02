@@ -26,6 +26,10 @@ class AppRoutes {
   static const adminDepartments = '/admin/departamentos';
   static const adminDepartmentsRegister = '/admin/departamentos/cadastrar';
   static const adminGeneralInfo = '/admin/informacoes-gerais';
+  static const adminGeneralInfoIdentityEdit =
+      '/admin/informacoes-gerais/editar-identidade';
+  static const adminGeneralInfoAddressEdit =
+      '/admin/informacoes-gerais/editar-endereco';
   static const departmentDetail = '/departamentos/:id';
   static const departmentParticipantsAdd =
       '/departamentos/:id/participantes/adicionar';
@@ -55,6 +59,9 @@ class AppRoutes {
   static const adminDepartmentsName = 'admin-departments';
   static const adminDepartmentsRegisterName = 'admin-departments-register';
   static const adminGeneralInfoName = 'admin-general-info';
+  static const adminGeneralInfoIdentityEditName = 'admin-general-info-identity-edit';
+  static const adminGeneralInfoAddressEditName =
+      'admin-general-info-address-edit';
   static const departmentDetailName = 'department-detail';
   static const departmentParticipantsAddName = 'department-participants-add';
 }

@@ -1,4 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_link_entity.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
@@ -7,6 +8,7 @@ import 'package:client/features/church/providers/church_general_info_providers.d
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class AdminChurchGeneralInfoScreen extends ConsumerWidget {
   const AdminChurchGeneralInfoScreen({super.key});
@@ -90,7 +92,7 @@ class _GeneralInfoContent extends ConsumerWidget {
           title: 'Identidade',
           icon: Icons.badge_outlined,
           onEdit: () {
-            // TODO: navigate to edit identity
+            context.pushNamed(AppRoutes.adminGeneralInfoIdentityEditName);
           },
           child: _IdentityPreview(
             unit: profile.unit,
@@ -102,7 +104,7 @@ class _GeneralInfoContent extends ConsumerWidget {
           title: 'Endereço',
           icon: Icons.location_on_outlined,
           onEdit: () {
-            // TODO: navigate to edit address
+            context.pushNamed(AppRoutes.adminGeneralInfoAddressEditName);
           },
           child: _AddressPreview(unit: profile.unit),
         ),

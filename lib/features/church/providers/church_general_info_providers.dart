@@ -328,8 +328,10 @@ UnitRequestModel buildEditChurchUnitIdentityRequest(
     phone: state.phone,
     email: state.email,
     type: currentUnit.type ?? 'MAIN',
-    address: AddressFormState.fromValue(currentUnit.addressValue)
-            .toRequestOrNull() ??
+    address:
+        AddressFormState.fromValue(
+          currentUnit.addressValue,
+        ).toRequestOrNull() ??
         const AddressRequestModel(),
   );
 }
@@ -395,10 +397,7 @@ final editChurchUnitAddressSubmitProvider =
       (ref) => const AsyncValue.data(null),
     );
 
-void initializeEditChurchUnitAddressForm(
-  WidgetRef ref,
-  ChurchUnitEntity unit,
-) {
+void initializeEditChurchUnitAddressForm(WidgetRef ref, ChurchUnitEntity unit) {
   final controller = ref.read(editChurchUnitAddressFormProvider.notifier);
   if (controller.state.isInitialized) return;
   controller.state = EditChurchUnitAddressFormState(

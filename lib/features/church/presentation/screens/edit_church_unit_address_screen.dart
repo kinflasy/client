@@ -26,8 +26,7 @@ class _EditChurchUnitAddressScreenState
 
     final formState = ref.read(editChurchUnitAddressFormProvider);
     final profile = await ref.read(currentChurchProfileProvider.future);
-    final request =
-        buildEditChurchUnitAddressRequest(formState, profile.unit);
+    final request = buildEditChurchUnitAddressRequest(formState, profile.unit);
     final result = await submitEditChurchUnitAddress(
       ref,
       request: request,
@@ -205,19 +204,12 @@ class _LoadError extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.error_outline,
-          size: 48,
-          color: AppColors.error,
-        ),
+        Icon(Icons.error_outline, size: 48, color: AppColors.error),
         const SizedBox(height: 16),
         Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textPrimary,
-          ),
+          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
         ),
         const SizedBox(height: 24),
         ElevatedButton.icon(

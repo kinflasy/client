@@ -59,7 +59,8 @@ class AppRoutes {
   static const adminDepartmentsName = 'admin-departments';
   static const adminDepartmentsRegisterName = 'admin-departments-register';
   static const adminGeneralInfoName = 'admin-general-info';
-  static const adminGeneralInfoIdentityEditName = 'admin-general-info-identity-edit';
+  static const adminGeneralInfoIdentityEditName =
+      'admin-general-info-identity-edit';
   static const adminGeneralInfoAddressEditName =
       'admin-general-info-address-edit';
   static const departmentDetailName = 'department-detail';

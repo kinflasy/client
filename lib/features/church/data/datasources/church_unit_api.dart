@@ -25,6 +25,17 @@ class ChurchUnitApi {
         .toList();
   }
 
+  Future<Map<String, dynamic>> updateUnit(
+    String unitId,
+    Map<String, dynamic> body,
+  ) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      '/v1/core/church/units/$unitId',
+      data: body,
+    );
+    return response.data ?? <String, dynamic>{};
+  }
+
   Future<void> joinUnit(String unitId, JoinMembershipRequestModel body) async {
     await _dio.post<void>(
       '/v1/core/church/units/$unitId/join',
@@ -63,5 +74,42 @@ class ChurchUnitApi {
     await _dio.post<void>(
       '/v1/core/church/units/$unitId/member/$personId/reject',
     );
+  }
+
+  Future<List<Map<String, dynamic>>> getUnitLinks(String unitId) async {
+    final response = await _dio.get<List<dynamic>>(
+      '/v1/core/church/units/$unitId/links',
+    );
+    final data = response.data ?? <dynamic>[];
+    return data
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> createUnitLink(
+    String unitId,
+    Map<String, dynamic> body,
+  ) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/v1/core/church/units/$unitId/links',
+      data: body,
+    );
+    return response.data ?? <String, dynamic>{};
+  }
+
+  Future<Map<String, dynamic>> updateLink(
+    String linkId,
+    Map<String, dynamic> body,
+  ) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      '/v1/core/links/$linkId',
+      data: body,
+    );
+    return response.data ?? <String, dynamic>{};
+  }
+
+  Future<void> deleteLink(String linkId) async {
+    await _dio.delete<void>('/v1/core/links/$linkId');
   }
 }

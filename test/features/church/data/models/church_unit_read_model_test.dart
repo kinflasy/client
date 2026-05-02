@@ -17,6 +17,7 @@ void main() {
       });
 
       expect(model.address, 'Rua A, 123');
+      expect(model.addressValue, isNull);
       expect(model.phone, '(11) 99999-0000');
       expect(model.email, 'contato@igreja.dev');
       expect(model.logoUrl, 'https://cdn/logo.png');
@@ -28,15 +29,49 @@ void main() {
         'id': 'unit-1',
         'churchId': 'church-1',
         'address': {
+          'zip': '60000-000',
+          'country': 'Brasil',
           'street': 'Rua B',
           'number': '45',
           'neighborhood': 'Centro',
           'city': 'Fortaleza',
           'state': 'CE',
+          'complement': 'Sala 2',
+          'reference': 'Perto da praca',
         },
       });
 
-      expect(model.address, 'Rua B, 45, Centro, Fortaleza, CE');
+      expect(
+        model.address,
+        'Rua B, 45, Centro, Fortaleza, CE, Brasil | Sala 2 - Perto da praca - 60000-000',
+      );
+      expect(model.addressValue?.zip, '60000-000');
+      expect(model.addressValue?.country, 'Brasil');
+      expect(model.addressValue?.street, 'Rua B');
+      expect(model.addressValue?.number, '45');
+      expect(model.addressValue?.neighborhood, 'Centro');
+      expect(model.addressValue?.city, 'Fortaleza');
+      expect(model.addressValue?.state, 'CE');
+      expect(model.addressValue?.complement, 'Sala 2');
+      expect(model.addressValue?.reference, 'Perto da praca');
+    });
+
+    test('ignores blank structured address fields', () {
+      final model = ChurchUnitReadModel.fromJson({
+        'id': 'unit-1',
+        'churchId': 'church-1',
+        'address': {
+          'zip': ' ',
+          'street': '',
+          'city': '  Fortaleza  ',
+          'state': 'CE',
+        },
+      });
+
+      expect(model.address, 'Fortaleza, CE');
+      expect(model.addressValue?.zip, isNull);
+      expect(model.addressValue?.street, isNull);
+      expect(model.addressValue?.city, 'Fortaleza');
     });
 
     test('keeps image fields null when absent', () {

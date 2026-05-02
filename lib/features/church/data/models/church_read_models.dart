@@ -1,3 +1,6 @@
+import '../../../../core/address/address_utils.dart';
+import '../../../../core/address/address_value.dart';
+
 class ChurchReadModel {
   const ChurchReadModel({
     required this.id,
@@ -94,6 +97,7 @@ class ChurchUnitReadModel {
     this.slug,
     this.type,
     this.address,
+    this.addressValue,
     this.phone,
     this.email,
     this.logoUrl,
@@ -101,13 +105,16 @@ class ChurchUnitReadModel {
   });
 
   factory ChurchUnitReadModel.fromJson(Map<String, dynamic> json) {
+    final parsedAddress = _readAddressValue(json);
+
     return ChurchUnitReadModel(
       id: json['id'] as String,
       churchId: json['churchId'] as String,
       name: _readNullableString(json, const ['name']),
       slug: _readNullableString(json, const ['slug']),
       type: _readNullableString(json, const ['type']),
-      address: _readAddress(json),
+      address: _formatAddress(parsedAddress, json),
+      addressValue: parsedAddress,
       phone: _readNullableString(json, const ['phone']),
       email: _readNullableString(json, const ['email']),
       logoUrl: _readNullableString(json, const [
@@ -131,6 +138,7 @@ class ChurchUnitReadModel {
   final String? slug;
   final String? type;
   final String? address;
+  final AddressValue? addressValue;
   final String? phone;
   final String? email;
   final String? logoUrl;
@@ -209,6 +217,30 @@ String? _readAddress(Map<String, dynamic> json) {
   return null;
 }
 
+AddressValue? _readAddressValue(Map<String, dynamic> json) {
+  final raw = json['address'];
+  if (raw is! Map) return null;
+
+  final address = AddressValue(
+    zip: _readMapString(raw, 'zip'),
+    country: _readMapString(raw, 'country'),
+    state: _readMapString(raw, 'state'),
+    city: _readMapString(raw, 'city'),
+    neighborhood: _readMapString(raw, 'neighborhood'),
+    street: _readMapString(raw, 'street'),
+    number: _readMapString(raw, 'number'),
+    complement: _readMapString(raw, 'complement'),
+    reference: _readMapString(raw, 'reference'),
+  );
+
+  return address.isBlank ? null : address;
+}
+
+String? _formatAddress(AddressValue? parsedAddress, Map<String, dynamic> json) {
+  if (parsedAddress != null) return parsedAddress.format();
+  return _readAddress(json);
+}
+
 String? _readNullableString(
   Map<String, dynamic> json,
   List<String> candidateKeys,
@@ -220,4 +252,9 @@ String? _readNullableString(
     }
   }
   return null;
+}
+
+String? _readMapString(Map<dynamic, dynamic> json, String key) {
+  final value = json[key];
+  return value is String ? normalizeAddressField(value) : null;
 }

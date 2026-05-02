@@ -1,5 +1,8 @@
+import 'package:client/core/address/address_request_model.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/church/data/datasources/church_unit_api.dart';
+import 'package:client/features/church/data/models/church_link_models.dart';
+import 'package:client/features/church/data/models/church_request_model.dart';
 import 'package:client/features/church/data/repositories/church_unit_repository_impl.dart';
 import 'package:client/features/membership/data/models/join_membership_request_model.dart';
 import 'package:client/features/membership/data/models/update_pending_membership_request_model.dart';
@@ -15,6 +18,11 @@ class _FakeJoinMembershipRequestModel extends Fake
 class _FakeUpdatePendingMembershipRequestModel extends Fake
     implements UpdatePendingMembershipRequestModel {}
 
+class _FakeUnitRequestModel extends Fake implements UnitRequestModel {}
+
+class _FakeChurchLinkRequestModel extends Fake
+    implements ChurchLinkRequestModel {}
+
 void main() {
   late ChurchUnitRepositoryImpl repository;
   late _MockChurchUnitApi api;
@@ -22,6 +30,9 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_FakeJoinMembershipRequestModel());
     registerFallbackValue(_FakeUpdatePendingMembershipRequestModel());
+    registerFallbackValue(_FakeUnitRequestModel());
+    registerFallbackValue(_FakeChurchLinkRequestModel());
+    registerFallbackValue(<String, dynamic>{});
   });
 
   setUp(() {
@@ -36,7 +47,12 @@ void main() {
         'churchId': 'church-1',
         'name': 'Sede',
         'type': 'MAIN',
-        'address': 'Rua A, 10',
+        'address': {
+          'street': 'Rua A',
+          'number': '10',
+          'city': 'Fortaleza',
+          'state': 'CE',
+        },
         'phone': '(11) 99999-0000',
         'email': 'sede@igreja.dev',
         'logoUrl': 'https://cdn/logo.png',
@@ -51,7 +67,11 @@ void main() {
       expect(unit.churchId, 'church-1');
       expect(unit.name, 'Sede');
       expect(unit.type, 'MAIN');
-      expect(unit.address, 'Rua A, 10');
+      expect(unit.address, 'Rua A, 10, Fortaleza, CE');
+      expect(unit.addressValue?.street, 'Rua A');
+      expect(unit.addressValue?.number, '10');
+      expect(unit.addressValue?.city, 'Fortaleza');
+      expect(unit.addressValue?.state, 'CE');
       expect(unit.phone, '(11) 99999-0000');
       expect(unit.email, 'sede@igreja.dev');
       expect(unit.logoUrl, 'https://cdn/logo.png');
@@ -96,6 +116,79 @@ void main() {
       (_) => fail('expected success'),
       (units) => expect(units, isEmpty),
     );
+  });
+
+  test('updates unit on success', () async {
+    const request = UnitRequestModel(
+      name: 'Sede Atualizada',
+      slug: 'sede-atualizada',
+      phone: '(85) 99999-0000',
+      email: 'sede@igreja.dev',
+      type: 'MAIN',
+      address: AddressRequestModel(city: 'Fortaleza', state: 'CE'),
+    );
+    when(
+      () => api.updateUnit('unit-1', any(that: isA<Map<String, dynamic>>())),
+    ).thenAnswer(
+      (_) async => {
+        'id': 'unit-1',
+        'churchId': 'church-1',
+        'name': 'Sede Atualizada',
+        'slug': 'sede-atualizada',
+        'type': 'MAIN',
+        'address': {'city': 'Fortaleza', 'state': 'CE'},
+        'phone': '(85) 99999-0000',
+        'email': 'sede@igreja.dev',
+      },
+    );
+
+    final result = await repository.updateUnit('unit-1', request);
+
+    expect(result.isRight(), isTrue);
+    result.match((_) => fail('expected success'), (unit) {
+      expect(unit.id, 'unit-1');
+      expect(unit.name, 'Sede Atualizada');
+      expect(unit.type, 'MAIN');
+      expect(unit.addressValue?.city, 'Fortaleza');
+    });
+    final captured =
+        verify(
+              () => api.updateUnit('unit-1', captureAny(that: isA<Map>())),
+            ).captured.single
+            as Map<String, dynamic>;
+    expect(captured['type'], 'MAIN');
+    expect(captured['address'], isA<AddressRequestModel>());
+  });
+
+  test('maps update unit backend message into NetworkFailure', () async {
+    const request = UnitRequestModel(
+      name: 'Sede',
+      slug: 'sede',
+      phone: '(85) 99999-0000',
+      email: 'sede@igreja.dev',
+      type: 'MAIN',
+      address: AddressRequestModel(city: 'Fortaleza', state: 'CE'),
+    );
+    when(
+      () => api.updateUnit('unit-1', any(that: isA<Map<String, dynamic>>())),
+    ).thenThrow(
+      DioException(
+        requestOptions: RequestOptions(path: '/v1/core/church/units/unit-1'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/v1/core/church/units/unit-1'),
+          statusCode: 409,
+          data: {'message': 'Slug ja esta em uso.'},
+        ),
+      ),
+    );
+
+    final result = await repository.updateUnit('unit-1', request);
+
+    expect(result.isLeft(), isTrue);
+    result.match((failure) {
+      expect(failure, isA<NetworkFailure>());
+      expect(failure.message, 'Slug ja esta em uso.');
+    }, (_) => fail('expected failure'));
   });
 
   test('maps list lookup errors into NetworkFailure', () async {
@@ -420,6 +513,119 @@ void main() {
     result.match((failure) {
       expect(failure, isA<NetworkFailure>());
       expect(failure.message, 'timeout');
+    }, (_) => fail('expected failure'));
+  });
+
+  test('returns unit links on success', () async {
+    when(() => api.getUnitLinks('unit-1')).thenAnswer(
+      (_) async => [
+        {'id': 'link-1', 'label': 'Site', 'url': 'https://igreja.dev'},
+      ],
+    );
+
+    final result = await repository.getUnitLinks('unit-1');
+
+    expect(result.isRight(), isTrue);
+    result.match((_) => fail('expected success'), (links) {
+      expect(links, hasLength(1));
+      expect(links.single.id, 'link-1');
+      expect(links.single.label, 'Site');
+      expect(links.single.url, 'https://igreja.dev');
+    });
+  });
+
+  test('returns empty unit links without error', () async {
+    when(() => api.getUnitLinks('unit-1')).thenAnswer((_) async => []);
+
+    final result = await repository.getUnitLinks('unit-1');
+
+    expect(result.isRight(), isTrue);
+    result.match(
+      (_) => fail('expected success'),
+      (links) => expect(links, isEmpty),
+    );
+  });
+
+  test('creates unit link on success', () async {
+    const request = ChurchLinkRequestModel(
+      label: 'YouTube',
+      url: 'https://youtube.com/igreja',
+    );
+    when(
+      () =>
+          api.createUnitLink('unit-1', any(that: isA<Map<String, dynamic>>())),
+    ).thenAnswer(
+      (_) async => {
+        'id': 'link-1',
+        'label': 'YouTube',
+        'url': 'https://youtube.com/igreja',
+      },
+    );
+
+    final result = await repository.createUnitLink('unit-1', request);
+
+    expect(result.isRight(), isTrue);
+    result.match((_) => fail('expected success'), (link) {
+      expect(link.id, 'link-1');
+      expect(link.label, 'YouTube');
+    });
+  });
+
+  test('updates link on success', () async {
+    const request = ChurchLinkRequestModel(
+      label: 'Instagram',
+      url: 'https://instagram.com/igreja',
+    );
+    when(
+      () => api.updateLink('link-1', any(that: isA<Map<String, dynamic>>())),
+    ).thenAnswer(
+      (_) async => {
+        'id': 'link-1',
+        'label': 'Instagram',
+        'url': 'https://instagram.com/igreja',
+      },
+    );
+
+    final result = await repository.updateLink('link-1', request);
+
+    expect(result.isRight(), isTrue);
+    result.match((_) => fail('expected success'), (link) {
+      expect(link.id, 'link-1');
+      expect(link.url, 'https://instagram.com/igreja');
+    });
+  });
+
+  test('deletes link on success', () async {
+    when(() => api.deleteLink('link-1')).thenAnswer((_) async {});
+
+    final result = await repository.deleteLink('link-1');
+
+    expect(result.isRight(), isTrue);
+    verify(() => api.deleteLink('link-1')).called(1);
+  });
+
+  test('maps link errors into NetworkFailure', () async {
+    when(() => api.getUnitLinks('unit-1')).thenThrow(
+      DioException(
+        requestOptions: RequestOptions(
+          path: '/v1/core/church/units/unit-1/links',
+        ),
+        response: Response(
+          requestOptions: RequestOptions(
+            path: '/v1/core/church/units/unit-1/links',
+          ),
+          statusCode: 400,
+          data: {'message': 'Nao foi possivel listar links.'},
+        ),
+      ),
+    );
+
+    final result = await repository.getUnitLinks('unit-1');
+
+    expect(result.isLeft(), isTrue);
+    result.match((failure) {
+      expect(failure, isA<NetworkFailure>());
+      expect(failure.message, 'Nao foi possivel listar links.');
     }, (_) => fail('expected failure'));
   });
 }

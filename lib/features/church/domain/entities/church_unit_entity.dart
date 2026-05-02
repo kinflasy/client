@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/address/address_value.dart';
+
 class ChurchUnitEntity extends Equatable {
   const ChurchUnitEntity({
     required this.id,
@@ -8,6 +10,7 @@ class ChurchUnitEntity extends Equatable {
     this.slug,
     this.type,
     this.address,
+    this.addressValue,
     this.phone,
     this.email,
     this.logoUrl,
@@ -20,6 +23,7 @@ class ChurchUnitEntity extends Equatable {
   final String? slug;
   final String? type;
   final String? address;
+  final AddressValue? addressValue;
   final String? phone;
   final String? email;
   final String? logoUrl;
@@ -33,6 +37,7 @@ class ChurchUnitEntity extends Equatable {
     slug,
     type,
     address,
+    addressValue,
     phone,
     email,
     logoUrl,

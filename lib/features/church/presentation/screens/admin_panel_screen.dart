@@ -40,6 +40,12 @@ class AdminPanelScreen extends StatelessWidget {
             label: 'Calendário',
             onTap: () => _showComingSoon(context),
           ),
+          const SizedBox(height: 12),
+          _AdminCard(
+            icon: Icons.info_outline,
+            label: 'Informações gerais',
+            onTap: () => context.push(AppRoutes.adminGeneralInfo),
+          ),
         ],
       ),
     );

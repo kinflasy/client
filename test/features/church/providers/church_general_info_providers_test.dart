@@ -1,6 +1,7 @@
 import 'package:client/core/address/address_request_model.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/church/data/models/church_request_model.dart';
+import 'package:client/features/church/domain/entities/church_link_entity.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
@@ -64,6 +65,60 @@ void main() {
     );
 
     expect(result.type, 'MAIN');
+  });
+
+  test('unitLinksProvider returns links for a unit', () async {
+    when(() => repository.getUnitLinks('unit-1')).thenAnswer(
+      (_) async => const Right([
+        ChurchLinkEntity(
+          id: 'link-1',
+          label: 'Website',
+          url: 'https://igreja.dev',
+        ),
+      ]),
+    );
+
+    final container = ProviderContainer(
+      overrides: [churchUnitRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+
+    final links = await container.read(unitLinksProvider('unit-1').future);
+
+    expect(links, hasLength(1));
+    expect(links.first.label, 'Website');
+    expect(links.first.url, 'https://igreja.dev');
+  });
+
+  test('unitLinksProvider throws repository failure', () async {
+    when(() => repository.getUnitLinks('unit-1')).thenAnswer(
+      (_) async => const Left(NetworkFailure('Falha ao carregar links.')),
+    );
+
+    final container = ProviderContainer(
+      overrides: [churchUnitRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+
+    final subscription = container.listen(
+      unitLinksProvider('unit-1'),
+      (previous, next) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    await Future<void>.delayed(Duration.zero);
+
+    final state = container.read(unitLinksProvider('unit-1'));
+    expect(state.hasError, isTrue);
+    expect(
+      state.error,
+      isA<NetworkFailure>().having(
+        (failure) => failure.message,
+        'message',
+        'Falha ao carregar links.',
+      ),
+    );
   });
 
   test('updates unit and invalidates related providers on success', () async {

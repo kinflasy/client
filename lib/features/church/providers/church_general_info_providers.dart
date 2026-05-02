@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValue, Provider, Ref;
+    show AsyncValue, FutureProvider, Provider, Ref;
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../../core/address/address_request_model.dart';
 import '../../../core/errors/failure.dart';
 import '../data/models/church_request_model.dart';
+import '../domain/entities/church_link_entity.dart';
 import '../domain/entities/church_unit_entity.dart';
 import 'church_providers.dart';
 
@@ -13,6 +14,15 @@ final editChurchUnitGeneralInfoSubmitProvider =
     StateProvider.autoDispose<AsyncValue<void>>(
       (ref) => const AsyncValue.data(null),
     );
+
+final unitLinksProvider = FutureProvider.family<List<ChurchLinkEntity>, String>(
+  (ref, unitId) async {
+    final result = await ref
+        .read(churchUnitRepositoryProvider)
+        .getUnitLinks(unitId);
+    return result.fold((failure) => throw failure, (links) => links);
+  },
+);
 
 final churchGeneralInfoActionsProvider = Provider<ChurchGeneralInfoActions>(
   ChurchGeneralInfoActions.new,

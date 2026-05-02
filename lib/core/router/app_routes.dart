@@ -25,6 +25,7 @@ class AppRoutes {
   static const adminMembersRegister = '/admin/membros/cadastrar';
   static const adminDepartments = '/admin/departamentos';
   static const adminDepartmentsRegister = '/admin/departamentos/cadastrar';
+  static const adminGeneralInfo = '/admin/informacoes-gerais';
   static const departmentDetail = '/departamentos/:id';
   static const departmentParticipantsAdd =
       '/departamentos/:id/participantes/adicionar';
@@ -53,6 +54,7 @@ class AppRoutes {
   static const adminMembersRegisterName = 'admin-members-register';
   static const adminDepartmentsName = 'admin-departments';
   static const adminDepartmentsRegisterName = 'admin-departments-register';
+  static const adminGeneralInfoName = 'admin-general-info';
   static const departmentDetailName = 'department-detail';
   static const departmentParticipantsAddName = 'department-participants-add';
 }

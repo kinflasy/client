@@ -349,6 +349,61 @@ void main() {
     );
   });
 
+  testWidgets('non admin user is redirected away from general info route', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    router.go('/admin/informacoes-gerais');
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Feed'), findsOneWidget);
+  });
+
+  testWidgets('unit admin user can access general info route', (tester) async {
+    final adminContainer = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(authRepository),
+        sessionPermissionsProvider.overrideWith(
+          (ref) async => adminPermissions,
+        ),
+        departmentRepositoryProvider.overrideWithValue(departmentRepository),
+        churchUnitRepositoryProvider.overrideWithValue(churchUnitRepository),
+        activeMembershipProvider.overrideWith(
+          (ref) async => const MembershipEntity(
+            id: 'membership-1',
+            unitId: 'unit-1',
+            affiliation: 'UNIT_ADMIN',
+          ),
+        ),
+      ],
+    );
+    addTearDown(adminContainer.dispose);
+
+    final router = adminContainer.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: adminContainer,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    router.go('/admin/informacoes-gerais');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Informações gerais'), findsOneWidget);
+  });
+
   testWidgets('unit admin user can access any department detail', (
     tester,
   ) async {

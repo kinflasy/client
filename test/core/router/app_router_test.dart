@@ -282,7 +282,7 @@ void main() {
       router.go('/departamentos/dep-2');
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Feed'), findsOneWidget);
+      expect(find.byType(BottomNavigationBar), findsOneWidget);
       expect(find.text('Midia'), findsNothing);
     },
   );
@@ -303,7 +303,7 @@ void main() {
       router.go('/admin/membros/solicitacoes');
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Feed'), findsOneWidget);
+      expect(find.byType(BottomNavigationBar), findsOneWidget);
     },
   );
 
@@ -365,7 +365,7 @@ void main() {
     router.go('/admin/informacoes-gerais');
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Feed'), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
   });
 
   testWidgets('unit admin user can access general info route', (tester) async {

@@ -27,7 +27,6 @@ import 'package:client/features/membership/presentation/screens/member_options_s
 import 'package:client/features/membership/presentation/screens/member_profile_screen.dart';
 import 'package:client/features/membership/presentation/screens/members_list_screen.dart';
 import 'package:client/features/membership/presentation/screens/register_member_screen.dart';
-import 'package:client/features/home/presentation/screens/feed_screen.dart';
 import 'package:client/features/home/presentation/screens/home_screen.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
@@ -42,7 +41,6 @@ final _authRoutes = <String>{AppRoutes.login, AppRoutes.register};
 final _systemRoutes = <String>{AppRoutes.splash};
 
 final _protectedRoutes = <String>{
-  AppRoutes.homeFeed,
   AppRoutes.homeCalendar,
   AppRoutes.homeChurch,
   AppRoutes.homeChurchDepartmentsCategory,
@@ -92,9 +90,6 @@ final _unitAdminRoutes = <String>{
 };
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-final _shellFeedNavigatorKey = GlobalKey<NavigatorState>(
-  debugLabel: 'shell-feed',
-);
 final _shellCalendarNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'shell-calendar',
 );
@@ -136,7 +131,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (!isLoggedIn && isProtectedRoute) return AppRoutes.login;
 
       if (isLoggedIn && (isAuthRoute || isSystemRoute)) {
-        return AppRoutes.homeFeed;
+        return AppRoutes.homeChurch;
       }
 
       if (isLoggedIn) {
@@ -146,16 +141,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         if (permissions != null) {
           if (_membershipRequiredRoutes.contains(routePath) &&
               !permissions.hasMembership) {
-            return AppRoutes.homeFeed;
+            return AppRoutes.homeChurch;
           }
 
           if (_memberRoutes.contains(routePath) && !permissions.isMember) {
-            return AppRoutes.homeFeed;
+            return AppRoutes.homeChurch;
           }
 
           if (_unitAdminRoutes.contains(routePath) &&
               !permissions.isUnitAdmin) {
-            return AppRoutes.homeFeed;
+            return AppRoutes.homeChurch;
           }
 
           final isDepartmentDetailRoute =
@@ -166,7 +161,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             final departmentId = state.pathParameters['id'];
             if (departmentId != null &&
                 !permissions.canObserveDept(departmentId)) {
-              return AppRoutes.homeFeed;
+              return AppRoutes.homeChurch;
             }
           }
         }
@@ -197,26 +192,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
         branches: [
           StatefulShellBranch(
-            navigatorKey: _shellFeedNavigatorKey,
-            routes: [
-              GoRoute(
-                path: AppRoutes.homeFeed,
-                name: AppRoutes.homeFeedName,
-                builder: (context, state) => const FeedScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: _shellCalendarNavigatorKey,
-            routes: [
-              GoRoute(
-                path: AppRoutes.homeCalendar,
-                name: AppRoutes.homeCalendarName,
-                builder: (context, state) => const CalendarScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
             navigatorKey: _shellChurchNavigatorKey,
             routes: [
               GoRoute(
@@ -244,6 +219,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     },
                   ),
                 ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _shellCalendarNavigatorKey,
+            routes: [
+              GoRoute(
+                path: AppRoutes.homeCalendar,
+                name: AppRoutes.homeCalendarName,
+                builder: (context, state) => const CalendarScreen(),
               ),
             ],
           ),

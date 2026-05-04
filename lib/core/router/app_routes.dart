@@ -30,6 +30,7 @@ class AppRoutes {
       '/admin/informacoes-gerais/editar-identidade';
   static const adminGeneralInfoAddressEdit =
       '/admin/informacoes-gerais/editar-endereco';
+  static const adminGeneralInfoLinks = '/admin/informacoes-gerais/links';
   static const departmentDetail = '/departamentos/:id';
   static const departmentParticipantsAdd =
       '/departamentos/:id/participantes/adicionar';
@@ -63,6 +64,7 @@ class AppRoutes {
       'admin-general-info-identity-edit';
   static const adminGeneralInfoAddressEditName =
       'admin-general-info-address-edit';
+  static const adminGeneralInfoLinksName = 'admin-general-info-links';
   static const departmentDetailName = 'department-detail';
   static const departmentParticipantsAddName = 'department-participants-add';
 }

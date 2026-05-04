@@ -7,6 +7,7 @@ import '../../../core/address/address_form_state.dart';
 import '../../../core/address/address_request_model.dart';
 import '../../../core/errors/failure.dart';
 import '../data/models/church_request_model.dart';
+import '../data/models/church_link_models.dart';
 import '../domain/entities/church_entity.dart';
 import '../domain/entities/church_link_entity.dart';
 import '../domain/entities/church_unit_entity.dart';
@@ -73,6 +74,19 @@ final unitLinksProvider = FutureProvider.family<List<ChurchLinkEntity>, String>(
   },
 );
 
+final activeUnitLinksProvider =
+    FutureProvider.autoDispose<List<ChurchLinkEntity>>((ref) async {
+      final profile = await ref.watch(currentChurchProfileProvider.future);
+      final result = await ref
+          .read(churchUnitRepositoryProvider)
+          .getUnitLinks(profile.unit.id);
+      return result.fold((failure) => throw failure, (links) => links);
+    });
+
+final unitLinkSubmitProvider = StateProvider.autoDispose<AsyncValue<void>>(
+  (ref) => const AsyncValue.data(null),
+);
+
 final churchGeneralInfoActionsProvider = Provider<ChurchGeneralInfoActions>(
   ChurchGeneralInfoActions.new,
 );
@@ -116,6 +130,99 @@ class ChurchGeneralInfoActions {
         _ref.invalidate(currentChurchProfileProvider);
         _ref.invalidate(publicChurchUnitProfileProvider(currentUnit.id));
         _ref.invalidate(headquarterUnitByChurchProvider(currentUnit.churchId));
+      },
+    );
+
+    return result;
+  }
+
+  Future<Either<Failure, ChurchLinkEntity>> createActiveUnitLink({
+    required String label,
+    required String url,
+  }) async {
+    _ref.read(unitLinkSubmitProvider.notifier).state =
+        const AsyncValue.loading();
+
+    final profile = await _ref.read(currentChurchProfileProvider.future);
+    final request = ChurchLinkRequestModel(label: label, url: url);
+
+    final result = await _ref
+        .read(churchUnitRepositoryProvider)
+        .createUnitLink(profile.unit.id, request);
+
+    result.fold(
+      (failure) {
+        _ref.read(unitLinkSubmitProvider.notifier).state = AsyncValue.error(
+          failure,
+          StackTrace.current,
+        );
+      },
+      (_) {
+        _ref.read(unitLinkSubmitProvider.notifier).state =
+            const AsyncValue.data(null);
+        _ref.invalidate(activeUnitLinksProvider);
+        _ref.invalidate(unitLinksProvider(profile.unit.id));
+      },
+    );
+
+    return result;
+  }
+
+  Future<Either<Failure, ChurchLinkEntity>> updateUnitLink({
+    required String linkId,
+    required String label,
+    required String url,
+  }) async {
+    _ref.read(unitLinkSubmitProvider.notifier).state =
+        const AsyncValue.loading();
+
+    final request = ChurchLinkRequestModel(label: label, url: url);
+    final profile = await _ref.read(currentChurchProfileProvider.future);
+
+    final result = await _ref
+        .read(churchUnitRepositoryProvider)
+        .updateLink(linkId, request);
+
+    result.fold(
+      (failure) {
+        _ref.read(unitLinkSubmitProvider.notifier).state = AsyncValue.error(
+          failure,
+          StackTrace.current,
+        );
+      },
+      (_) {
+        _ref.read(unitLinkSubmitProvider.notifier).state =
+            const AsyncValue.data(null);
+        _ref.invalidate(activeUnitLinksProvider);
+        _ref.invalidate(unitLinksProvider(profile.unit.id));
+      },
+    );
+
+    return result;
+  }
+
+  Future<Either<Failure, void>> deleteUnitLink({required String linkId}) async {
+    _ref.read(unitLinkSubmitProvider.notifier).state =
+        const AsyncValue.loading();
+
+    final profile = await _ref.read(currentChurchProfileProvider.future);
+
+    final result = await _ref
+        .read(churchUnitRepositoryProvider)
+        .deleteLink(linkId);
+
+    result.fold(
+      (failure) {
+        _ref.read(unitLinkSubmitProvider.notifier).state = AsyncValue.error(
+          failure,
+          StackTrace.current,
+        );
+      },
+      (_) {
+        _ref.read(unitLinkSubmitProvider.notifier).state =
+            const AsyncValue.data(null);
+        _ref.invalidate(activeUnitLinksProvider);
+        _ref.invalidate(unitLinksProvider(profile.unit.id));
       },
     );
 

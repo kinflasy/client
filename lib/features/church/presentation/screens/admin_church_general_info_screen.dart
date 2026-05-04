@@ -113,7 +113,7 @@ class _GeneralInfoContent extends ConsumerWidget {
           title: 'Links externos',
           icon: Icons.link_outlined,
           onEdit: () {
-            // TODO: navigate to manage links
+            context.pushNamed(AppRoutes.adminGeneralInfoLinksName);
           },
           child: _LinksPreview(
             linksAsync: linksAsync,

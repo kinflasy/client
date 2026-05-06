@@ -389,6 +389,8 @@ class ChurchUnitRepositoryImpl implements ChurchUnitRepository {
       email: model.email,
       logoUrl: model.logoUrl,
       coverUrl: model.coverUrl,
+      profileImageId: model.profileImageId,
+      coverImageId: model.coverImageId,
     );
   }
 

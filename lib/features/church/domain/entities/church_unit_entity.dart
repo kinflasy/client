@@ -15,6 +15,8 @@ class ChurchUnitEntity extends Equatable {
     this.email,
     this.logoUrl,
     this.coverUrl,
+    this.profileImageId,
+    this.coverImageId,
   });
 
   final String id;
@@ -28,6 +30,8 @@ class ChurchUnitEntity extends Equatable {
   final String? email;
   final String? logoUrl;
   final String? coverUrl;
+  final String? profileImageId;
+  final String? coverImageId;
 
   @override
   List<Object?> get props => [
@@ -42,5 +46,7 @@ class ChurchUnitEntity extends Equatable {
     email,
     logoUrl,
     coverUrl,
+    profileImageId,
+    coverImageId,
   ];
 }

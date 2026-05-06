@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
-import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
+import 'package:client/features/church/presentation/widgets/church_unit_media.dart';
 import 'package:client/features/church/providers/church_general_info_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
@@ -204,11 +204,9 @@ class _EditChurchUnitImagesScreenState
             _ImageSection(
               title: 'Foto de perfil',
               subtitle: 'Usada no avatar da unidade.',
-              image: _profileImage(
-                unit: profile.unit,
-                church: profile.church,
-                preview: _profilePreview,
-              ),
+              imageId: profile.unit.profileImageId,
+              imageUrl: profile.unit.logoUrl ?? profile.church.logoUrl,
+              preview: _profilePreview,
               height: 160,
               isRound: true,
               isLoading: isLoading,
@@ -219,11 +217,9 @@ class _EditChurchUnitImagesScreenState
             _ImageSection(
               title: 'Capa',
               subtitle: 'Usada no topo dos perfis da unidade.',
-              image: _coverImage(
-                unit: profile.unit,
-                church: profile.church,
-                preview: _coverPreview,
-              ),
+              imageId: profile.unit.coverImageId,
+              imageUrl: profile.unit.coverUrl ?? profile.church.coverUrl,
+              preview: _coverPreview,
               height: 180,
               isLoading: isLoading,
               onChange: _pickCoverImage,
@@ -233,26 +229,6 @@ class _EditChurchUnitImagesScreenState
         ),
       ),
     );
-  }
-
-  ImageProvider? _profileImage({
-    required ChurchUnitEntity unit,
-    required ChurchEntity church,
-    required File? preview,
-  }) {
-    if (preview != null) return FileImage(preview);
-    final url = unit.logoUrl ?? church.logoUrl;
-    return url == null ? null : NetworkImage(url);
-  }
-
-  ImageProvider? _coverImage({
-    required ChurchUnitEntity unit,
-    required ChurchEntity church,
-    required File? preview,
-  }) {
-    if (preview != null) return FileImage(preview);
-    final url = unit.coverUrl ?? church.coverUrl;
-    return url == null ? null : NetworkImage(url);
   }
 
   String _failureMessage(Object failure) {
@@ -283,7 +259,9 @@ class _ImageSection extends StatelessWidget {
   const _ImageSection({
     required this.title,
     required this.subtitle,
-    required this.image,
+    required this.imageId,
+    required this.imageUrl,
+    required this.preview,
     required this.height,
     required this.isLoading,
     required this.onChange,
@@ -293,7 +271,9 @@ class _ImageSection extends StatelessWidget {
 
   final String title;
   final String subtitle;
-  final ImageProvider? image;
+  final String? imageId;
+  final String? imageUrl;
+  final File? preview;
   final double height;
   final bool isLoading;
   final VoidCallback onChange;
@@ -329,8 +309,10 @@ class _ImageSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Center(
-            child: _ImagePreview(
-              image: image,
+            child: UnitImagePreview(
+              imageId: imageId,
+              imageUrl: imageUrl,
+              preview: preview,
               height: height,
               isRound: isRound,
             ),
@@ -357,45 +339,6 @@ class _ImageSection extends StatelessWidget {
             const LinearProgressIndicator(),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _ImagePreview extends StatelessWidget {
-  const _ImagePreview({
-    required this.image,
-    required this.height,
-    required this.isRound,
-  });
-
-  final ImageProvider? image;
-  final double height;
-  final bool isRound;
-
-  @override
-  Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(isRound ? height / 2 : 8);
-    final width = isRound ? height : double.infinity;
-
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8F0FE),
-          image: image == null
-              ? null
-              : DecorationImage(image: image!, fit: BoxFit.cover),
-        ),
-        child: image == null
-            ? const Icon(
-                Icons.image_outlined,
-                size: 40,
-                color: AppColors.textSecondary,
-              )
-            : null,
       ),
     );
   }

@@ -189,13 +189,19 @@ class _CoverPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final coverUrl = unit.coverUrl ?? church.coverUrl;
-    final logoUrl = unit.logoUrl ?? church.logoUrl;
+    final hasCover =
+        unit.coverImageId != null ||
+        unit.coverUrl != null ||
+        church.coverUrl != null;
+    final hasLogo =
+        unit.profileImageId != null ||
+        unit.logoUrl != null ||
+        church.logoUrl != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (coverUrl != null)
+        if (hasCover)
           Text(
             'Capa: definida',
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
@@ -206,7 +212,7 @@ class _CoverPreview extends StatelessWidget {
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
         const SizedBox(height: 8),
-        if (logoUrl != null)
+        if (hasLogo)
           Text(
             'Logo: definida',
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),

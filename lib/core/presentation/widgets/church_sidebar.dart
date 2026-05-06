@@ -4,7 +4,7 @@ import 'package:client/core/presentation/widgets/if_permission.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
-import 'package:client/features/church/presentation/widgets/church_shared_widgets.dart';
+import 'package:client/features/church/presentation/widgets/church_unit_media.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,6 +40,7 @@ class _SidebarContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final logoUrl = unit.logoUrl ?? church.logoUrl;
+    final profileImageId = unit.profileImageId;
     final displayName = unit.name?.trim().isNotEmpty == true
         ? unit.name!
         : church.name;
@@ -47,7 +48,11 @@ class _SidebarContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SidebarHeader(logoUrl: logoUrl, displayName: displayName),
+        _SidebarHeader(
+          logoUrl: logoUrl,
+          profileImageId: profileImageId,
+          displayName: displayName,
+        ),
         const Divider(height: 1),
         const SizedBox(height: 8),
         IfPermission(
@@ -68,9 +73,14 @@ class _SidebarContent extends StatelessWidget {
 }
 
 class _SidebarHeader extends StatelessWidget {
-  const _SidebarHeader({required this.logoUrl, required this.displayName});
+  const _SidebarHeader({
+    required this.logoUrl,
+    required this.profileImageId,
+    required this.displayName,
+  });
 
   final String? logoUrl;
+  final String? profileImageId;
   final String displayName;
 
   @override
@@ -79,20 +89,16 @@ class _SidebarHeader extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          CircleAvatar(
+          ChurchUnitAvatar(
+            displayName: displayName,
             radius: 24,
-            backgroundColor: const Color(0xFFE8F0FE),
-            backgroundImage: logoUrl != null ? NetworkImage(logoUrl!) : null,
-            child: logoUrl == null
-                ? Text(
-                    churchInitials(displayName),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  )
-                : null,
+            imageId: profileImageId,
+            imageUrl: logoUrl,
+            textStyle: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(

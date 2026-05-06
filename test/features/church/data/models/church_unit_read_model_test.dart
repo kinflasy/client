@@ -96,7 +96,7 @@ void main() {
       expect(model.coverUrl, 'https://cdn/cover.png');
     });
 
-    test('builds media download URLs from image ids', () {
+    test('preserves image ids without building download URLs', () {
       final model = ChurchUnitReadModel.fromJson({
         'id': 'unit-1',
         'churchId': 'church-1',
@@ -104,14 +104,10 @@ void main() {
         'coverImageId': 'cover-456',
       });
 
-      expect(
-        model.logoUrl,
-        'https://app-production-647c.up.railway.app/v1/media/profile-123/download',
-      );
-      expect(
-        model.coverUrl,
-        'https://app-production-647c.up.railway.app/v1/media/cover-456/download',
-      );
+      expect(model.logoUrl, isNull);
+      expect(model.coverUrl, isNull);
+      expect(model.profileImageId, 'profile-123');
+      expect(model.coverImageId, 'cover-456');
     });
 
     test('keeps direct image URLs when ids are also present', () {
@@ -126,6 +122,8 @@ void main() {
 
       expect(model.logoUrl, 'https://cdn/logo.png');
       expect(model.coverUrl, 'https://cdn/cover.png');
+      expect(model.profileImageId, 'profile-123');
+      expect(model.coverImageId, 'cover-456');
     });
   });
 }

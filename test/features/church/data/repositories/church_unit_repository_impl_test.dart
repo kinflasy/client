@@ -59,6 +59,7 @@ void main() {
         'phone': '(11) 99999-0000',
         'email': 'sede@igreja.dev',
         'logoUrl': 'https://cdn/logo.png',
+        'profileImageId': 'profile-1',
       },
     );
 
@@ -78,6 +79,7 @@ void main() {
       expect(unit.phone, '(11) 99999-0000');
       expect(unit.email, 'sede@igreja.dev');
       expect(unit.logoUrl, 'https://cdn/logo.png');
+      expect(unit.profileImageId, 'profile-1');
     });
   });
 
@@ -177,7 +179,7 @@ void main() {
         'id': 'unit-1',
         'churchId': 'church-1',
         'type': 'MAIN',
-        'logoUrl': 'https://cdn/foto.png',
+        'profileImageId': 'profile-1',
       },
     );
 
@@ -188,7 +190,8 @@ void main() {
 
     expect(result.isRight(), isTrue);
     result.match((_) => fail('expected success'), (unit) {
-      expect(unit.logoUrl, 'https://cdn/foto.png');
+      expect(unit.logoUrl, isNull);
+      expect(unit.profileImageId, 'profile-1');
     });
     verify(
       () =>

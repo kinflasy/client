@@ -87,6 +87,10 @@ final unitLinkSubmitProvider = StateProvider.autoDispose<AsyncValue<void>>(
   (ref) => const AsyncValue.data(null),
 );
 
+final unitImageSubmitProvider = StateProvider.autoDispose<AsyncValue<void>>(
+  (ref) => const AsyncValue.data(null),
+);
+
 final churchGeneralInfoActionsProvider = Provider<ChurchGeneralInfoActions>(
   ChurchGeneralInfoActions.new,
 );
@@ -168,6 +172,41 @@ class ChurchGeneralInfoActions {
     return result;
   }
 
+  Future<Either<Failure, ChurchUnitEntity>> updateActiveUnitProfileImage(
+    String filePath,
+  ) async {
+    return _runActiveUnitImageAction(
+      (unitId) => _ref
+          .read(churchUnitRepositoryProvider)
+          .updateUnitProfileImage(unitId, filePath),
+    );
+  }
+
+  Future<Either<Failure, ChurchUnitEntity>> updateActiveUnitCoverImage(
+    String filePath,
+  ) async {
+    return _runActiveUnitImageAction(
+      (unitId) => _ref
+          .read(churchUnitRepositoryProvider)
+          .updateUnitCoverImage(unitId, filePath),
+    );
+  }
+
+  Future<Either<Failure, void>> deleteActiveUnitProfileImage() async {
+    return _runActiveUnitImageDeleteAction(
+      (unitId) => _ref
+          .read(churchUnitRepositoryProvider)
+          .deleteUnitProfileImage(unitId),
+    );
+  }
+
+  Future<Either<Failure, void>> deleteActiveUnitCoverImage() async {
+    return _runActiveUnitImageDeleteAction(
+      (unitId) =>
+          _ref.read(churchUnitRepositoryProvider).deleteUnitCoverImage(unitId),
+    );
+  }
+
   Future<Either<Failure, ChurchLinkEntity>> updateUnitLink({
     required String linkId,
     required String label,
@@ -227,6 +266,64 @@ class ChurchGeneralInfoActions {
     );
 
     return result;
+  }
+
+  Future<Either<Failure, ChurchUnitEntity>> _runActiveUnitImageAction(
+    Future<Either<Failure, ChurchUnitEntity>> Function(String unitId) action,
+  ) async {
+    _ref.read(unitImageSubmitProvider.notifier).state =
+        const AsyncValue.loading();
+
+    final profile = await _ref.read(currentChurchProfileProvider.future);
+    final result = await action(profile.unit.id);
+
+    result.fold(
+      (failure) {
+        _ref.read(unitImageSubmitProvider.notifier).state = AsyncValue.error(
+          failure,
+          StackTrace.current,
+        );
+      },
+      (_) {
+        _ref.read(unitImageSubmitProvider.notifier).state =
+            const AsyncValue.data(null);
+        _invalidateUnitImageProviders(profile.unit.id, profile.unit.churchId);
+      },
+    );
+
+    return result;
+  }
+
+  Future<Either<Failure, void>> _runActiveUnitImageDeleteAction(
+    Future<Either<Failure, void>> Function(String unitId) action,
+  ) async {
+    _ref.read(unitImageSubmitProvider.notifier).state =
+        const AsyncValue.loading();
+
+    final profile = await _ref.read(currentChurchProfileProvider.future);
+    final result = await action(profile.unit.id);
+
+    result.fold(
+      (failure) {
+        _ref.read(unitImageSubmitProvider.notifier).state = AsyncValue.error(
+          failure,
+          StackTrace.current,
+        );
+      },
+      (_) {
+        _ref.read(unitImageSubmitProvider.notifier).state =
+            const AsyncValue.data(null);
+        _invalidateUnitImageProviders(profile.unit.id, profile.unit.churchId);
+      },
+    );
+
+    return result;
+  }
+
+  void _invalidateUnitImageProviders(String unitId, String churchId) {
+    _ref.invalidate(currentChurchProfileProvider);
+    _ref.invalidate(publicChurchUnitProfileProvider(unitId));
+    _ref.invalidate(headquarterUnitByChurchProvider(churchId));
   }
 }
 

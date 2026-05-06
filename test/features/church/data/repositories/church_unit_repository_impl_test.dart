@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:client/core/address/address_request_model.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/church/data/datasources/church_unit_api.dart';
@@ -33,6 +35,7 @@ void main() {
     registerFallbackValue(_FakeUnitRequestModel());
     registerFallbackValue(_FakeChurchLinkRequestModel());
     registerFallbackValue(<String, dynamic>{});
+    registerFallbackValue(MultipartFile.fromBytes([1], filename: 'foto.png'));
   });
 
   setUp(() {
@@ -158,6 +161,82 @@ void main() {
             as Map<String, dynamic>;
     expect(captured['type'], 'MAIN');
     expect(captured['address'], isA<AddressRequestModel>());
+  });
+
+  test('updates unit profile image with multipart file', () async {
+    final tempDir = await Directory.systemTemp.createTemp('unit-image-test');
+    addTearDown(() => tempDir.delete(recursive: true));
+    final image = File('${tempDir.path}/foto.png');
+    await image.writeAsBytes([1, 2, 3]);
+
+    when(
+      () =>
+          api.updateUnitProfileImage('unit-1', any(that: isA<MultipartFile>())),
+    ).thenAnswer(
+      (_) async => {
+        'id': 'unit-1',
+        'churchId': 'church-1',
+        'type': 'MAIN',
+        'logoUrl': 'https://cdn/foto.png',
+      },
+    );
+
+    final result = await repository.updateUnitProfileImage(
+      'unit-1',
+      image.path,
+    );
+
+    expect(result.isRight(), isTrue);
+    result.match((_) => fail('expected success'), (unit) {
+      expect(unit.logoUrl, 'https://cdn/foto.png');
+    });
+    verify(
+      () =>
+          api.updateUnitProfileImage('unit-1', any(that: isA<MultipartFile>())),
+    ).called(1);
+  });
+
+  test('deletes unit cover image on success', () async {
+    when(() => api.deleteUnitCoverImage('unit-1')).thenAnswer((_) async {});
+
+    final result = await repository.deleteUnitCoverImage('unit-1');
+
+    expect(result.isRight(), isTrue);
+    verify(() => api.deleteUnitCoverImage('unit-1')).called(1);
+  });
+
+  test('maps upload 413 into friendly message', () async {
+    final tempDir = await Directory.systemTemp.createTemp('unit-image-test');
+    addTearDown(() => tempDir.delete(recursive: true));
+    final image = File('${tempDir.path}/capa.png');
+    await image.writeAsBytes([1, 2, 3]);
+
+    when(
+      () => api.updateUnitCoverImage('unit-1', any(that: isA<MultipartFile>())),
+    ).thenThrow(
+      DioException(
+        requestOptions: RequestOptions(
+          path: '/v1/core/church/units/unit-1/cover-image',
+        ),
+        response: Response(
+          requestOptions: RequestOptions(
+            path: '/v1/core/church/units/unit-1/cover-image',
+          ),
+          statusCode: 413,
+        ),
+      ),
+    );
+
+    final result = await repository.updateUnitCoverImage('unit-1', image.path);
+
+    expect(result.isLeft(), isTrue);
+    result.match((failure) {
+      expect(failure, isA<NetworkFailure>());
+      expect(
+        failure.message,
+        'Arquivo muito grande. Envie uma imagem de até 2 MB.',
+      );
+    }, (_) => fail('expected failure'));
   });
 
   test('maps update unit backend message into NetworkFailure', () async {

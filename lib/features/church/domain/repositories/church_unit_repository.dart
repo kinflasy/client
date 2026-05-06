@@ -16,6 +16,16 @@ abstract class ChurchUnitRepository {
     String unitId,
     UnitRequestModel request,
   );
+  Future<Either<Failure, ChurchUnitEntity>> updateUnitProfileImage(
+    String unitId,
+    String filePath,
+  );
+  Future<Either<Failure, ChurchUnitEntity>> updateUnitCoverImage(
+    String unitId,
+    String filePath,
+  );
+  Future<Either<Failure, void>> deleteUnitProfileImage(String unitId);
+  Future<Either<Failure, void>> deleteUnitCoverImage(String unitId);
   Future<Either<Failure, void>> joinUnit(String unitId, String affiliation);
   Future<Either<Failure, List<PendingUnitMembershipEntity>>> getPendingMembers(
     String unitId,

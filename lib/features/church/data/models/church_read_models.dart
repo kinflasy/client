@@ -1,3 +1,4 @@
+import '../../../../core/config/app_config.dart';
 import '../../../../core/address/address_utils.dart';
 import '../../../../core/address/address_value.dart';
 
@@ -117,18 +118,16 @@ class ChurchUnitReadModel {
       addressValue: parsedAddress,
       phone: _readNullableString(json, const ['phone']),
       email: _readNullableString(json, const ['email']),
-      logoUrl: _readNullableString(json, const [
-        'logoUrl',
-        'logo_url',
-        'logoImageUrl',
-        'logoImage',
-      ]),
-      coverUrl: _readNullableString(json, const [
-        'coverUrl',
-        'cover_url',
-        'coverImageUrl',
-        'coverImage',
-      ]),
+      logoUrl: _readUnitImageUrl(
+        json,
+        urlKeys: const ['logoUrl', 'logo_url', 'logoImageUrl', 'logoImage'],
+        idKeys: const ['profileImageId', 'profile_image_id'],
+      ),
+      coverUrl: _readUnitImageUrl(
+        json,
+        urlKeys: const ['coverUrl', 'cover_url', 'coverImageUrl', 'coverImage'],
+        idKeys: const ['coverImageId', 'cover_image_id'],
+      ),
     );
   }
 
@@ -252,6 +251,22 @@ String? _readNullableString(
     }
   }
   return null;
+}
+
+String? _readUnitImageUrl(
+  Map<String, dynamic> json, {
+  required List<String> urlKeys,
+  required List<String> idKeys,
+}) {
+  final directUrl = _readNullableString(json, urlKeys);
+  if (directUrl != null) return directUrl;
+
+  final imageId = _readNullableString(json, idKeys);
+  if (imageId == null) return null;
+
+  return Uri.parse(
+    AppConfig.baseUrl,
+  ).resolve('/v1/media/$imageId/download').toString();
 }
 
 String? _readMapString(Map<dynamic, dynamic> json, String key) {

@@ -1,4 +1,3 @@
-import 'package:client/core/errors/failure.dart';
 import 'package:client/features/church/data/models/church_link_models.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_link_entity.dart';
@@ -6,7 +5,6 @@ import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
 import 'package:client/features/church/domain/repositories/church_unit_repository.dart';
 import 'package:client/features/church/presentation/screens/edit_church_unit_links_screen.dart';
-import 'package:client/features/church/providers/church_general_info_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:flutter/material.dart';

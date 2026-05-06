@@ -12,6 +12,7 @@ import 'package:client/features/church/presentation/screens/church_tab_screen.da
 import 'package:client/features/church/presentation/screens/admin_church_general_info_screen.dart';
 import 'package:client/features/church/presentation/screens/edit_church_unit_identity_screen.dart';
 import 'package:client/features/church/presentation/screens/edit_church_unit_address_screen.dart';
+import 'package:client/features/church/presentation/screens/edit_church_unit_images_screen.dart';
 import 'package:client/features/church/presentation/screens/edit_church_unit_links_screen.dart';
 import 'package:client/features/church/presentation/screens/admin_panel_screen.dart';
 import 'package:client/features/department/presentation/screens/department_category_list_screen.dart';
@@ -62,6 +63,7 @@ final _protectedRoutes = <String>{
   AppRoutes.adminGeneralInfoIdentityEdit,
   AppRoutes.adminGeneralInfoAddressEdit,
   AppRoutes.adminGeneralInfoLinks,
+  AppRoutes.adminGeneralInfoImages,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
@@ -84,6 +86,7 @@ final _unitAdminRoutes = <String>{
   AppRoutes.adminGeneralInfoIdentityEdit,
   AppRoutes.adminGeneralInfoAddressEdit,
   AppRoutes.adminGeneralInfoLinks,
+  AppRoutes.adminGeneralInfoImages,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
@@ -346,6 +349,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.adminGeneralInfoLinksName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const EditChurchUnitLinksScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminGeneralInfoImages,
+        name: AppRoutes.adminGeneralInfoImagesName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const EditChurchUnitImagesScreen(),
       ),
       GoRoute(
         path: AppRoutes.departmentDetail,

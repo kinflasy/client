@@ -214,6 +214,82 @@ void main() {
     );
   });
 
+  test('updates active unit profile image and invalidates profiles', () async {
+    var currentProfileLoads = 0;
+    var publicProfileLoads = 0;
+    var headquarterLoads = 0;
+
+    when(
+      () => repository.updateUnitProfileImage('unit-1', '/tmp/foto.png'),
+    ).thenAnswer((_) async => const Right(currentUnit));
+
+    final container = ProviderContainer(
+      overrides: [
+        churchUnitRepositoryProvider.overrideWithValue(repository),
+        currentChurchProfileProvider.overrideWith((ref) async {
+          currentProfileLoads++;
+          return _currentProfile(currentUnit);
+        }),
+        publicChurchUnitProfileProvider.overrideWith((ref, unitId) async {
+          publicProfileLoads++;
+          return _publicProfile(currentUnit);
+        }),
+        headquarterUnitByChurchProvider.overrideWith((ref, churchId) async {
+          headquarterLoads++;
+          return currentUnit;
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(currentChurchProfileProvider.future);
+    await container.read(publicChurchUnitProfileProvider('unit-1').future);
+    await container.read(headquarterUnitByChurchProvider('church-1').future);
+
+    final result = await container
+        .read(churchGeneralInfoActionsProvider)
+        .updateActiveUnitProfileImage('/tmp/foto.png');
+
+    expect(result.isRight(), isTrue);
+    expect(
+      container.read(unitImageSubmitProvider),
+      const AsyncValue<void>.data(null),
+    );
+
+    await container.read(currentChurchProfileProvider.future);
+    await container.read(publicChurchUnitProfileProvider('unit-1').future);
+    await container.read(headquarterUnitByChurchProvider('church-1').future);
+
+    expect(currentProfileLoads, 2);
+    expect(publicProfileLoads, 2);
+    expect(headquarterLoads, 2);
+  });
+
+  test('stores submit error when image update fails', () async {
+    when(
+      () => repository.updateUnitCoverImage('unit-1', '/tmp/capa.png'),
+    ).thenAnswer(
+      (_) async => const Left(NetworkFailure('Falha ao atualizar capa.')),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        churchUnitRepositoryProvider.overrideWithValue(repository),
+        currentChurchProfileProvider.overrideWith(
+          (ref) async => _currentProfile(currentUnit),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final result = await container
+        .read(churchGeneralInfoActionsProvider)
+        .updateActiveUnitCoverImage('/tmp/capa.png');
+
+    expect(result.isLeft(), isTrue);
+    expect(container.read(unitImageSubmitProvider), isA<AsyncError<void>>());
+  });
+
   test(
     'createEditChurchUnitInfoFormStateFromUnit initializes with unit data',
     () {

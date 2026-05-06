@@ -83,6 +83,48 @@ class ChurchUnitRepositoryImpl implements ChurchUnitRepository {
   }
 
   @override
+  Future<Either<Failure, ChurchUnitEntity>> updateUnitProfileImage(
+    String unitId,
+    String filePath,
+  ) {
+    return _updateUnitImage(
+      unitId: unitId,
+      filePath: filePath,
+      upload: _api.updateUnitProfileImage,
+      fallbackMessage: 'Erro ao atualizar a foto da unidade.',
+    );
+  }
+
+  @override
+  Future<Either<Failure, ChurchUnitEntity>> updateUnitCoverImage(
+    String unitId,
+    String filePath,
+  ) {
+    return _updateUnitImage(
+      unitId: unitId,
+      filePath: filePath,
+      upload: _api.updateUnitCoverImage,
+      fallbackMessage: 'Erro ao atualizar a capa da unidade.',
+    );
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteUnitProfileImage(String unitId) {
+    return _deleteUnitImage(
+      () => _api.deleteUnitProfileImage(unitId),
+      fallbackMessage: 'Erro ao remover a foto da unidade.',
+    );
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteUnitCoverImage(String unitId) {
+    return _deleteUnitImage(
+      () => _api.deleteUnitCoverImage(unitId),
+      fallbackMessage: 'Erro ao remover a capa da unidade.',
+    );
+  }
+
+  @override
   Future<Either<Failure, void>> joinUnit(
     String unitId,
     String affiliation,
@@ -253,6 +295,59 @@ class ChurchUnitRepositoryImpl implements ChurchUnitRepository {
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
     }
+  }
+
+  Future<Either<Failure, ChurchUnitEntity>> _updateUnitImage({
+    required String unitId,
+    required String filePath,
+    required Future<Map<String, dynamic>> Function(
+      String unitId,
+      MultipartFile file,
+    )
+    upload,
+    required String fallbackMessage,
+  }) async {
+    try {
+      final file = await MultipartFile.fromFile(filePath);
+      final json = await upload(unitId, file);
+      final unitJson = json.isEmpty ? await _api.getUnitById(unitId) : json;
+      final model = ChurchUnitReadModel.fromJson(unitJson);
+      return Right(_mapModelToEntity(model));
+    } on DioException catch (e) {
+      return Left(
+        NetworkFailure(_extractUploadErrorMessage(e, fallbackMessage)),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, void>> _deleteUnitImage(
+    Future<void> Function() action, {
+    required String fallbackMessage,
+  }) async {
+    try {
+      await action();
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(NetworkFailure(_extractErrorMessage(e, fallbackMessage)));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  String _extractUploadErrorMessage(
+    DioException error,
+    String fallbackMessage,
+  ) {
+    if (error.response?.statusCode == 413) {
+      return _extractErrorMessage(
+        error,
+        'Arquivo muito grande. Envie uma imagem de até 2 MB.',
+      );
+    }
+
+    return _extractErrorMessage(error, fallbackMessage);
   }
 
   String _extractErrorMessage(DioException error, String fallbackMessage) {

@@ -83,7 +83,7 @@ class _GeneralInfoContent extends ConsumerWidget {
           title: 'Capa',
           icon: Icons.image_outlined,
           onEdit: () {
-            // TODO: navigate to edit cover/logo
+            context.pushNamed(AppRoutes.adminGeneralInfoImagesName);
           },
           child: _CoverPreview(unit: profile.unit, church: profile.church),
         ),

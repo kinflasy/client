@@ -95,5 +95,37 @@ void main() {
       expect(model.logoUrl, 'https://cdn/logo.png');
       expect(model.coverUrl, 'https://cdn/cover.png');
     });
+
+    test('builds media download URLs from image ids', () {
+      final model = ChurchUnitReadModel.fromJson({
+        'id': 'unit-1',
+        'churchId': 'church-1',
+        'profileImageId': 'profile-123',
+        'coverImageId': 'cover-456',
+      });
+
+      expect(
+        model.logoUrl,
+        'https://app-production-647c.up.railway.app/v1/media/profile-123/download',
+      );
+      expect(
+        model.coverUrl,
+        'https://app-production-647c.up.railway.app/v1/media/cover-456/download',
+      );
+    });
+
+    test('keeps direct image URLs when ids are also present', () {
+      final model = ChurchUnitReadModel.fromJson({
+        'id': 'unit-1',
+        'churchId': 'church-1',
+        'logoUrl': 'https://cdn/logo.png',
+        'coverUrl': 'https://cdn/cover.png',
+        'profileImageId': 'profile-123',
+        'coverImageId': 'cover-456',
+      });
+
+      expect(model.logoUrl, 'https://cdn/logo.png');
+      expect(model.coverUrl, 'https://cdn/cover.png');
+    });
   });
 }

@@ -36,6 +36,36 @@ class ChurchUnitApi {
     return response.data ?? <String, dynamic>{};
   }
 
+  Future<Map<String, dynamic>> updateUnitProfileImage(
+    String unitId,
+    MultipartFile file,
+  ) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      '/v1/core/church/units/$unitId/profile-image',
+      data: FormData.fromMap({'file': file}),
+    );
+    return response.data ?? <String, dynamic>{};
+  }
+
+  Future<void> deleteUnitProfileImage(String unitId) async {
+    await _dio.delete<void>('/v1/core/church/units/$unitId/profile-image');
+  }
+
+  Future<Map<String, dynamic>> updateUnitCoverImage(
+    String unitId,
+    MultipartFile file,
+  ) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      '/v1/core/church/units/$unitId/cover-image',
+      data: FormData.fromMap({'file': file}),
+    );
+    return response.data ?? <String, dynamic>{};
+  }
+
+  Future<void> deleteUnitCoverImage(String unitId) async {
+    await _dio.delete<void>('/v1/core/church/units/$unitId/cover-image');
+  }
+
   Future<void> joinUnit(String unitId, JoinMembershipRequestModel body) async {
     await _dio.post<void>(
       '/v1/core/church/units/$unitId/join',

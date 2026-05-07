@@ -22,6 +22,7 @@ import 'package:client/features/department/presentation/screens/department_scree
 import 'package:client/features/department/presentation/screens/departments_list_screen.dart';
 import 'package:client/features/department/presentation/screens/register_department_screen.dart';
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
+import 'package:client/features/calendar/sub_features/unit_agenda/presentation/screens/unit_agenda_screen.dart';
 import 'package:client/features/membership/presentation/screens/edit_inactive_person_screen.dart';
 import 'package:client/features/membership/presentation/screens/admin_membership_requests_screen.dart';
 import 'package:client/features/membership/presentation/screens/member_options_screen.dart';
@@ -64,6 +65,8 @@ final _protectedRoutes = <String>{
   AppRoutes.adminGeneralInfoAddressEdit,
   AppRoutes.adminGeneralInfoLinks,
   AppRoutes.adminGeneralInfoImages,
+  AppRoutes.adminCalendar,
+  AppRoutes.adminCalendarCreate,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
@@ -87,6 +90,8 @@ final _unitAdminRoutes = <String>{
   AppRoutes.adminGeneralInfoAddressEdit,
   AppRoutes.adminGeneralInfoLinks,
   AppRoutes.adminGeneralInfoImages,
+  AppRoutes.adminCalendar,
+  AppRoutes.adminCalendarCreate,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
@@ -355,6 +360,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.adminGeneralInfoImagesName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const EditChurchUnitImagesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminCalendar,
+        name: AppRoutes.adminCalendarName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const UnitAgendaScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminCalendarCreate,
+        name: AppRoutes.adminCalendarCreateName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('Criar evento - em breve')),
+        ),
       ),
       GoRoute(
         path: AppRoutes.departmentDetail,

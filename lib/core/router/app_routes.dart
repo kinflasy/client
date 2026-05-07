@@ -32,6 +32,8 @@ class AppRoutes {
       '/admin/informacoes-gerais/editar-endereco';
   static const adminGeneralInfoLinks = '/admin/informacoes-gerais/links';
   static const adminGeneralInfoImages = '/admin/informacoes-gerais/imagens';
+  static const adminCalendar = '/admin/calendario';
+  static const adminCalendarCreate = '/admin/calendario/criar';
   static const departmentDetail = '/departamentos/:id';
   static const departmentParticipantsAdd =
       '/departamentos/:id/participantes/adicionar';
@@ -67,6 +69,8 @@ class AppRoutes {
       'admin-general-info-address-edit';
   static const adminGeneralInfoLinksName = 'admin-general-info-links';
   static const adminGeneralInfoImagesName = 'admin-general-info-images';
+  static const adminCalendarName = 'admin-calendar';
+  static const adminCalendarCreateName = 'admin-calendar-create';
   static const departmentDetailName = 'department-detail';
   static const departmentParticipantsAddName = 'department-participants-add';
 }

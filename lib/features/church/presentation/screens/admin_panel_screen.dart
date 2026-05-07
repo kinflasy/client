@@ -6,12 +6,6 @@ import 'package:go_router/go_router.dart';
 class AdminPanelScreen extends StatelessWidget {
   const AdminPanelScreen({super.key});
 
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Em breve')));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,7 +32,7 @@ class AdminPanelScreen extends StatelessWidget {
           _AdminCard(
             icon: Icons.calendar_month_outlined,
             label: 'Calendário',
-            onTap: () => _showComingSoon(context),
+            onTap: () => context.push(AppRoutes.adminCalendar),
           ),
           const SizedBox(height: 12),
           _AdminCard(

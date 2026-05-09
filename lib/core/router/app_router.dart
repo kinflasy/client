@@ -23,6 +23,7 @@ import 'package:client/features/department/presentation/screens/departments_list
 import 'package:client/features/department/presentation/screens/register_department_screen.dart';
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
 import 'package:client/features/calendar/sub_features/unit_agenda/presentation/screens/unit_agenda_screen.dart';
+import 'package:client/features/calendar/sub_features/create_event/presentation/screens/create_event_screen.dart';
 import 'package:client/features/membership/presentation/screens/edit_inactive_person_screen.dart';
 import 'package:client/features/membership/presentation/screens/admin_membership_requests_screen.dart';
 import 'package:client/features/membership/presentation/screens/member_options_screen.dart';
@@ -371,9 +372,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.adminCalendarCreate,
         name: AppRoutes.adminCalendarCreateName,
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Criar evento - em breve')),
-        ),
+        builder: (context, state) => const CreateEventScreen(),
       ),
       GoRoute(
         path: AppRoutes.departmentDetail,

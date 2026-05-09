@@ -1,5 +1,8 @@
 {
     "chat.tools.terminal.autoApprove": {
         "flutter": true
-    }
+    },
+    "conventionalCommits.scopes": [
+        "event"
+    ]
 }

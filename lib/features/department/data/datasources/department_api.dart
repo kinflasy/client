@@ -6,10 +6,10 @@ class DepartmentApi {
   final Dio _dio;
 
   Future<List<dynamic>> getDepartmentsByUnitId(String unitId) async {
-    final response = await _dio.get<List<dynamic>>(
+    final response = await _dio.get<dynamic>(
       '/v1/core/church/units/$unitId/departments',
     );
-    return response.data ?? <dynamic>[];
+    return _readList(response.data);
   }
 
   Future<Map<String, dynamic>> createDepartment(
@@ -31,10 +31,10 @@ class DepartmentApi {
   }
 
   Future<List<dynamic>> getParticipants(String departmentId) async {
-    final response = await _dio.get<List<dynamic>>(
+    final response = await _dio.get<dynamic>(
       '/v1/core/church/unit/departments/$departmentId/integrants',
     );
-    return response.data ?? <dynamic>[];
+    return _readList(response.data);
   }
 
   Future<Map<String, dynamic>> addParticipant(
@@ -56,5 +56,19 @@ class DepartmentApi {
       '/v1/core/church/unit/departments/$departmentId/extensions/$extension',
     );
     return response.data ?? <String, dynamic>{};
+  }
+
+  List<dynamic> _readList(Object? data) {
+    if (data is List) return data;
+
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      for (final key in const ['content', 'items', 'data', 'departments']) {
+        final value = map[key];
+        if (value is List) return value;
+      }
+    }
+
+    return <dynamic>[];
   }
 }

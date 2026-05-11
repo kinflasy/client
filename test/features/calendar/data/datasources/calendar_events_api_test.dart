@@ -18,14 +18,86 @@ void main() {
     api = CalendarEventsApi(dio);
   });
 
+  test('normalizes enveloped create response', () async {
+    when(
+      () => dio.post<dynamic>(
+        '/v1/core/calendar-events/unit/unit-1',
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/unit/unit-1',
+        ),
+        data: {
+          'data': {'id': 'event-1'},
+        },
+      ),
+    );
+
+    final json = await api.createUnitEvent('unit-1', {'title': 'Evento'});
+
+    expect(json, {'id': 'event-1'});
+  });
+
+  test('normalizes list create response', () async {
+    when(
+      () => dio.post<dynamic>(
+        '/v1/core/calendar-events/department/dep-1',
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/department/dep-1',
+        ),
+        data: [
+          {'id': 'event-1'},
+        ],
+      ),
+    );
+
+    final json = await api.createDepartmentEvent('dep-1', {'title': 'Evento'});
+
+    expect(json, {'id': 'event-1'});
+  });
+
+  test('normalizes enveloped event list response', () async {
+    final start = DateTime(2026, 5);
+    final end = DateTime(2026, 6);
+    when(
+      () => dio.get<dynamic>(
+        '/v1/core/calendar-events/unit/unit-1',
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/unit/unit-1',
+        ),
+        data: {
+          'content': [
+            {'id': 'event-1'},
+          ],
+        },
+      ),
+    );
+
+    final list = await api.getUnitEvents('unit-1', start, end);
+
+    expect(list, [
+      {'id': 'event-1'},
+    ]);
+  });
+
   test('sends card image upload as multipart file field', () async {
     when(
-      () => dio.put<Map<String, dynamic>>(
+      () => dio.put<dynamic>(
         '/v1/core/calendar-events/event-1/card-image',
         data: any(named: 'data'),
       ),
     ).thenAnswer(
-      (_) async => Response<Map<String, dynamic>>(
+      (_) async => Response<dynamic>(
         requestOptions: RequestOptions(
           path: '/v1/core/calendar-events/event-1/card-image',
         ),
@@ -39,7 +111,7 @@ void main() {
 
     final data =
         verify(
-              () => dio.put<Map<String, dynamic>>(
+              () => dio.put<dynamic>(
                 '/v1/core/calendar-events/event-1/card-image',
                 data: captureAny(named: 'data'),
               ),

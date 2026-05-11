@@ -61,23 +61,23 @@ class VisibilityRuleEntity extends Equatable {
        );
 
   factory VisibilityRuleEntity.fromJson(Map<String, dynamic> json) {
-    final type = VisibilityRuleType.fromString(json['type'] as String? ?? '');
+    final type = VisibilityRuleType.fromString(_readString(json, 'type') ?? '');
     return switch (type) {
       VisibilityRuleType.user => VisibilityRuleEntity.user(
-        userId: json['userId'] as String? ?? '*',
+        userId: _readString(json, 'userId') ?? '*',
       ),
       VisibilityRuleType.unit => VisibilityRuleEntity.unit(
-        unitId: json['unitId'] as String? ?? '',
+        unitId: _readString(json, 'unitId') ?? '',
         affiliation: _affiliationFromJson(json['affiliation']),
       ),
       VisibilityRuleType.church => VisibilityRuleEntity.church(
-        churchId: json['churchId'] as String? ?? '',
+        churchId: _readString(json, 'churchId') ?? '',
         affiliation: _affiliationFromJson(json['affiliation']),
       ),
       VisibilityRuleType.department => VisibilityRuleEntity.department(
-        departmentId: json['departmentId'] as String? ?? '',
+        departmentId: _readString(json, 'departmentId') ?? '',
         integrationType: IntegrationType.fromString(
-          json['integrationType'] as String? ?? '',
+          _readString(json, 'integrationType') ?? '',
         ),
       ),
     };
@@ -122,6 +122,13 @@ class VisibilityRuleEntity extends Equatable {
     affiliation,
     integrationType,
   ];
+}
+
+String? _readString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  final text = value.toString().trim();
+  return text.isEmpty ? null : text;
 }
 
 Affiliation _affiliationFromJson(Object? value) {

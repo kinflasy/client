@@ -70,5 +70,86 @@ void main() {
       expect(entity.departmentId, 'department-1');
       expect(entity.type, CalendarEventType.department);
     });
+
+    test('parses flexible ids, nested owner, and enveloped rules', () {
+      final model = CalendarEventReadModel.fromJson({
+        'id': 123,
+        'title': 'Evento',
+        'startDateTime': '2026-05-12T19:00:00',
+        'endDateTime': '2026-05-12T21:00:00',
+        'department': {'id': 456},
+        'cardImage': {'id': 789},
+        'visibilityRules': {
+          'content': [
+            {
+              'type': 'DEPARTMENT',
+              'departmentId': 456,
+              'integrationType': 'INTEGRANT',
+            },
+          ],
+        },
+      });
+
+      expect(model.id, '123');
+      expect(model.type, CalendarEventType.department);
+      expect(model.departmentId, '456');
+      expect(model.cardImageId, '789');
+      expect(model.visibilityRules, hasLength(1));
+      expect(model.visibilityRules.single.departmentId, '456');
+    });
+
+    test('parses Java LocalDateTime arrays', () {
+      final model = CalendarEventReadModel.fromJson({
+        'id': 'event-3',
+        'title': 'Evento',
+        'startDateTime': [2026, 5, 12, 19, 30, 15, 123000000],
+        'endDateTime': [2026, 5, 12, 21, 0],
+        'unitId': 'unit-1',
+      });
+
+      expect(model.startDateTime, DateTime(2026, 5, 12, 19, 30, 15, 123));
+      expect(model.endDateTime, DateTime(2026, 5, 12, 21));
+    });
+
+    test('parses date time objects', () {
+      final model = CalendarEventReadModel.fromJson({
+        'id': 'event-4',
+        'title': 'Evento',
+        'startDateTime': {
+          'year': 2026,
+          'monthValue': 5,
+          'dayOfMonth': 12,
+          'hour': 19,
+          'minute': 30,
+        },
+        'endDateTime': {'year': 2026, 'month': 5, 'day': 12, 'hour': 21},
+        'unitId': 'unit-1',
+      });
+
+      expect(model.startDateTime, DateTime(2026, 5, 12, 19, 30));
+      expect(model.endDateTime, DateTime(2026, 5, 12, 21));
+    });
+
+    test('infers owner type when backend sends generic dto type', () {
+      final departmentModel = CalendarEventReadModel.fromJson({
+        'id': 'event-5',
+        'title': 'Evento',
+        'startDateTime': '2026-05-12T19:00:00',
+        'endDateTime': '2026-05-12T21:00:00',
+        'type': 'CalendarEventDto',
+        'departmentId': 'department-1',
+      });
+      final unitModel = CalendarEventReadModel.fromJson({
+        'id': 'event-6',
+        'title': 'Evento',
+        'startDateTime': '2026-05-12T19:00:00',
+        'endDateTime': '2026-05-12T21:00:00',
+        'type': 'CalendarEventDto',
+        'unitId': 'unit-1',
+      });
+
+      expect(departmentModel.type, CalendarEventType.department);
+      expect(unitModel.type, CalendarEventType.unit);
+    });
   });
 }

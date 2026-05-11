@@ -2,6 +2,8 @@ import 'package:client/core/domain/enums/affiliation.dart';
 import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
@@ -113,6 +115,9 @@ void main() {
       ProviderScope(
         overrides: [
           departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) async => const [],
+          ),
           sessionPermissionsProvider.overrideWith(
             (ref) async => _leaderPermissions,
           ),
@@ -127,7 +132,7 @@ void main() {
     expect(find.text('Louvor'), findsOneWidget);
     expect(find.text('Eventos'), findsOneWidget);
     expect(find.text('Participantes'), findsOneWidget);
-    expect(find.text('Eventos do departamento em breve.'), findsOneWidget);
+    expect(find.text('Nenhum evento encontrado.'), findsOneWidget);
 
     await tester.tap(find.text('Participantes'));
     await tester.pumpAndSettle();
@@ -135,6 +140,93 @@ void main() {
     expect(find.text('Maria Silva'), findsOneWidget);
     expect(find.textContaining('34 anos'), findsOneWidget);
     expect(find.text('Adicionar participantes'), findsOneWidget);
+  });
+
+  testWidgets('shows department events empty state', (tester) async {
+    _stubDepartmentDetail(repository);
+    _stubParticipants(repository);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) async => const [],
+          ),
+          sessionPermissionsProvider.overrideWith(
+            (ref) async => _leaderPermissions,
+          ),
+        ],
+        child: const MaterialApp(
+          home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nenhum evento encontrado.'), findsOneWidget);
+    expect(
+      find.text(
+        'Quando houver eventos deste departamento, eles aparecerão aqui.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows department events rendered with EventCard', (
+    tester,
+  ) async {
+    _stubDepartmentDetail(repository);
+    _stubParticipants(repository);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) async => [_departmentEvent],
+          ),
+          sessionPermissionsProvider.overrideWith(
+            (ref) async => _leaderPermissions,
+          ),
+        ],
+        child: const MaterialApp(
+          home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ensaio do Louvor'), findsOneWidget);
+    expect(find.text('12 mai 19:00 - 12 mai 21:00'), findsOneWidget);
+    expect(find.text('Preparação do domingo'), findsOneWidget);
+    expect(find.text('Departamento'), findsOneWidget);
+  });
+
+  testWidgets('shows department events loading error', (tester) async {
+    _stubDepartmentDetail(repository);
+    _stubParticipants(repository);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) => Future.error(Exception('falha')),
+          ),
+          sessionPermissionsProvider.overrideWith(
+            (ref) async => _leaderPermissions,
+          ),
+        ],
+        child: const MaterialApp(
+          home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Não foi possível carregar os eventos.'), findsOneWidget);
+    expect(find.text('Tente novamente em instantes.'), findsOneWidget);
   });
 
   testWidgets('shows inline error when department detail fails', (
@@ -148,6 +240,9 @@ void main() {
       ProviderScope(
         overrides: [
           departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) async => const [],
+          ),
           sessionPermissionsProvider.overrideWith(
             (ref) async => _leaderPermissions,
           ),
@@ -196,6 +291,9 @@ void main() {
       ProviderScope(
         overrides: [
           departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) async => const [],
+          ),
           sessionPermissionsProvider.overrideWith(
             (ref) async => _integrantPermissions,
           ),
@@ -268,6 +366,9 @@ Future<void> _pumpParticipantsTab({
     ProviderScope(
       overrides: [
         departmentRepositoryProvider.overrideWithValue(repository),
+        departmentCalendarEventsProvider.overrideWith(
+          (ref, request) async => const [],
+        ),
         sessionPermissionsProvider.overrideWith((ref) async => permissions),
       ],
       child: const MaterialApp(
@@ -280,3 +381,40 @@ Future<void> _pumpParticipantsTab({
   await tester.tap(find.text('Participantes'));
   await tester.pumpAndSettle();
 }
+
+void _stubDepartmentDetail(DepartmentRepository repository) {
+  when(() => repository.getDepartmentById('dep-1')).thenAnswer(
+    (_) async => const Right(
+      DepartmentDetailEntity(
+        id: 'dep-1',
+        name: 'Louvor',
+        slug: 'louvor',
+        type: 'MINISTRY',
+      ),
+    ),
+  );
+}
+
+void _stubParticipants(DepartmentRepository repository) {
+  when(() => repository.getParticipants('dep-1')).thenAnswer(
+    (_) async => const Right([
+      DepartmentParticipantEntity(
+        personId: 'person-1',
+        fullName: 'Maria Silva',
+        affiliation: 'MEMBER',
+        gender: 'FEMALE',
+        age: 34,
+      ),
+    ]),
+  );
+}
+
+final _departmentEvent = CalendarEventEntity(
+  id: 'event-1',
+  title: 'Ensaio do Louvor',
+  description: 'Preparação do domingo',
+  startDateTime: DateTime(2026, 5, 12, 19),
+  endDateTime: DateTime(2026, 5, 12, 21),
+  type: CalendarEventType.department,
+  departmentId: 'dep-1',
+);

@@ -1,8 +1,8 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/church/domain/entities/church_event_entity.dart';
-import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/calendar/presentation/widgets/event_card.dart';
+import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/presentation/widgets/department_card.dart';
 import 'package:client/features/department/providers/department_providers.dart';
@@ -103,7 +103,15 @@ class ChurchEventsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(churchEventsProvider(unitId));
+    final eventsAsync = ref.watch(
+      unitCalendarEventsProvider(
+        UnitCalendarEventsRequest(
+          unitId: unitId,
+          start: _initialEventsStart(),
+          end: _initialEventsEnd(),
+        ),
+      ),
+    );
     return eventsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(
@@ -123,7 +131,7 @@ class ChurchEventsTab extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           itemCount: events.length,
           separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) => _EventCard(event: events[index]),
+          itemBuilder: (context, index) => EventCard(event: events[index]),
         );
       },
     );
@@ -282,49 +290,6 @@ class ChurchAnnouncementsTab extends StatelessWidget {
   }
 }
 
-class _EventCard extends StatelessWidget {
-  const _EventCard({required this.event});
-
-  final ChurchEventEntity event;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            event.title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _formatDateRange(event.startDateTime, event.endDateTime),
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          if ((event.description ?? '').isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              event.description!,
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _InlineStatus extends StatelessWidget {
   const _InlineStatus({required this.icon, required this.title, this.subtitle});
 
@@ -363,24 +328,12 @@ class _InlineStatus extends StatelessWidget {
   }
 }
 
-String _formatDateRange(DateTime start, DateTime end) {
-  const months = [
-    'jan',
-    'fev',
-    'mar',
-    'abr',
-    'mai',
-    'jun',
-    'jul',
-    'ago',
-    'set',
-    'out',
-    'nov',
-    'dez',
-  ];
-  final startLabel =
-      '${start.day} ${months[start.month - 1]} ${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
-  final endLabel =
-      '${end.day} ${months[end.month - 1]} ${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
-  return '$startLabel - $endLabel';
+DateTime _initialEventsStart() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month);
+}
+
+DateTime _initialEventsEnd() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month + 2, 0, 23, 59, 59);
 }

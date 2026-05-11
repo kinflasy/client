@@ -1,6 +1,8 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/presentation/widgets/app_tab_bar.dart';
 import 'package:client/core/router/app_routes.dart';
+import 'package:client/features/calendar/presentation/widgets/event_card.dart';
+import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/membership/presentation/widgets/member_summary_card.dart';
@@ -85,7 +87,9 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
                       child: IndexedStack(
                         index: _selectedTabIndex,
                         children: [
-                          const _DepartmentEventsPlaceholder(),
+                          _DepartmentEventsTab(
+                            departmentId: widget.departmentId,
+                          ),
                           _DepartmentParticipantsTab(
                             departmentId: widget.departmentId,
                             canManageParticipants: canManageParticipants,
@@ -109,16 +113,47 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
   }
 }
 
-class _DepartmentEventsPlaceholder extends StatelessWidget {
-  const _DepartmentEventsPlaceholder();
+class _DepartmentEventsTab extends ConsumerWidget {
+  const _DepartmentEventsTab({required this.departmentId});
+
+  final String departmentId;
 
   @override
-  Widget build(BuildContext context) {
-    return const _InlineStatus(
-      icon: Icons.event_note_outlined,
-      title: 'Eventos do departamento em breve.',
-      subtitle:
-          'Nesta primeira versão, esta aba vai começar com conteúdo mockado.',
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eventsAsync = ref.watch(
+      departmentCalendarEventsProvider(
+        DepartmentCalendarEventsRequest(
+          departmentId: departmentId,
+          start: _initialEventsStart(),
+          end: _initialEventsEnd(),
+        ),
+      ),
+    );
+
+    return eventsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => const _InlineStatus(
+        icon: Icons.event_busy_outlined,
+        title: 'Não foi possível carregar os eventos.',
+        subtitle: 'Tente novamente em instantes.',
+      ),
+      data: (events) {
+        if (events.isEmpty) {
+          return const _InlineStatus(
+            icon: Icons.event_note_outlined,
+            title: 'Nenhum evento encontrado.',
+            subtitle:
+                'Quando houver eventos deste departamento, eles aparecerão aqui.',
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.only(bottom: 24),
+          itemCount: events.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) => EventCard(event: events[index]),
+        );
+      },
     );
   }
 }
@@ -257,4 +292,14 @@ class _InlineStatus extends StatelessWidget {
       ),
     );
   }
+}
+
+DateTime _initialEventsStart() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month);
+}
+
+DateTime _initialEventsEnd() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month + 2, 0, 23, 59, 59);
 }

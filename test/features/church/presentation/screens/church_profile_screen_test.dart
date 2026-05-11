@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/church/data/datasources/church_events_api.dart';
+import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
@@ -13,26 +14,10 @@ import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-
-class _FakeChurchEventsApi extends ChurchEventsApi {
-  _FakeChurchEventsApi(this.events) : super(Dio());
-
-  final List<dynamic> events;
-
-  @override
-  Future<List<dynamic>> getEventsByUnitId({
-    required String unitId,
-    required DateTime start,
-    required DateTime end,
-  }) async {
-    return events;
-  }
-}
 
 void main() {
   CurrentChurchProfileEntity buildMemberProfile() {
@@ -140,16 +125,8 @@ void main() {
           currentChurchProfileProvider.overrideWith(
             (ref) async => buildMemberProfile(),
           ),
-          churchEventsApiProvider.overrideWithValue(
-            _FakeChurchEventsApi([
-              {
-                'id': 'event-1',
-                'title': 'Culto de Domingo',
-                'description': 'Celebracao principal',
-                'startDateTime': '2026-04-05T19:00:00',
-                'endDateTime': '2026-04-05T21:00:00',
-              },
-            ]),
+          unitCalendarEventsProvider.overrideWith(
+            (ref, request) async => [_calendarEvent],
           ),
           segmentedDepartmentsProvider.overrideWith(
             (ref, unitId) async => const SegmentedDepartments(
@@ -210,7 +187,9 @@ void main() {
           currentChurchProfileProvider.overrideWith(
             (ref) async => buildMemberProfile(),
           ),
-          churchEventsApiProvider.overrideWithValue(_FakeChurchEventsApi([])),
+          unitCalendarEventsProvider.overrideWith(
+            (ref, request) async => const [],
+          ),
           segmentedDepartmentsProvider.overrideWith(
             (ref, unitId) async => const SegmentedDepartments(
               myDepartments: [],
@@ -310,7 +289,9 @@ void main() {
           currentChurchProfileProvider.overrideWith(
             (ref) async => buildMemberProfile(),
           ),
-          churchEventsApiProvider.overrideWithValue(_FakeChurchEventsApi([])),
+          unitCalendarEventsProvider.overrideWith(
+            (ref, request) async => const [],
+          ),
           segmentedDepartmentsProvider.overrideWith(
             (ref, unitId) async => const SegmentedDepartments(
               myDepartments: [],
@@ -328,3 +309,13 @@ void main() {
     expect(find.byKey(ChurchFloatingBackButton.buttonKey), findsNothing);
   });
 }
+
+final _calendarEvent = CalendarEventEntity(
+  id: 'event-1',
+  title: 'Culto de Domingo',
+  description: 'Celebração principal',
+  startDateTime: DateTime(2026, 5, 10, 18),
+  endDateTime: DateTime(2026, 5, 10, 20),
+  type: CalendarEventType.unit,
+  unitId: 'unit-1',
+);

@@ -2,6 +2,8 @@ import 'package:client/core/domain/enums/affiliation.dart';
 import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/router/app_routes.dart';
+import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/church/presentation/widgets/church_profile_tabs.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/providers/department_providers.dart';
@@ -13,6 +15,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
+  Widget buildEventsSubject({
+    required Future<List<CalendarEventEntity>> Function(
+      UnitCalendarEventsRequest request,
+    )
+    loadEvents,
+  }) {
+    return ProviderScope(
+      overrides: [
+        unitCalendarEventsProvider.overrideWith(
+          (ref, request) => loadEvents(request),
+        ),
+      ],
+      child: const MaterialApp(
+        home: Scaffold(body: ChurchEventsTab(unitId: 'unit-1')),
+      ),
+    );
+  }
+
   Widget buildSubject({
     required SegmentedDepartments segmentedDepartments,
     SessionPermissions permissions = const SessionPermissions(
@@ -83,6 +103,50 @@ void main() {
 
     expect(find.text('Meus departamentos'), findsNothing);
     expect(find.text('Nenhum departamento encontrado.'), findsOneWidget);
+  });
+
+  testWidgets('ChurchEventsTab cobre loading', (tester) async {
+    await tester.pumpWidget(
+      buildEventsSubject(loadEvents: (_) => Future.value(const [])),
+    );
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('ChurchEventsTab cobre erro', (tester) async {
+    await tester.pumpWidget(
+      buildEventsSubject(loadEvents: (_) => Future.error(Exception('falha'))),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Não foi possível carregar os eventos.'), findsOneWidget);
+  });
+
+  testWidgets('ChurchEventsTab cobre estado vazio', (tester) async {
+    await tester.pumpWidget(
+      buildEventsSubject(loadEvents: (_) async => const []),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nenhum evento encontrado.'), findsOneWidget);
+    expect(
+      find.text('Os próximos eventos da sua igreja aparecerão aqui.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('ChurchEventsTab renderiza eventos com EventCard', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildEventsSubject(loadEvents: (_) async => [_calendarEvent]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Culto de Domingo'), findsOneWidget);
+    expect(find.text('10 mai 18:00 - 10 mai 20:00'), findsOneWidget);
+    expect(find.text('Celebração principal'), findsOneWidget);
+    expect(find.text('Unidade'), findsOneWidget);
   });
 
   testWidgets('shows my departments when the list has items', (tester) async {
@@ -220,4 +284,14 @@ const _secretariaDepartment = DepartmentEntity(
   name: 'Secretaria',
   slug: 'secretaria',
   type: 'ADMINISTRATIVE',
+);
+
+final _calendarEvent = CalendarEventEntity(
+  id: 'event-1',
+  title: 'Culto de Domingo',
+  description: 'Celebração principal',
+  startDateTime: DateTime(2026, 5, 10, 18),
+  endDateTime: DateTime(2026, 5, 10, 20),
+  type: CalendarEventType.unit,
+  unitId: 'unit-1',
 );

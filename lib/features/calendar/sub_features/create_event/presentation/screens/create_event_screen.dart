@@ -39,8 +39,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   String? _selectedDepartmentId;
   List<VisibilityRuleEntity> _visibilityRules = const [];
   PickedEventImage? _pickedImage;
-  String? _rulesError;
   String? _dateTimeError;
+  bool _endDateWasAutoFilled = false;
 
   @override
   void dispose() {
@@ -68,14 +68,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
   Future<void> _submit(String unitId) async {
     setState(() {
-      _rulesError = _visibilityRules.isEmpty
-          ? 'Adicione pelo menos uma regra de visibilidade.'
-          : null;
       _dateTimeError = _validateDateRange();
     });
 
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_rulesError != null || _dateTimeError != null) return;
+    if (_dateTimeError != null) return;
 
     final start = _combineDateTime(
       _startDateController.text,
@@ -92,7 +89,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       description: _nullableTrim(_descriptionController.text),
       startDateTime: start,
       endDateTime: end,
-      visibilityRules: _visibilityRules,
+      visibilityRules: _effectiveVisibilityRules(),
     );
 
     final notifier = ref.read(createCalendarEventProvider.notifier);
@@ -189,6 +186,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                       endTimeController: _endTimeController,
                       enabled: !isLoading,
                       dateTimeError: _dateTimeError,
+                      onStartDateChanged: _handleStartDateChanged,
+                      onStartTimeChanged: _handleStartTimeChanged,
+                      onEndDateChanged: _handleEndDateChanged,
                     ),
                     if (_dateTimeError != null) ...[
                       const SizedBox(height: 8),
@@ -203,7 +203,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     const SizedBox(height: 16),
                     DropdownButtonFormField<_EventOwnerScope>(
                       initialValue: _ownerScope,
-                      decoration: _inputDecoration('Evento de *'),
+                      decoration: _inputDecoration('Organizado por *'),
                       items: const [
                         DropdownMenuItem(
                           value: _EventOwnerScope.unit,
@@ -254,21 +254,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                           ? (_) {}
                           : (rules) => setState(() {
                               _visibilityRules = rules;
-                              _rulesError = rules.isEmpty
-                                  ? 'Adicione pelo menos uma regra de visibilidade.'
-                                  : null;
                             }),
                     ),
-                    if (_rulesError != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        _rulesError!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 20),
                     _EventImageSection(
                       image: _pickedImage,
@@ -315,6 +302,57 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
+  List<VisibilityRuleEntity> _effectiveVisibilityRules() {
+    return _visibilityRules.isEmpty
+        ? const [VisibilityRuleEntity.user(userId: '*')]
+        : _visibilityRules;
+  }
+
+  void _handleStartDateChanged(String value) {
+    if (_endDateController.text.trim().isNotEmpty) return;
+
+    final startDate = parseBrazilianDate(value);
+    if (startDate == null) return;
+
+    _endDateController.text = formatBrazilianDate(startDate);
+    _endDateWasAutoFilled = true;
+  }
+
+  void _handleStartTimeChanged(String value) {
+    if (_endTimeController.text.trim().isNotEmpty) return;
+
+    final startTime = parseBrazilianTime(value);
+    if (startTime == null) return;
+
+    final startDate =
+        parseBrazilianDate(_startDateController.text) ?? DateTime(2000);
+    final startDateTime = DateTime(
+      startDate.year,
+      startDate.month,
+      startDate.day,
+      startTime.hour,
+      startTime.minute,
+    );
+    final endDateTime = startDateTime.add(const Duration(hours: 2));
+
+    _endTimeController.text = formatBrazilianTime(
+      TimeOfDay.fromDateTime(endDateTime),
+    );
+
+    final shouldAdjustEndDate =
+        _endDateController.text.trim().isEmpty || _endDateWasAutoFilled;
+    if (shouldAdjustEndDate) {
+      _endDateController.text = formatBrazilianDate(endDateTime);
+      _endDateWasAutoFilled = true;
+    }
+  }
+
+  void _handleEndDateChanged(String value) {
+    if (value.trim().isNotEmpty) {
+      _endDateWasAutoFilled = false;
+    }
+  }
+
   String? _validateDateRange() {
     final startDate = _startDateController.text.trim();
     final startTime = _startTimeController.text.trim();
@@ -357,6 +395,9 @@ class _DateTimeFields extends StatelessWidget {
     required this.endTimeController,
     required this.enabled,
     required this.dateTimeError,
+    required this.onStartDateChanged,
+    required this.onStartTimeChanged,
+    required this.onEndDateChanged,
   });
 
   final TextEditingController startDateController;
@@ -365,6 +406,9 @@ class _DateTimeFields extends StatelessWidget {
   final TextEditingController endTimeController;
   final bool enabled;
   final String? dateTimeError;
+  final ValueChanged<String> onStartDateChanged;
+  final ValueChanged<String> onStartTimeChanged;
+  final ValueChanged<String> onEndDateChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -383,6 +427,7 @@ class _DateTimeFields extends StatelessWidget {
                   filled: true,
                   fillColor: Colors.white,
                 ),
+                onChanged: onStartDateChanged,
                 validator: _requiredDate,
               ),
             ),
@@ -398,6 +443,7 @@ class _DateTimeFields extends StatelessWidget {
                   filled: true,
                   fillColor: Colors.white,
                 ),
+                onChanged: onStartTimeChanged,
                 validator: _requiredTime,
               ),
             ),
@@ -417,6 +463,7 @@ class _DateTimeFields extends StatelessWidget {
                   filled: true,
                   fillColor: Colors.white,
                 ),
+                onChanged: onEndDateChanged,
                 validator: _requiredDate,
               ),
             ),

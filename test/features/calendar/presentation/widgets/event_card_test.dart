@@ -40,31 +40,15 @@ void main() {
     expect(find.text('Encontro aberto para toda a unidade.'), findsNothing);
   });
 
-  testWidgets('exibe badge para evento de unidade', (tester) async {
-    await tester.pumpWidget(
-      _build(event: _event(type: CalendarEventType.unit)),
-    );
-
-    expect(find.text('Unidade'), findsOneWidget);
-    expect(find.text('Departamento'), findsNothing);
-  });
-
-  testWidgets('exibe badge para evento de departamento', (tester) async {
-    await tester.pumpWidget(
-      _build(event: _event(type: CalendarEventType.department)),
-    );
-
-    expect(find.text('Departamento'), findsOneWidget);
-    expect(find.text('Unidade'), findsNothing);
-  });
-
   testWidgets('menu de três pontos chama edição', (tester) async {
     var editCalled = false;
+    var deleteCalled = false;
     await tester.pumpWidget(
       _build(
         event: _event(),
         organizerLabel: 'Unidade Central - Louvor',
         onEdit: () => editCalled = true,
+        onDelete: () => deleteCalled = true,
       ),
     );
 
@@ -72,10 +56,34 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.more_vert));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Editar evento'));
+    expect(find.text('Editar'), findsOneWidget);
+    expect(find.text('Excluir'), findsOneWidget);
+
+    await tester.tap(find.text('Editar'));
     await tester.pumpAndSettle();
 
     expect(editCalled, isTrue);
+    expect(deleteCalled, isFalse);
+  });
+
+  testWidgets('menu de três pontos chama exclusão', (tester) async {
+    var editCalled = false;
+    var deleteCalled = false;
+    await tester.pumpWidget(
+      _build(
+        event: _event(),
+        onEdit: () => editCalled = true,
+        onDelete: () => deleteCalled = true,
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir'));
+    await tester.pumpAndSettle();
+
+    expect(editCalled, isFalse);
+    expect(deleteCalled, isTrue);
   });
 }
 
@@ -83,6 +91,7 @@ Widget _build({
   required CalendarEventEntity event,
   String? organizerLabel,
   VoidCallback? onEdit,
+  VoidCallback? onDelete,
 }) {
   return ProviderScope(
     child: MaterialApp(
@@ -91,6 +100,7 @@ Widget _build({
           event: event,
           organizerLabel: organizerLabel,
           onEdit: onEdit,
+          onDelete: onDelete,
         ),
       ),
     ),

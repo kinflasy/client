@@ -148,6 +148,12 @@ class _DepartmentEventsTab extends ConsumerWidget {
     final unitName =
         profileAsync.whenOrNull(data: (profile) => profile.unit.name?.trim()) ??
         'Unidade';
+    final unitAvatarImageId = profileAsync.whenOrNull(
+      data: (profile) => profile.unit.profileImageId,
+    );
+    final unitAvatarImageUrl = profileAsync.whenOrNull(
+      data: (profile) => profile.unit.logoUrl ?? profile.church.logoUrl,
+    );
     final organizerLabel = '$unitName - $departmentName';
 
     return eventsAsync.when(
@@ -176,11 +182,17 @@ class _DepartmentEventsTab extends ConsumerWidget {
             return EventCard(
               event: event,
               organizerLabel: organizerLabel,
+              unitAvatarDisplayName: unitName,
+              unitAvatarImageId: unitAvatarImageId,
+              unitAvatarImageUrl: unitAvatarImageUrl,
               onEdit: canEditEvents
                   ? () => context.pushNamed(
                       AppRoutes.adminCalendarEditName,
                       pathParameters: {'id': event.id},
                     )
+                  : null,
+              onDelete: canEditEvents
+                  ? () => confirmAndDeleteCalendarEvent(context, ref, event)
                   : null,
               onTap: () =>
                   showEventDetailBottomSheet(context, eventId: event.id),

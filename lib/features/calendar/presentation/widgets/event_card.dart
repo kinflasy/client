@@ -2,6 +2,7 @@ import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/presentation/widgets/event_date_formatters.dart';
 import 'package:client/features/calendar/presentation/widgets/event_image.dart';
+import 'package:client/features/church/presentation/widgets/church_unit_media.dart';
 import 'package:flutter/material.dart';
 
 class EventCard extends StatelessWidget {
@@ -10,13 +11,21 @@ class EventCard extends StatelessWidget {
     required this.event,
     this.onTap,
     this.onEdit,
+    this.onDelete,
     this.organizerLabel,
+    this.unitAvatarDisplayName,
+    this.unitAvatarImageId,
+    this.unitAvatarImageUrl,
   });
 
   final CalendarEventEntity event;
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final String? organizerLabel;
+  final String? unitAvatarDisplayName;
+  final String? unitAvatarImageId;
+  final String? unitAvatarImageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -33,36 +42,33 @@ class EventCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _EventOrganizerHeader(label: organizerLabel, onEdit: onEdit),
+              _EventOrganizerHeader(
+                label: organizerLabel,
+                dateLabel: formatEventDateRange(
+                  event.startDateTime,
+                  event.endDateTime,
+                ),
+                onEdit: onEdit,
+                onDelete: onDelete,
+                unitAvatarDisplayName: unitAvatarDisplayName,
+                unitAvatarImageId: unitAvatarImageId,
+                unitAvatarImageUrl: unitAvatarImageUrl,
+              ),
               const SizedBox(height: 12),
               if (_hasImage) ...[
                 EventImage(imageId: event.cardImageId!.trim()),
                 const SizedBox(height: 12),
               ],
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      event.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  _EventTypeBadge(type: event.type),
-                ],
-              ),
-              const SizedBox(height: 8),
               Text(
-                formatEventDateRange(event.startDateTime, event.endDateTime),
-                style: const TextStyle(color: AppColors.textSecondary),
+                event.title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
               ),
               if (description != null && description.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 5),
                 Text(
                   description,
                   maxLines: 2,
@@ -84,10 +90,23 @@ class EventCard extends StatelessWidget {
 }
 
 class _EventOrganizerHeader extends StatelessWidget {
-  const _EventOrganizerHeader({required this.label, required this.onEdit});
+  const _EventOrganizerHeader({
+    required this.label,
+    required this.dateLabel,
+    required this.onEdit,
+    required this.onDelete,
+    required this.unitAvatarDisplayName,
+    required this.unitAvatarImageId,
+    required this.unitAvatarImageUrl,
+  });
 
   final String? label;
+  final String dateLabel;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final String? unitAvatarDisplayName;
+  final String? unitAvatarImageId;
+  final String? unitAvatarImageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -95,19 +114,37 @@ class _EventOrganizerHeader extends StatelessWidget {
 
     return Row(
       children: [
+        _EventOrganizerAvatar(
+          displayName: _avatarDisplayName(text),
+          unitAvatarImageId: unitAvatarImageId,
+          unitAvatarImageUrl: unitAvatarImageUrl,
+        ),
+        const SizedBox(width: 10),
         Expanded(
-          child: Text(
-            text == null || text.isEmpty ? 'Organizador' : text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text == null || text.isEmpty ? 'Organizador' : text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                dateLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
           ),
         ),
-        if (onEdit != null) ...[
+        if (onEdit != null || onDelete != null) ...[
           const SizedBox(width: 8),
           PopupMenuButton<_EventCardMenuAction>(
             tooltip: 'Opções do evento',
@@ -116,53 +153,66 @@ class _EventOrganizerHeader extends StatelessWidget {
               switch (action) {
                 case _EventCardMenuAction.edit:
                   onEdit?.call();
+                  break;
+                case _EventCardMenuAction.delete:
+                  onDelete?.call();
+                  break;
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: _EventCardMenuAction.edit,
-                child: Text('Editar evento'),
-              ),
+            itemBuilder: (context) => [
+              if (onEdit != null)
+                const PopupMenuItem(
+                  value: _EventCardMenuAction.edit,
+                  child: Text('Editar'),
+                ),
+              if (onDelete != null)
+                PopupMenuItem(
+                  value: _EventCardMenuAction.delete,
+                  child: Text(
+                    'Excluir',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
             ],
           ),
         ],
       ],
     );
   }
+
+  String _avatarDisplayName(String? organizerText) {
+    final unitName = unitAvatarDisplayName?.trim();
+    if (unitName != null && unitName.isNotEmpty) return unitName;
+
+    if (organizerText == null || organizerText.isEmpty) return 'Organizador';
+    return organizerText;
+  }
 }
 
-enum _EventCardMenuAction { edit }
+enum _EventCardMenuAction { edit, delete }
 
-class _EventTypeBadge extends StatelessWidget {
-  const _EventTypeBadge({required this.type});
+class _EventOrganizerAvatar extends StatelessWidget {
+  const _EventOrganizerAvatar({
+    required this.displayName,
+    required this.unitAvatarImageId,
+    required this.unitAvatarImageUrl,
+  });
 
-  final CalendarEventType type;
+  final String displayName;
+  final String? unitAvatarImageId;
+  final String? unitAvatarImageUrl;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        child: Text(
-          _label,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+    // TODO: quando o departamento tiver avatar próprio, usar a imagem dele
+    // primeiro e manter este avatar da unidade como fallback.
+    return ChurchUnitAvatar(
+      displayName: displayName,
+      radius: 18,
+      imageId: unitAvatarImageId,
+      imageUrl: unitAvatarImageUrl,
     );
-  }
-
-  String get _label {
-    return switch (type) {
-      CalendarEventType.unit => 'Unidade',
-      CalendarEventType.department => 'Departamento',
-    };
   }
 }

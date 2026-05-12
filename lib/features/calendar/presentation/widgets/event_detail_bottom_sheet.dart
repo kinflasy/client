@@ -24,6 +24,36 @@ Future<void> showEventDetailBottomSheet(
   );
 }
 
+Future<void> confirmAndDeleteCalendarEvent(
+  BuildContext context,
+  WidgetRef ref,
+  CalendarEventEntity event, {
+  VoidCallback? onDeleted,
+}) async {
+  final confirmed = await showActionConfirmationDialog(
+    context,
+    title: 'Excluir evento',
+    message: 'Tem certeza que deseja excluir este evento?',
+    confirmLabel: 'Excluir',
+    isDestructive: true,
+  );
+
+  if (!confirmed) return;
+
+  final result = await ref
+      .read(calendarEventActionsProvider.notifier)
+      .deleteEvent(event.id);
+  if (!context.mounted) return;
+
+  result.fold(
+    (failure) => _showEventSnackBar(context, _failureMessage(failure)),
+    (_) {
+      _showEventSnackBar(context, 'Evento excluído.');
+      onDeleted?.call();
+    },
+  );
+}
+
 class _EventDetailBottomSheet extends ConsumerWidget {
   const _EventDetailBottomSheet({required this.eventId});
 
@@ -98,32 +128,19 @@ class _EventDetailContent extends ConsumerWidget {
           EventImage(imageId: imageId),
           const SizedBox(height: 20),
         ],
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                event.title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            _EventTypeBadge(type: event.type),
-          ],
+        Text(
+          event.title,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 16),
         _DetailRow(
           icon: Icons.schedule_outlined,
           label: formatEventDateRange(event.startDateTime, event.endDateTime),
         ),
-        if (canEdit) ...[
-          const SizedBox(height: 20),
-          _AdminActions(event: event, isSubmitting: isSubmitting),
-        ],
         if (description != null && description.isNotEmpty) ...[
           const SizedBox(height: 20),
           const Text(
@@ -139,6 +156,10 @@ class _EventDetailContent extends ConsumerWidget {
             description,
             style: const TextStyle(color: AppColors.textPrimary, height: 1.45),
           ),
+        ],
+        if (canEdit) ...[
+          const SizedBox(height: 24),
+          _AdminActions(event: event, isSubmitting: isSubmitting),
         ],
       ],
     );
@@ -171,14 +192,14 @@ class _AdminActions extends ConsumerWidget {
                       );
                     },
               icon: const Icon(Icons.edit_outlined),
-              label: const Text('Editar evento'),
+              label: const Text('Editar'),
             ),
             OutlinedButton.icon(
               onPressed: isSubmitting
                   ? null
                   : () => _confirmAndDeleteEvent(context, ref),
               icon: const Icon(Icons.delete_outline),
-              label: const Text('Excluir evento'),
+              label: const Text('Excluir'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error,
               ),
@@ -230,6 +251,17 @@ class _AdminActions extends ConsumerWidget {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
   }
+}
+
+String _failureMessage(Object failure) {
+  if (failure is Failure) return failure.message;
+  return failure.toString();
+}
+
+void _showEventSnackBar(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(message)));
 }
 
 class _EventDetailLoading extends StatelessWidget {
@@ -335,36 +367,6 @@ class _DetailRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _EventTypeBadge extends StatelessWidget {
-  const _EventTypeBadge({required this.type});
-
-  final CalendarEventType type;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        child: Text(
-          switch (type) {
-            CalendarEventType.unit => 'Unidade',
-            CalendarEventType.department => 'Departamento',
-          },
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
     );
   }
 }

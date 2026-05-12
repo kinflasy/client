@@ -113,6 +113,10 @@ class _MemberProfileBodyState extends State<_MemberProfileBody> {
                   unitId: widget.profile.unit.id,
                   unitName:
                       widget.profile.unit.name ?? widget.profile.church.name,
+                  unitAvatarImageId: widget.profile.unit.profileImageId,
+                  unitAvatarImageUrl:
+                      widget.profile.unit.logoUrl ??
+                      widget.profile.church.logoUrl,
                 ),
               ),
             ],

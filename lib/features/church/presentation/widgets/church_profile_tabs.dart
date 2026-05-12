@@ -61,17 +61,26 @@ class ChurchProfileMemberTabView extends StatelessWidget {
     super.key,
     required this.unitId,
     this.unitName,
+    this.unitAvatarImageId,
+    this.unitAvatarImageUrl,
   });
 
   final String unitId;
   final String? unitName;
+  final String? unitAvatarImageId;
+  final String? unitAvatarImageUrl;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
       child: TabBarView(
         children: [
-          ChurchEventsTab(unitId: unitId, unitName: unitName),
+          ChurchEventsTab(
+            unitId: unitId,
+            unitName: unitName,
+            unitAvatarImageId: unitAvatarImageId,
+            unitAvatarImageUrl: unitAvatarImageUrl,
+          ),
           DepartmentsTab(unitId: unitId),
           const ChurchAnnouncementsTab(),
         ],
@@ -104,10 +113,18 @@ class ChurchVisitorEventsPlaceholderTab extends StatelessWidget {
 }
 
 class ChurchEventsTab extends ConsumerWidget {
-  const ChurchEventsTab({super.key, required this.unitId, this.unitName});
+  const ChurchEventsTab({
+    super.key,
+    required this.unitId,
+    this.unitName,
+    this.unitAvatarImageId,
+    this.unitAvatarImageUrl,
+  });
 
   final String unitId;
   final String? unitName;
+  final String? unitAvatarImageId;
+  final String? unitAvatarImageUrl;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -162,11 +179,17 @@ class ChurchEventsTab extends ConsumerWidget {
                 unitLabel,
                 departments,
               ),
+              unitAvatarDisplayName: unitLabel,
+              unitAvatarImageId: unitAvatarImageId,
+              unitAvatarImageUrl: unitAvatarImageUrl,
               onEdit: canEdit
                   ? () => context.pushNamed(
                       AppRoutes.adminCalendarEditName,
                       pathParameters: {'id': event.id},
                     )
+                  : null,
+              onDelete: canEdit
+                  ? () => confirmAndDeleteCalendarEvent(context, ref, event)
                   : null,
               onTap: () =>
                   showEventDetailBottomSheet(context, eventId: event.id),

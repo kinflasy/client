@@ -1,7 +1,9 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/router/app_routes.dart';
+import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/presentation/widgets/event_card.dart';
+import 'package:client/features/calendar/presentation/widgets/event_detail_bottom_sheet.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/presentation/widgets/department_card.dart';
@@ -55,16 +57,21 @@ class ChurchProfileTabBarDelegate extends SliverPersistentHeaderDelegate {
 }
 
 class ChurchProfileMemberTabView extends StatelessWidget {
-  const ChurchProfileMemberTabView({super.key, required this.unitId});
+  const ChurchProfileMemberTabView({
+    super.key,
+    required this.unitId,
+    this.unitName,
+  });
 
   final String unitId;
+  final String? unitName;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
       child: TabBarView(
         children: [
-          ChurchEventsTab(unitId: unitId),
+          ChurchEventsTab(unitId: unitId, unitName: unitName),
           DepartmentsTab(unitId: unitId),
           const ChurchAnnouncementsTab(),
         ],
@@ -97,14 +104,16 @@ class ChurchVisitorEventsPlaceholderTab extends StatelessWidget {
 }
 
 class ChurchEventsTab extends ConsumerWidget {
-  const ChurchEventsTab({super.key, required this.unitId});
+  const ChurchEventsTab({super.key, required this.unitId, this.unitName});
 
   final String unitId;
+  final String? unitName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final permissionsAsync = ref.watch(sessionPermissionsProvider);
     final eventsAsync = ref.watch(
-      unitCalendarEventsProvider(
+      visibleUnitCalendarEventsProvider(
         UnitCalendarEventsRequest(
           unitId: unitId,
           start: _initialEventsStart(),
@@ -112,6 +121,14 @@ class ChurchEventsTab extends ConsumerWidget {
         ),
       ),
     );
+    final departmentsAsync = ref.watch(departmentsProvider(unitId));
+    final unitLabel = _nonEmptyOrFallback(unitName, 'Unidade');
+    final canEdit =
+        permissionsAsync.whenOrNull(
+          data: (permissions) => permissions.isUnitAdmin,
+        ) ??
+        false;
+
     return eventsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(
@@ -131,11 +148,58 @@ class ChurchEventsTab extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           itemCount: events.length,
           separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) => EventCard(event: events[index]),
+          itemBuilder: (context, index) {
+            final event = events[index];
+            final departments =
+                departmentsAsync.whenOrNull(
+                  data: (departments) => departments,
+                ) ??
+                const <DepartmentEntity>[];
+            return EventCard(
+              event: event,
+              organizerLabel: _organizerLabelForEvent(
+                event,
+                unitLabel,
+                departments,
+              ),
+              onEdit: canEdit
+                  ? () => context.pushNamed(
+                      AppRoutes.adminCalendarEditName,
+                      pathParameters: {'id': event.id},
+                    )
+                  : null,
+              onTap: () =>
+                  showEventDetailBottomSheet(context, eventId: event.id),
+            );
+          },
         );
       },
     );
   }
+}
+
+String _organizerLabelForEvent(
+  CalendarEventEntity event,
+  String unitLabel,
+  List<DepartmentEntity> departments,
+) {
+  final departmentId = event.departmentId?.trim();
+  if (departmentId == null || departmentId.isEmpty) return unitLabel;
+
+  final departmentName = _departmentName(departments, departmentId);
+  return departmentName == null ? unitLabel : '$unitLabel - $departmentName';
+}
+
+String? _departmentName(List<DepartmentEntity> departments, String id) {
+  for (final department in departments) {
+    if (department.id == id) return department.name;
+  }
+  return null;
+}
+
+String _nonEmptyOrFallback(String? value, String fallback) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? fallback : trimmed;
 }
 
 class DepartmentsTab extends ConsumerWidget {

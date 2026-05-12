@@ -34,6 +34,7 @@ class AppRoutes {
   static const adminGeneralInfoImages = '/admin/informacoes-gerais/imagens';
   static const adminCalendar = '/admin/calendario';
   static const adminCalendarCreate = '/admin/calendario/criar';
+  static const adminCalendarEdit = '/admin/calendario/:id/editar';
   static const departmentDetail = '/departamentos/:id';
   static const departmentParticipantsAdd =
       '/departamentos/:id/participantes/adicionar';
@@ -71,6 +72,7 @@ class AppRoutes {
   static const adminGeneralInfoImagesName = 'admin-general-info-images';
   static const adminCalendarName = 'admin-calendar';
   static const adminCalendarCreateName = 'admin-calendar-create';
+  static const adminCalendarEditName = 'admin-calendar-edit';
   static const departmentDetailName = 'department-detail';
   static const departmentParticipantsAddName = 'department-participants-add';
 }

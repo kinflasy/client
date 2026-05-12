@@ -1,13 +1,22 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/presentation/widgets/event_date_formatters.dart';
+import 'package:client/features/calendar/presentation/widgets/event_image.dart';
 import 'package:flutter/material.dart';
 
 class EventCard extends StatelessWidget {
-  const EventCard({super.key, required this.event, this.onTap});
+  const EventCard({
+    super.key,
+    required this.event,
+    this.onTap,
+    this.onEdit,
+    this.organizerLabel,
+  });
 
   final CalendarEventEntity event;
   final VoidCallback? onTap;
+  final VoidCallback? onEdit;
+  final String? organizerLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +33,12 @@ class EventCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _EventOrganizerHeader(label: organizerLabel, onEdit: onEdit),
+              const SizedBox(height: 12),
+              if (_hasImage) ...[
+                EventImage(imageId: event.cardImageId!.trim()),
+                const SizedBox(height: 12),
+              ],
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -61,7 +76,62 @@ class EventCard extends StatelessWidget {
       ),
     );
   }
+
+  bool get _hasImage {
+    final imageId = event.cardImageId?.trim();
+    return imageId != null && imageId.isNotEmpty;
+  }
 }
+
+class _EventOrganizerHeader extends StatelessWidget {
+  const _EventOrganizerHeader({required this.label, required this.onEdit});
+
+  final String? label;
+  final VoidCallback? onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = label?.trim();
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            text == null || text.isEmpty ? 'Organizador' : text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        if (onEdit != null) ...[
+          const SizedBox(width: 8),
+          PopupMenuButton<_EventCardMenuAction>(
+            tooltip: 'Opções do evento',
+            icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+            onSelected: (action) {
+              switch (action) {
+                case _EventCardMenuAction.edit:
+                  onEdit?.call();
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _EventCardMenuAction.edit,
+                child: Text('Editar evento'),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+enum _EventCardMenuAction { edit }
 
 class _EventTypeBadge extends StatelessWidget {
   const _EventTypeBadge({required this.type});

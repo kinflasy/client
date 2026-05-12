@@ -2,7 +2,9 @@ import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/presentation/widgets/app_tab_bar.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/calendar/presentation/widgets/event_card.dart';
+import 'package:client/features/calendar/presentation/widgets/event_detail_bottom_sheet.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/membership/presentation/widgets/member_summary_card.dart';
@@ -44,6 +46,11 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
           data: (permissions) => permissions.canManageDept(widget.departmentId),
         ) ??
         false;
+    final canEditEvents =
+        permissionsAsync.whenOrNull(
+          data: (permissions) => permissions.isUnitAdmin,
+        ) ??
+        false;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -68,7 +75,7 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
                 title: 'Não foi possível carregar o departamento.',
                 subtitle: 'Tente novamente em instantes.',
               ),
-              data: (_) => Padding(
+              data: (department) => Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,6 +96,8 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
                         children: [
                           _DepartmentEventsTab(
                             departmentId: widget.departmentId,
+                            departmentName: department.name,
+                            canEditEvents: canEditEvents,
                           ),
                           _DepartmentParticipantsTab(
                             departmentId: widget.departmentId,
@@ -114,12 +123,19 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
 }
 
 class _DepartmentEventsTab extends ConsumerWidget {
-  const _DepartmentEventsTab({required this.departmentId});
+  const _DepartmentEventsTab({
+    required this.departmentId,
+    required this.departmentName,
+    required this.canEditEvents,
+  });
 
   final String departmentId;
+  final String departmentName;
+  final bool canEditEvents;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(currentChurchProfileProvider);
     final eventsAsync = ref.watch(
       departmentCalendarEventsProvider(
         DepartmentCalendarEventsRequest(
@@ -129,6 +145,10 @@ class _DepartmentEventsTab extends ConsumerWidget {
         ),
       ),
     );
+    final unitName =
+        profileAsync.whenOrNull(data: (profile) => profile.unit.name?.trim()) ??
+        'Unidade';
+    final organizerLabel = '$unitName - $departmentName';
 
     return eventsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -151,7 +171,21 @@ class _DepartmentEventsTab extends ConsumerWidget {
           padding: const EdgeInsets.only(bottom: 24),
           itemCount: events.length,
           separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) => EventCard(event: events[index]),
+          itemBuilder: (context, index) {
+            final event = events[index];
+            return EventCard(
+              event: event,
+              organizerLabel: organizerLabel,
+              onEdit: canEditEvents
+                  ? () => context.pushNamed(
+                      AppRoutes.adminCalendarEditName,
+                      pathParameters: {'id': event.id},
+                    )
+                  : null,
+              onTap: () =>
+                  showEventDetailBottomSheet(context, eventId: event.id),
+            );
+          },
         );
       },
     );

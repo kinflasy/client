@@ -109,7 +109,11 @@ class _MemberProfileBodyState extends State<_MemberProfileBody> {
               ),
               SliverFillRemaining(
                 hasScrollBody: true,
-                child: ChurchProfileMemberTabView(unitId: widget.profile.unit.id),
+                child: ChurchProfileMemberTabView(
+                  unitId: widget.profile.unit.id,
+                  unitName:
+                      widget.profile.unit.name ?? widget.profile.church.name,
+                ),
               ),
             ],
           ),

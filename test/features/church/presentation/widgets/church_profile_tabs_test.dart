@@ -20,15 +20,35 @@ void main() {
       UnitCalendarEventsRequest request,
     )
     loadEvents,
+    Future<CalendarEventEntity> Function(String eventId)? loadDetail,
   }) {
     return ProviderScope(
       overrides: [
-        unitCalendarEventsProvider.overrideWith(
+        visibleUnitCalendarEventsProvider.overrideWith(
           (ref, request) => loadEvents(request),
+        ),
+        departmentsProvider.overrideWith(
+          (ref, unitId) async => const [_louvorDepartment],
+        ),
+        calendarEventDetailProvider.overrideWith(
+          (ref, eventId) =>
+              loadDetail?.call(eventId) ?? Future.value(_calendarEvent),
+        ),
+        sessionPermissionsProvider.overrideWith(
+          (ref) async => const SessionPermissions(
+            isAuthenticated: true,
+            affiliation: Affiliation.unitAdmin,
+            activeUnitId: 'unit-1',
+            hasMembership: true,
+            integrations: [],
+            isUnitAdmin: true,
+          ),
         ),
       ],
       child: const MaterialApp(
-        home: Scaffold(body: ChurchEventsTab(unitId: 'unit-1')),
+        home: Scaffold(
+          body: ChurchEventsTab(unitId: 'unit-1', unitName: 'Unidade Central'),
+        ),
       ),
     );
   }
@@ -146,7 +166,39 @@ void main() {
     expect(find.text('Culto de Domingo'), findsOneWidget);
     expect(find.text('10 mai 18:00 - 10 mai 20:00'), findsOneWidget);
     expect(find.text('Celebração principal'), findsOneWidget);
+    expect(find.text('Unidade Central'), findsOneWidget);
     expect(find.text('Unidade'), findsOneWidget);
+  });
+
+  testWidgets('ChurchEventsTab mostra departamento no organizador do evento', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildEventsSubject(loadEvents: (_) async => [_departmentCalendarEvent]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ensaio do Louvor'), findsOneWidget);
+    expect(find.text('Unidade Central - Louvor'), findsOneWidget);
+    expect(find.text('Departamento'), findsOneWidget);
+  });
+
+  testWidgets('ChurchEventsTab abre bottom sheet ao tocar no card', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildEventsSubject(
+        loadEvents: (_) async => [_calendarEvent],
+        loadDetail: (_) async => _calendarEvent,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Culto de Domingo'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Descrição'), findsOneWidget);
+    expect(find.text('Culto de Domingo'), findsNWidgets(2));
   });
 
   testWidgets('shows my departments when the list has items', (tester) async {
@@ -294,4 +346,14 @@ final _calendarEvent = CalendarEventEntity(
   endDateTime: DateTime(2026, 5, 10, 20),
   type: CalendarEventType.unit,
   unitId: 'unit-1',
+);
+
+final _departmentCalendarEvent = CalendarEventEntity(
+  id: 'event-2',
+  title: 'Ensaio do Louvor',
+  description: 'Preparação do repertório',
+  startDateTime: DateTime(2026, 5, 11, 19),
+  endDateTime: DateTime(2026, 5, 11, 21),
+  type: CalendarEventType.department,
+  departmentId: 'dep-1',
 );

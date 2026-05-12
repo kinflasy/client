@@ -4,10 +4,15 @@ import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
+import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
 import 'package:client/core/presentation/widgets/app_date_text_form_field.dart';
 import 'package:client/core/presentation/widgets/app_time_text_form_field.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
+import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
+import 'package:client/features/calendar/presentation/widgets/event_image.dart';
+import 'package:client/features/calendar/providers/calendar_event_actions_provider.dart';
+import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/calendar/sub_features/create_event/presentation/widgets/visibility_rules_selector.dart';
 import 'package:client/features/calendar/sub_features/create_event/providers/create_event_providers.dart';
 import 'package:client/features/calendar/sub_features/create_event/providers/event_image_picker_provider.dart';
@@ -15,12 +20,15 @@ import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 
 enum _EventOwnerScope { unit, department }
 
 class CreateEventScreen extends ConsumerStatefulWidget {
-  const CreateEventScreen({super.key});
+  const CreateEventScreen({super.key, this.eventId});
+
+  final String? eventId;
 
   @override
   ConsumerState<CreateEventScreen> createState() => _CreateEventScreenState();
@@ -41,6 +49,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   PickedEventImage? _pickedImage;
   String? _dateTimeError;
   bool _endDateWasAutoFilled = false;
+  String? _initializedEventId;
+
+  bool get _isEditing => widget.eventId != null;
 
   @override
   void dispose() {
@@ -64,6 +75,50 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     }
 
     setState(() => _pickedImage = image);
+  }
+
+  Future<void> _pickAndUpdateImage(String eventId) async {
+    final image = await ref.read(eventImagePickerProvider).pickImage();
+    if (image == null) return;
+
+    final validationMessage = validatePickedEventImage(image);
+    if (validationMessage != null) {
+      if (!mounted) return;
+      _showSnack(validationMessage);
+      return;
+    }
+
+    final result = await ref
+        .read(calendarEventActionsProvider.notifier)
+        .updateCardImage(eventId, image.path);
+    if (!mounted) return;
+
+    result.fold(
+      (failure) => _showSnack(failure.message),
+      (_) => _showSnack('Imagem do evento atualizada.'),
+    );
+  }
+
+  Future<void> _confirmAndDeleteImage(String eventId) async {
+    final confirmed = await showActionConfirmationDialog(
+      context,
+      title: 'Remover imagem',
+      message: 'Tem certeza que deseja remover a imagem do evento?',
+      confirmLabel: 'Remover',
+      isDestructive: true,
+    );
+
+    if (!confirmed) return;
+
+    final result = await ref
+        .read(calendarEventActionsProvider.notifier)
+        .deleteCardImage(eventId);
+    if (!mounted) return;
+
+    result.fold(
+      (failure) => _showSnack(failure.message),
+      (_) => _showSnack('Imagem do evento removida.'),
+    );
   }
 
   Future<void> _submit(String unitId) async {
@@ -92,170 +147,226 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       visibilityRules: _effectiveVisibilityRules(),
     );
 
-    final notifier = ref.read(createCalendarEventProvider.notifier);
-    final result = _ownerScope == _EventOwnerScope.unit
-        ? await notifier.createUnitEvent(
-            unitId,
-            request,
-            cardImagePath: _pickedImage?.path,
-          )
-        : await notifier.createDepartmentEvent(
-            _selectedDepartmentId!,
-            request,
-            cardImagePath: _pickedImage?.path,
-          );
+    final result = _isEditing
+        ? await ref
+              .read(calendarEventActionsProvider.notifier)
+              .updateEvent(widget.eventId!, request)
+        : await _createEvent(unitId, request);
 
     if (!mounted) return;
 
     result.fold((failure) => _showSnack(failure.message), (_) {
-      _showSnack('Evento criado com sucesso.');
+      _showSnack(
+        _isEditing
+            ? 'Evento atualizado com sucesso.'
+            : 'Evento criado com sucesso.',
+      );
       context.pop();
     });
+  }
+
+  Future<Either<Failure, CalendarEventEntity>> _createEvent(
+    String unitId,
+    CalendarEventRequestModel request,
+  ) {
+    final notifier = ref.read(createCalendarEventProvider.notifier);
+    return _ownerScope == _EventOwnerScope.unit
+        ? notifier.createUnitEvent(
+            unitId,
+            request,
+            cardImagePath: _pickedImage?.path,
+          )
+        : notifier.createDepartmentEvent(
+            _selectedDepartmentId!,
+            request,
+            cardImagePath: _pickedImage?.path,
+          );
   }
 
   @override
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(currentChurchProfileProvider);
-    final isLoading = ref.watch(createCalendarEventProvider).isLoading;
+    final createLoading = ref.watch(createCalendarEventProvider).isLoading;
+    final updateLoading = ref.watch(calendarEventActionsProvider).isLoading;
+    final isLoading = createLoading || updateLoading;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Criar evento'),
+        title: Text(_isEditing ? 'Editar evento' : 'Criar evento'),
         backgroundColor: AppColors.surface,
       ),
-      body: profileAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _InlineStatus(
-          icon: Icons.error_outline,
-          title: error is Failure
-              ? error.message
-              : 'Não foi possível carregar a unidade ativa.',
-          subtitle: 'Tente novamente em instantes.',
-        ),
-        data: (profile) {
-          final unitId = profile.unit.id;
-          final departmentsAsync = ref.watch(departmentsProvider(unitId));
+      body: _isEditing
+          ? ref
+                .watch(calendarEventDetailProvider(widget.eventId!))
+                .when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, _) => _InlineStatus(
+                    icon: Icons.error_outline,
+                    title: error is Failure
+                        ? error.message
+                        : 'Não foi possível carregar o evento.',
+                    subtitle: 'Tente novamente em instantes.',
+                  ),
+                  data: (event) {
+                    _initializeForEdit(event);
+                    return _buildFormWithProfile(
+                      profileAsync,
+                      isLoading,
+                      event: event,
+                    );
+                  },
+                )
+          : _buildFormWithProfile(profileAsync, isLoading),
+    );
+  }
 
-          return departmentsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => _InlineStatus(
-              icon: Icons.error_outline,
-              title: error is Failure
-                  ? error.message
-                  : 'Não foi possível carregar os departamentos.',
-              subtitle: 'Tente novamente em instantes.',
-            ),
-            data: (departments) {
-              if (_selectedDepartmentId == null && departments.isNotEmpty) {
-                _selectedDepartmentId = departments.first.id;
-              }
+  Widget _buildFormWithProfile(
+    AsyncValue<dynamic> profileAsync,
+    bool isLoading, {
+    CalendarEventEntity? event,
+  }) {
+    return profileAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _InlineStatus(
+        icon: Icons.error_outline,
+        title: error is Failure
+            ? error.message
+            : 'Não foi possível carregar a unidade ativa.',
+        subtitle: 'Tente novamente em instantes.',
+      ),
+      data: (profile) {
+        final unitId = profile.unit.id as String;
+        final departmentsAsync = ref.watch(departmentsProvider(unitId));
 
-              return Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                  children: [
-                    TextFormField(
-                      controller: _titleController,
-                      enabled: !isLoading,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: _inputDecoration('Título *'),
+        return departmentsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => _InlineStatus(
+            icon: Icons.error_outline,
+            title: error is Failure
+                ? error.message
+                : 'Não foi possível carregar os departamentos.',
+            subtitle: 'Tente novamente em instantes.',
+          ),
+          data: (departments) {
+            if (_selectedDepartmentId == null && departments.isNotEmpty) {
+              _selectedDepartmentId = departments.first.id;
+            }
+
+            return Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    enabled: !isLoading,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: _inputDecoration('Título *'),
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Campo obrigatório'
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    enabled: !isLoading,
+                    maxLines: 4,
+                    textCapitalization:
+                        AppTextInputBehavior.plain.textCapitalization,
+                    autocorrect: AppTextInputBehavior.plain.autocorrect,
+                    enableSuggestions:
+                        AppTextInputBehavior.plain.enableSuggestions,
+                    decoration: _inputDecoration('Descrição'),
+                  ),
+                  const SizedBox(height: 16),
+                  _DateTimeFields(
+                    startDateController: _startDateController,
+                    startTimeController: _startTimeController,
+                    endDateController: _endDateController,
+                    endTimeController: _endTimeController,
+                    enabled: !isLoading,
+                    dateTimeError: _dateTimeError,
+                    onStartDateChanged: _handleStartDateChanged,
+                    onStartTimeChanged: _handleStartTimeChanged,
+                    onEndDateChanged: _handleEndDateChanged,
+                  ),
+                  if (_dateTimeError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _dateTimeError!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<_EventOwnerScope>(
+                    initialValue: _ownerScope,
+                    decoration: _inputDecoration('Organizado por *'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: _EventOwnerScope.unit,
+                        child: Text('Unidade'),
+                      ),
+                      DropdownMenuItem(
+                        value: _EventOwnerScope.department,
+                        child: Text('Departamento'),
+                      ),
+                    ],
+                    onChanged: isLoading || _isEditing
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            setState(() => _ownerScope = value);
+                          },
+                  ),
+                  if (_ownerScope == _EventOwnerScope.department) ...[
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedDepartmentId,
+                      decoration: _inputDecoration('Departamento *'),
+                      items: departments
+                          .map(
+                            (department) => DropdownMenuItem(
+                              value: department.id,
+                              child: Text(department.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: isLoading || _isEditing
+                          ? null
+                          : (value) =>
+                                setState(() => _selectedDepartmentId = value),
                       validator: (value) =>
-                          value == null || value.trim().isEmpty
+                          _ownerScope == _EventOwnerScope.department &&
+                              (value == null || value.isEmpty)
                           ? 'Campo obrigatório'
                           : null,
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descriptionController,
-                      enabled: !isLoading,
-                      maxLines: 4,
-                      textCapitalization:
-                          AppTextInputBehavior.plain.textCapitalization,
-                      autocorrect: AppTextInputBehavior.plain.autocorrect,
-                      enableSuggestions:
-                          AppTextInputBehavior.plain.enableSuggestions,
-                      decoration: _inputDecoration('Descrição'),
-                    ),
-                    const SizedBox(height: 16),
-                    _DateTimeFields(
-                      startDateController: _startDateController,
-                      startTimeController: _startTimeController,
-                      endDateController: _endDateController,
-                      endTimeController: _endTimeController,
-                      enabled: !isLoading,
-                      dateTimeError: _dateTimeError,
-                      onStartDateChanged: _handleStartDateChanged,
-                      onStartTimeChanged: _handleStartTimeChanged,
-                      onEndDateChanged: _handleEndDateChanged,
-                    ),
-                    if (_dateTimeError != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        _dateTimeError!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<_EventOwnerScope>(
-                      initialValue: _ownerScope,
-                      decoration: _inputDecoration('Organizado por *'),
-                      items: const [
-                        DropdownMenuItem(
-                          value: _EventOwnerScope.unit,
-                          child: Text('Unidade'),
-                        ),
-                        DropdownMenuItem(
-                          value: _EventOwnerScope.department,
-                          child: Text('Departamento'),
-                        ),
-                      ],
-                      onChanged: isLoading
-                          ? null
-                          : (value) {
-                              if (value == null) return;
-                              setState(() => _ownerScope = value);
-                            },
-                    ),
-                    if (_ownerScope == _EventOwnerScope.department) ...[
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        initialValue: _selectedDepartmentId,
-                        decoration: _inputDecoration('Departamento *'),
-                        items: departments
-                            .map(
-                              (department) => DropdownMenuItem(
-                                value: department.id,
-                                child: Text(department.name),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: isLoading
-                            ? null
-                            : (value) =>
-                                  setState(() => _selectedDepartmentId = value),
-                        validator: (value) =>
-                            _ownerScope == _EventOwnerScope.department &&
-                                (value == null || value.isEmpty)
-                            ? 'Campo obrigatório'
-                            : null,
-                      ),
-                    ],
+                  ],
+                  const SizedBox(height: 20),
+                  VisibilityRulesSelector(
+                    unitId: unitId,
+                    departments: departments,
+                    rules: _visibilityRules,
+                    onChanged: isLoading
+                        ? (_) {}
+                        : (rules) => setState(() {
+                            _visibilityRules = rules;
+                          }),
+                  ),
+                  if (_isEditing && event != null) ...[
                     const SizedBox(height: 20),
-                    VisibilityRulesSelector(
-                      unitId: unitId,
-                      departments: departments,
-                      rules: _visibilityRules,
-                      onChanged: isLoading
-                          ? (_) {}
-                          : (rules) => setState(() {
-                              _visibilityRules = rules;
-                            }),
+                    _EventImageEditSection(
+                      cardImageId: event.cardImageId,
+                      isLoading: isLoading,
+                      onChange: () => _pickAndUpdateImage(event.id),
+                      onRemove: () => _confirmAndDeleteImage(event.id),
                     ),
+                  ] else ...[
                     const SizedBox(height: 20),
                     _EventImageSection(
                       image: _pickedImage,
@@ -263,27 +374,53 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                       onChange: _pickImage,
                       onRemove: () => setState(() => _pickedImage = null),
                     ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      key: const Key('save-event-button'),
-                      onPressed: isLoading ? null : () => _submit(unitId),
-                      icon: isLoading
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.save_outlined),
-                      label: const Text('Salvar evento'),
-                    ),
                   ],
-                ),
-              );
-            },
-          );
-        },
-      ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    key: const Key('save-event-button'),
+                    onPressed: isLoading ? null : () => _submit(unitId),
+                    icon: isLoading
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save_outlined),
+                    label: Text(
+                      _isEditing ? 'Salvar alterações' : 'Salvar evento',
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
+  }
+
+  void _initializeForEdit(CalendarEventEntity event) {
+    if (_initializedEventId == event.id) return;
+
+    _initializedEventId = event.id;
+    _titleController.text = event.title;
+    _descriptionController.text = event.description ?? '';
+    _startDateController.text = formatBrazilianDate(event.startDateTime);
+    _startTimeController.text = formatBrazilianTime(
+      TimeOfDay.fromDateTime(event.startDateTime),
+    );
+    _endDateController.text = formatBrazilianDate(event.endDateTime);
+    _endTimeController.text = formatBrazilianTime(
+      TimeOfDay.fromDateTime(event.endDateTime),
+    );
+    _ownerScope = event.type == CalendarEventType.department
+        ? _EventOwnerScope.department
+        : _EventOwnerScope.unit;
+    _selectedDepartmentId = event.departmentId ?? _selectedDepartmentId;
+    _visibilityRules = event.visibilityRules;
+    _endDateWasAutoFilled = false;
+    _pickedImage = null;
+    _dateTimeError = null;
   }
 
   InputDecoration _inputDecoration(String label) {
@@ -410,6 +547,8 @@ class _DateTimeFields extends StatelessWidget {
   final ValueChanged<String> onStartTimeChanged;
   final ValueChanged<String> onEndDateChanged;
 
+  static final _lastEventDate = DateTime(DateTime.now().year + 100, 12, 31);
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -427,6 +566,8 @@ class _DateTimeFields extends StatelessWidget {
                   filled: true,
                   fillColor: Colors.white,
                 ),
+                initialDate: parseBrazilianDate(startDateController.text),
+                lastDate: _lastEventDate,
                 onChanged: onStartDateChanged,
                 validator: _requiredDate,
               ),
@@ -463,6 +604,8 @@ class _DateTimeFields extends StatelessWidget {
                   filled: true,
                   fillColor: Colors.white,
                 ),
+                initialDate: parseBrazilianDate(endDateController.text),
+                lastDate: _lastEventDate,
                 onChanged: onEndDateChanged,
                 validator: _requiredDate,
               ),
@@ -572,6 +715,91 @@ class _EventImageSection extends StatelessWidget {
                 ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EventImageEditSection extends StatelessWidget {
+  const _EventImageEditSection({
+    required this.cardImageId,
+    required this.isLoading,
+    required this.onChange,
+    required this.onRemove,
+  });
+
+  final String? cardImageId;
+  final bool isLoading;
+  final VoidCallback onChange;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageId = cardImageId?.trim();
+    final hasImage = imageId != null && imageId.isNotEmpty;
+
+    return Container(
+      key: const Key('edit-event-image-section'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Imagem do evento',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Usada no card e no detalhe do evento.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          if (hasImage)
+            EventImage(imageId: imageId)
+          else
+            Container(
+              height: 120,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Nenhuma imagem selecionada.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              ElevatedButton.icon(
+                onPressed: isLoading ? null : onChange,
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: Text(hasImage ? 'Trocar imagem' : 'Adicionar imagem'),
+              ),
+              if (hasImage)
+                OutlinedButton.icon(
+                  onPressed: isLoading ? null : onRemove,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Remover imagem'),
+                ),
+            ],
+          ),
+          if (isLoading) ...[
+            const SizedBox(height: 12),
+            const LinearProgressIndicator(),
+          ],
         ],
       ),
     );

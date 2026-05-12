@@ -186,6 +186,9 @@ void main() {
           departmentCalendarEventsProvider.overrideWith(
             (ref, request) async => [_departmentEvent],
           ),
+          calendarEventDetailProvider.overrideWith(
+            (ref, eventId) async => _departmentEvent,
+          ),
           sessionPermissionsProvider.overrideWith(
             (ref) async => _leaderPermissions,
           ),
@@ -201,6 +204,40 @@ void main() {
     expect(find.text('12 mai 19:00 - 12 mai 21:00'), findsOneWidget);
     expect(find.text('Preparação do domingo'), findsOneWidget);
     expect(find.text('Departamento'), findsOneWidget);
+  });
+
+  testWidgets('opens event detail bottom sheet from department event card', (
+    tester,
+  ) async {
+    _stubDepartmentDetail(repository);
+    _stubParticipants(repository);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) async => [_departmentEvent],
+          ),
+          calendarEventDetailProvider.overrideWith(
+            (ref, eventId) async => _departmentEvent,
+          ),
+          sessionPermissionsProvider.overrideWith(
+            (ref) async => _leaderPermissions,
+          ),
+        ],
+        child: const MaterialApp(
+          home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ensaio do Louvor'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Descrição'), findsOneWidget);
+    expect(find.text('Ensaio do Louvor'), findsNWidgets(2));
   });
 
   testWidgets('shows department events loading error', (tester) async {

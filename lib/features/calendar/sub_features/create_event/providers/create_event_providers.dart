@@ -26,7 +26,10 @@ class CreateCalendarEventNotifier
           .read(calendarEventRepositoryProvider)
           .createUnitEvent(unitId, request),
       uploadImage: (event) => _uploadImage(event, cardImagePath),
-      invalidateListings: () => ref.invalidate(unitCalendarEventsProvider),
+      invalidateListings: () {
+        ref.invalidate(unitCalendarEventsProvider);
+        ref.invalidate(visibleUnitCalendarEventsProvider);
+      },
     );
   }
 
@@ -40,8 +43,10 @@ class CreateCalendarEventNotifier
           .read(calendarEventRepositoryProvider)
           .createDepartmentEvent(departmentId, request),
       uploadImage: (event) => _uploadImage(event, cardImagePath),
-      invalidateListings: () =>
-          ref.invalidate(departmentCalendarEventsProvider),
+      invalidateListings: () {
+        ref.invalidate(departmentCalendarEventsProvider);
+        ref.invalidate(visibleUnitCalendarEventsProvider);
+      },
     );
   }
 

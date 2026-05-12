@@ -2,11 +2,12 @@ import 'package:client/features/calendar/domain/entities/calendar_event_entity.d
 import 'package:client/features/calendar/presentation/widgets/event_card.dart';
 import 'package:client/features/calendar/presentation/widgets/event_date_formatters.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('formatEventDateRange', () {
-    test('formata periodo em PT-BR abreviado', () {
+    test('formata período em PT-BR abreviado', () {
       expect(
         formatEventDateRange(
           DateTime(2026, 5, 10, 18),
@@ -17,15 +18,20 @@ void main() {
     });
   });
 
-  testWidgets('renderiza titulo, periodo e descricao', (tester) async {
-    await tester.pumpWidget(_build(event: _event()));
+  testWidgets('renderiza título, período, organizador e descrição', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _build(event: _event(), organizerLabel: 'Unidade Central'),
+    );
 
+    expect(find.text('Unidade Central'), findsOneWidget);
     expect(find.text('Culto de Celebração'), findsOneWidget);
     expect(find.text('10 mai 18:00 - 10 mai 20:00'), findsOneWidget);
     expect(find.text('Encontro aberto para toda a unidade.'), findsOneWidget);
   });
 
-  testWidgets('omite descricao quando evento nao possui descricao', (
+  testWidgets('omite descrição quando evento não possui descrição', (
     tester,
   ) async {
     await tester.pumpWidget(_build(event: _event(description: null)));
@@ -51,11 +57,43 @@ void main() {
     expect(find.text('Departamento'), findsOneWidget);
     expect(find.text('Unidade'), findsNothing);
   });
+
+  testWidgets('menu de três pontos chama edição', (tester) async {
+    var editCalled = false;
+    await tester.pumpWidget(
+      _build(
+        event: _event(),
+        organizerLabel: 'Unidade Central - Louvor',
+        onEdit: () => editCalled = true,
+      ),
+    );
+
+    expect(find.text('Unidade Central - Louvor'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Editar evento'));
+    await tester.pumpAndSettle();
+
+    expect(editCalled, isTrue);
+  });
 }
 
-Widget _build({required CalendarEventEntity event}) {
-  return MaterialApp(
-    home: Scaffold(body: EventCard(event: event)),
+Widget _build({
+  required CalendarEventEntity event,
+  String? organizerLabel,
+  VoidCallback? onEdit,
+}) {
+  return ProviderScope(
+    child: MaterialApp(
+      home: Scaffold(
+        body: EventCard(
+          event: event,
+          organizerLabel: organizerLabel,
+          onEdit: onEdit,
+        ),
+      ),
+    ),
   );
 }
 

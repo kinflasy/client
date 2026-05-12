@@ -125,7 +125,7 @@ void main() {
           currentChurchProfileProvider.overrideWith(
             (ref) async => buildMemberProfile(),
           ),
-          unitCalendarEventsProvider.overrideWith(
+          visibleUnitCalendarEventsProvider.overrideWith(
             (ref, request) async => [_calendarEvent],
           ),
           segmentedDepartmentsProvider.overrideWith(
@@ -148,7 +148,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Sede Central'), findsOneWidget);
+    expect(find.text('Sede Central'), findsWidgets);
     expect(find.text('@sede-central'), findsOneWidget);
     expect(find.text('Culto de Domingo'), findsOneWidget);
 
@@ -187,7 +187,7 @@ void main() {
           currentChurchProfileProvider.overrideWith(
             (ref) async => buildMemberProfile(),
           ),
-          unitCalendarEventsProvider.overrideWith(
+          visibleUnitCalendarEventsProvider.overrideWith(
             (ref, request) async => const [],
           ),
           segmentedDepartmentsProvider.overrideWith(
@@ -289,7 +289,7 @@ void main() {
           currentChurchProfileProvider.overrideWith(
             (ref) async => buildMemberProfile(),
           ),
-          unitCalendarEventsProvider.overrideWith(
+          visibleUnitCalendarEventsProvider.overrideWith(
             (ref, request) async => const [],
           ),
           segmentedDepartmentsProvider.overrideWith(

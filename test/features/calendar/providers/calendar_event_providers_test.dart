@@ -1,9 +1,17 @@
 import 'dart:async';
 
+import 'package:client/core/domain/enums/affiliation.dart';
+import 'package:client/core/domain/enums/integration_type.dart';
+import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/providers/department_providers.dart';
+import 'package:client/features/membership/domain/entities/integration_entity.dart';
+import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -44,6 +52,17 @@ void main() {
     container = ProviderContainer(
       overrides: [
         calendarEventRepositoryProvider.overrideWithValue(repository),
+        departmentsProvider.overrideWith((ref, unitId) async => const []),
+        sessionPermissionsProvider.overrideWith(
+          (ref) async => const SessionPermissions(
+            isAuthenticated: true,
+            affiliation: Affiliation.member,
+            activeUnitId: 'unit-1',
+            hasMembership: true,
+            integrations: [],
+            isUnitAdmin: false,
+          ),
+        ),
       ],
     );
   });
@@ -126,6 +145,93 @@ void main() {
     expect(loadCount, 2);
   });
 
+  test('visible unit provider includes visible department events', () async {
+    final start = DateTime(2026, 5);
+    final end = DateTime(2026, 6);
+    final request = UnitCalendarEventsRequest(
+      unitId: 'unit-1',
+      start: start,
+      end: end,
+    );
+    final unitEvent = _event(
+      id: 'event-1',
+      title: 'Culto',
+      type: CalendarEventType.unit,
+      unitId: 'unit-1',
+      startDateTime: DateTime(2026, 5, 12, 20),
+    );
+    final visibleDepartmentEvent = _event(
+      id: 'event-2',
+      title: 'Ensaio',
+      type: CalendarEventType.department,
+      departmentId: 'dep-1',
+      startDateTime: DateTime(2026, 5, 10, 18),
+      visibilityRules: const [
+        VisibilityRuleEntity.department(
+          departmentId: 'dep-1',
+          integrationType: IntegrationType.integrant,
+        ),
+      ],
+    );
+    final hiddenDepartmentEvent = _event(
+      id: 'event-3',
+      title: 'Reunião da liderança',
+      type: CalendarEventType.department,
+      departmentId: 'dep-1',
+      startDateTime: DateTime(2026, 5, 11, 18),
+      visibilityRules: const [
+        VisibilityRuleEntity.department(
+          departmentId: 'dep-1',
+          integrationType: IntegrationType.leader,
+        ),
+      ],
+    );
+
+    container.dispose();
+    container = ProviderContainer(
+      overrides: [
+        calendarEventRepositoryProvider.overrideWithValue(repository),
+        departmentsProvider.overrideWith(
+          (ref, unitId) async => const [
+            DepartmentEntity(id: 'dep-1', name: 'Louvor'),
+          ],
+        ),
+        sessionPermissionsProvider.overrideWith(
+          (ref) async => const SessionPermissions(
+            isAuthenticated: true,
+            affiliation: Affiliation.member,
+            activeUnitId: 'unit-1',
+            hasMembership: true,
+            integrations: [
+              IntegrationEntity(
+                id: 'integration-1',
+                membershipId: 'membership-1',
+                departmentId: 'dep-1',
+                departmentType: 'MINISTRY',
+                integrationType: IntegrationType.integrant,
+              ),
+            ],
+            isUnitAdmin: false,
+          ),
+        ),
+      ],
+    );
+
+    when(
+      () => repository.getUnitEvents('unit-1', start, end),
+    ).thenAnswer((_) async => Right([unitEvent, visibleDepartmentEvent]));
+    when(() => repository.getDepartmentEvents('dep-1', start, end)).thenAnswer(
+      (_) async => Right([visibleDepartmentEvent, hiddenDepartmentEvent]),
+    );
+
+    final result = await _readFutureProvider(
+      container,
+      visibleUnitCalendarEventsProvider(request),
+    );
+
+    expect(result.map((event) => event.id), ['event-2', 'event-1']);
+  });
+
   test('detail provider reads event by id', () async {
     final event = _event(
       id: 'event-1',
@@ -152,14 +258,17 @@ CalendarEventEntity _event({
   required CalendarEventType type,
   String? unitId,
   String? departmentId,
+  DateTime? startDateTime,
+  List<VisibilityRuleEntity> visibilityRules = const [],
 }) {
   return CalendarEventEntity(
     id: id,
     title: title,
-    startDateTime: DateTime(2026, 5, 10, 18),
+    startDateTime: startDateTime ?? DateTime(2026, 5, 10, 18),
     endDateTime: DateTime(2026, 5, 10, 20),
     type: type,
     unitId: unitId,
     departmentId: departmentId,
+    visibilityRules: visibilityRules,
   );
 }

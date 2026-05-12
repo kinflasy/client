@@ -68,6 +68,7 @@ final _protectedRoutes = <String>{
   AppRoutes.adminGeneralInfoImages,
   AppRoutes.adminCalendar,
   AppRoutes.adminCalendarCreate,
+  AppRoutes.adminCalendarEdit,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
@@ -93,6 +94,7 @@ final _unitAdminRoutes = <String>{
   AppRoutes.adminGeneralInfoImages,
   AppRoutes.adminCalendar,
   AppRoutes.adminCalendarCreate,
+  AppRoutes.adminCalendarEdit,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
@@ -373,6 +375,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.adminCalendarCreateName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const CreateEventScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminCalendarEdit,
+        name: AppRoutes.adminCalendarEditName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final eventId = state.pathParameters['id']!;
+          return CreateEventScreen(eventId: eventId);
+        },
       ),
       GoRoute(
         path: AppRoutes.departmentDetail,

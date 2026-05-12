@@ -25,6 +25,7 @@ void main() {
     String? eventId,
     CalendarEventEntity? event,
     EventImagePicker? picker,
+    String? lockedDepartmentId,
   }) {
     return ProviderScope(
       overrides: [
@@ -43,7 +44,12 @@ void main() {
           (ref, imageId) async => 'https://example.com/$imageId.png',
         ),
       ],
-      child: MaterialApp(home: CreateEventScreen(eventId: eventId)),
+      child: MaterialApp(
+        home: CreateEventScreen(
+          eventId: eventId,
+          lockedDepartmentId: lockedDepartmentId,
+        ),
+      ),
     );
   }
 
@@ -297,6 +303,31 @@ void main() {
     expect(repository.deletedCardImageEventId, 'event-1');
     expect(find.text('Imagem do evento removida.'), findsOneWidget);
   });
+  testWidgets('modo departamento travado cria evento para o departamento', (
+    tester,
+  ) async {
+    final repository = _CapturingCalendarEventRepository();
+    await _pumpApp(
+      tester,
+      buildApp(repository: repository, lockedDepartmentId: 'dep-1'),
+    );
+
+    expect(find.text('Organizado por *'), findsNothing);
+    expect(find.text('Departamento *'), findsNothing);
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Ensaio geral');
+    await tester.enterText(_field('start-date-field'), '10/05/2026');
+    await tester.enterText(_field('start-time-field'), '18:00');
+    await tester.enterText(_field('end-date-field'), '10/05/2026');
+    await tester.enterText(_field('end-time-field'), '20:00');
+
+    await tester.tap(find.byKey(const Key('save-event-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository.createdDepartmentId, 'dep-1');
+    expect(repository.createdDepartmentEventRequest, isNotNull);
+    expect(repository.createdUnitEventRequest, isNull);
+  });
 }
 
 Future<void> _pumpApp(WidgetTester tester, Widget app) async {
@@ -343,6 +374,8 @@ CurrentChurchProfileEntity _profile() {
 
 class _CapturingCalendarEventRepository implements CalendarEventRepository {
   CalendarEventRequestModel? createdUnitEventRequest;
+  String? createdDepartmentId;
+  CalendarEventRequestModel? createdDepartmentEventRequest;
   String? updatedEventId;
   CalendarEventRequestModel? updatedEventRequest;
   String? updatedCardImageEventId;
@@ -363,6 +396,8 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
     String departmentId,
     CalendarEventRequestModel request,
   ) async {
+    createdDepartmentId = departmentId;
+    createdDepartmentEventRequest = request;
     return const Left(ServerFailure('Falha simulada.'));
   }
 

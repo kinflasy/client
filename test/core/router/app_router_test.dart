@@ -5,6 +5,10 @@ import 'package:client/core/router/app_router.dart';
 import 'package:client/features/auth/domain/entities/user_entity.dart';
 import 'package:client/features/auth/domain/repositories/auth_repository.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
+import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/church/domain/entities/church_entity.dart';
+import 'package:client/features/church/domain/entities/church_unit_entity.dart';
+import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
 import 'package:client/features/church/domain/repositories/church_unit_repository.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
@@ -66,6 +70,23 @@ void main() {
     hasMembership: true,
     integrations: [],
     isUnitAdmin: true,
+  );
+
+  const leaderPermissions = SessionPermissions(
+    isAuthenticated: true,
+    affiliation: Affiliation.member,
+    activeUnitId: 'unit-1',
+    hasMembership: true,
+    integrations: [
+      IntegrationEntity(
+        id: 'integration-2',
+        membershipId: 'membership-1',
+        departmentId: 'dep-1',
+        departmentType: 'MINISTRY',
+        integrationType: IntegrationType.leader,
+      ),
+    ],
+    isUnitAdmin: false,
   );
 
   setUp(() {
@@ -134,6 +155,10 @@ void main() {
             unitId: 'unit-1',
             affiliation: 'MEMBER',
           ),
+        ),
+        currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+        departmentCalendarEventsProvider.overrideWith(
+          (ref, request) async => const [],
         ),
         myDepartmentsByUnitProvider.overrideWith(
           (ref) async => const [
@@ -216,10 +241,72 @@ void main() {
 
     router.go('/departamentos/dep-1/participantes/adicionar');
     await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
 
     expect(find.byType(BottomNavigationBar), findsNothing);
     expect(find.text('Pesquisar nome ou apelido...'), findsOneWidget);
+  });
+
+  testWidgets('department event create route opens for department leader', (
+    tester,
+  ) async {
+    final leaderContainer = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(authRepository),
+        sessionPermissionsProvider.overrideWith(
+          (ref) async => leaderPermissions,
+        ),
+        departmentRepositoryProvider.overrideWithValue(departmentRepository),
+        churchUnitRepositoryProvider.overrideWithValue(churchUnitRepository),
+        activeMembershipProvider.overrideWith(
+          (ref) async => const MembershipEntity(
+            id: 'membership-1',
+            unitId: 'unit-1',
+            affiliation: 'MEMBER',
+          ),
+        ),
+        currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+      ],
+    );
+    addTearDown(leaderContainer.dispose);
+
+    final router = leaderContainer.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: leaderContainer,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+
+    router.goNamed('department-event-create', pathParameters: {'id': 'dep-1'});
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.text('Criar evento'), findsOneWidget);
+    expect(find.text('Organizado por *'), findsNothing);
+  });
+
+  testWidgets('integrant is redirected away from department event create', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+
+    router.go('/departamentos/dep-1/eventos/criar');
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.text('Criar evento'), findsNothing);
   });
 
   testWidgets(
@@ -325,6 +412,10 @@ void main() {
             affiliation: 'UNIT_ADMIN',
           ),
         ),
+        currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+        departmentCalendarEventsProvider.overrideWith(
+          (ref, request) async => const [],
+        ),
       ],
     );
     addTearDown(adminContainer.dispose);
@@ -384,6 +475,10 @@ void main() {
             affiliation: 'UNIT_ADMIN',
           ),
         ),
+        currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+        departmentCalendarEventsProvider.overrideWith(
+          (ref, request) async => const [],
+        ),
       ],
     );
     addTearDown(adminContainer.dispose);
@@ -422,6 +517,10 @@ void main() {
             affiliation: 'UNIT_ADMIN',
           ),
         ),
+        currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+        departmentCalendarEventsProvider.overrideWith(
+          (ref, request) async => const [],
+        ),
       ],
     );
     addTearDown(adminContainer.dispose);
@@ -442,4 +541,21 @@ void main() {
     expect(find.text('Midia'), findsOneWidget);
     expect(find.byType(BottomNavigationBar), findsNothing);
   });
+}
+
+CurrentChurchProfileEntity _profile() {
+  return const CurrentChurchProfileEntity(
+    membership: MembershipEntity(
+      id: 'membership-1',
+      unitId: 'unit-1',
+      affiliation: 'MEMBER',
+    ),
+    unit: ChurchUnitEntity(id: 'unit-1', churchId: 'church-1'),
+    church: ChurchEntity(
+      id: 'church-1',
+      name: 'Igreja Pontis',
+      slug: 'igreja-pontis',
+      email: 'contato@pontis.test',
+    ),
+  );
 }

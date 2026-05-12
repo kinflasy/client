@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:client/core/domain/enums/affiliation.dart';
+import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/media/media_providers.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
@@ -8,6 +9,7 @@ import 'package:client/features/calendar/domain/repositories/calendar_event_repo
 import 'package:client/features/calendar/presentation/widgets/event_detail_bottom_sheet.dart';
 import 'package:client/features/calendar/presentation/widgets/event_image.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,7 +61,6 @@ void main() {
     expect(find.text('10 mai 18:00 - 10 mai 20:00'), findsOneWidget);
     expect(find.text('Descrição'), findsOneWidget);
     expect(find.text('Encontro aberto para toda a unidade.'), findsOneWidget);
-    expect(find.text('Unidade'), findsOneWidget);
   });
 
   testWidgets('renderiza imagem no topo do detalhe quando existe cardImageId', (
@@ -95,7 +96,7 @@ void main() {
 
     await tester.tap(find.text('Abrir detalhe'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Excluir evento'));
+    await tester.tap(find.text('Excluir'));
     await tester.pumpAndSettle();
 
     expect(find.text('Excluir evento'), findsWidgets);
@@ -123,11 +124,48 @@ void main() {
     await tester.tap(find.text('Abrir detalhe'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Editar evento'), findsOneWidget);
-    expect(find.text('Excluir evento'), findsOneWidget);
+    expect(find.text('Editar'), findsOneWidget);
+    expect(find.text('Excluir'), findsOneWidget);
     expect(find.text('Trocar imagem'), findsNothing);
     expect(find.text('Adicionar imagem'), findsNothing);
     expect(find.text('Remover imagem'), findsNothing);
+  });
+  testWidgets('mostra ações para líder do departamento do evento', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _build(
+        loadDetail: (_) async =>
+            _event(type: CalendarEventType.department, departmentId: 'dep-1'),
+        departmentRole: IntegrationType.leader,
+        roleDepartmentId: 'dep-1',
+      ),
+    );
+
+    await tester.tap(find.text('Abrir detalhe'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar'), findsOneWidget);
+    expect(find.text('Excluir'), findsOneWidget);
+  });
+
+  testWidgets('não mostra ações para líder de outro departamento', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _build(
+        loadDetail: (_) async =>
+            _event(type: CalendarEventType.department, departmentId: 'dep-2'),
+        departmentRole: IntegrationType.leader,
+        roleDepartmentId: 'dep-1',
+      ),
+    );
+
+    await tester.tap(find.text('Abrir detalhe'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar'), findsNothing);
+    expect(find.text('Excluir'), findsNothing);
   });
 }
 
@@ -135,6 +173,8 @@ Widget _build({
   required Future<CalendarEventEntity> Function(String eventId) loadDetail,
   Future<String> Function(String imageId)? resolveImageUrl,
   bool canAdmin = false,
+  IntegrationType? departmentRole,
+  String roleDepartmentId = 'dep-1',
   CalendarEventRepository? repository,
 }) {
   return ProviderScope(
@@ -148,7 +188,11 @@ Widget _build({
             Future.value('https://example.com/event.png'),
       ),
       sessionPermissionsProvider.overrideWith(
-        (ref) async => _permissions(isUnitAdmin: canAdmin),
+        (ref) async => _permissions(
+          isUnitAdmin: canAdmin,
+          departmentRole: departmentRole,
+          roleDepartmentId: roleDepartmentId,
+        ),
       ),
       if (repository != null)
         calendarEventRepositoryProvider.overrideWithValue(repository),
@@ -169,26 +213,45 @@ Widget _build({
   );
 }
 
-SessionPermissions _permissions({required bool isUnitAdmin}) {
+SessionPermissions _permissions({
+  required bool isUnitAdmin,
+  IntegrationType? departmentRole,
+  String roleDepartmentId = 'dep-1',
+}) {
   return SessionPermissions(
     isAuthenticated: true,
     affiliation: Affiliation.member,
     activeUnitId: 'unit-1',
     hasMembership: true,
-    integrations: const [],
+    integrations: departmentRole == null
+        ? const []
+        : [
+            IntegrationEntity(
+              id: 'integration-1',
+              membershipId: 'membership-1',
+              departmentId: roleDepartmentId,
+              departmentType: 'MINISTRY',
+              integrationType: departmentRole,
+            ),
+          ],
     isUnitAdmin: isUnitAdmin,
   );
 }
 
-CalendarEventEntity _event({String? cardImageId}) {
+CalendarEventEntity _event({
+  String? cardImageId,
+  CalendarEventType type = CalendarEventType.unit,
+  String? departmentId,
+}) {
   return CalendarEventEntity(
     id: 'event-1',
     title: 'Culto de Celebração',
     description: 'Encontro aberto para toda a unidade.',
     startDateTime: DateTime(2026, 5, 10, 18),
     endDateTime: DateTime(2026, 5, 10, 20),
-    type: CalendarEventType.unit,
-    unitId: 'unit-1',
+    type: type,
+    unitId: type == CalendarEventType.unit ? 'unit-1' : null,
+    departmentId: type == CalendarEventType.department ? departmentId : null,
     cardImageId: cardImageId,
   );
 }

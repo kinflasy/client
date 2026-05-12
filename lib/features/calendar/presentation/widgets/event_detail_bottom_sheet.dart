@@ -1,4 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
 import 'package:client/core/router/app_routes.dart';
@@ -62,11 +63,7 @@ class _EventDetailBottomSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eventAsync = ref.watch(calendarEventDetailProvider(eventId));
-    final canEdit =
-        ref
-            .watch(sessionPermissionsProvider)
-            .whenOrNull(data: (permissions) => permissions.isUnitAdmin) ??
-        false;
+    final permissionsAsync = ref.watch(sessionPermissionsProvider);
 
     return DraggableScrollableSheet(
       expand: false,
@@ -85,11 +82,20 @@ class _EventDetailBottomSheet extends ConsumerWidget {
                     _EventDetailLoading(scrollController: scrollController),
                 error: (error, stackTrace) =>
                     _EventDetailError(scrollController: scrollController),
-                data: (event) => _EventDetailContent(
-                  event: event,
-                  scrollController: scrollController,
-                  canEdit: canEdit,
-                ),
+                data: (event) {
+                  final canManage =
+                      permissionsAsync.whenOrNull(
+                        data: (permissions) =>
+                            _canManageEvent(permissions, event),
+                      ) ??
+                      false;
+
+                  return _EventDetailContent(
+                    event: event,
+                    scrollController: scrollController,
+                    canEdit: canManage,
+                  );
+                },
               ),
             ),
           ),
@@ -97,6 +103,17 @@ class _EventDetailBottomSheet extends ConsumerWidget {
       },
     );
   }
+}
+
+bool _canManageEvent(
+  SessionPermissions permissions,
+  CalendarEventEntity event,
+) {
+  if (permissions.isUnitAdmin) return true;
+  if (event.type != CalendarEventType.department) return false;
+
+  final departmentId = event.departmentId;
+  return departmentId != null && permissions.canManageDept(departmentId);
 }
 
 class _EventDetailContent extends ConsumerWidget {

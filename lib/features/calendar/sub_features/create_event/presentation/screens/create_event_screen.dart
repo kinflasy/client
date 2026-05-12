@@ -26,9 +26,10 @@ import 'package:go_router/go_router.dart';
 enum _EventOwnerScope { unit, department }
 
 class CreateEventScreen extends ConsumerStatefulWidget {
-  const CreateEventScreen({super.key, this.eventId});
+  const CreateEventScreen({super.key, this.eventId, this.lockedDepartmentId});
 
   final String? eventId;
+  final String? lockedDepartmentId;
 
   @override
   ConsumerState<CreateEventScreen> createState() => _CreateEventScreenState();
@@ -52,6 +53,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   String? _initializedEventId;
 
   bool get _isEditing => widget.eventId != null;
+  bool get _isDepartmentLocked =>
+      !_isEditing && widget.lockedDepartmentId != null;
 
   @override
   void dispose() {
@@ -170,14 +173,15 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     CalendarEventRequestModel request,
   ) {
     final notifier = ref.read(createCalendarEventProvider.notifier);
-    return _ownerScope == _EventOwnerScope.unit
+    final departmentId = widget.lockedDepartmentId ?? _selectedDepartmentId;
+    return !_isDepartmentLocked && _ownerScope == _EventOwnerScope.unit
         ? notifier.createUnitEvent(
             unitId,
             request,
             cardImagePath: _pickedImage?.path,
           )
         : notifier.createDepartmentEvent(
-            _selectedDepartmentId!,
+            departmentId!,
             request,
             cardImagePath: _pickedImage?.path,
           );
@@ -250,6 +254,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             subtitle: 'Tente novamente em instantes.',
           ),
           data: (departments) {
+            if (_isDepartmentLocked) {
+              _ownerScope = _EventOwnerScope.department;
+              _selectedDepartmentId = widget.lockedDepartmentId;
+            }
             if (_selectedDepartmentId == null && departments.isNotEmpty) {
               _selectedDepartmentId = departments.first.id;
             }
@@ -274,10 +282,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     enabled: !isLoading,
                     maxLines: 4,
                     textCapitalization:
-                        AppTextInputBehavior.plain.textCapitalization,
-                    autocorrect: AppTextInputBehavior.plain.autocorrect,
+                        AppTextInputBehavior.longText.textCapitalization,
+                    autocorrect: AppTextInputBehavior.longText.autocorrect,
                     enableSuggestions:
-                        AppTextInputBehavior.plain.enableSuggestions,
+                        AppTextInputBehavior.longText.enableSuggestions,
                     decoration: _inputDecoration('Descrição'),
                   ),
                   const SizedBox(height: 16),
@@ -303,27 +311,29 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     ),
                   ],
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<_EventOwnerScope>(
-                    initialValue: _ownerScope,
-                    decoration: _inputDecoration('Organizado por *'),
-                    items: const [
-                      DropdownMenuItem(
-                        value: _EventOwnerScope.unit,
-                        child: Text('Unidade'),
-                      ),
-                      DropdownMenuItem(
-                        value: _EventOwnerScope.department,
-                        child: Text('Departamento'),
-                      ),
-                    ],
-                    onChanged: isLoading || _isEditing
-                        ? null
-                        : (value) {
-                            if (value == null) return;
-                            setState(() => _ownerScope = value);
-                          },
-                  ),
-                  if (_ownerScope == _EventOwnerScope.department) ...[
+                  if (!_isDepartmentLocked)
+                    DropdownButtonFormField<_EventOwnerScope>(
+                      initialValue: _ownerScope,
+                      decoration: _inputDecoration('Organizado por *'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: _EventOwnerScope.unit,
+                          child: Text('Unidade'),
+                        ),
+                        DropdownMenuItem(
+                          value: _EventOwnerScope.department,
+                          child: Text('Departamento'),
+                        ),
+                      ],
+                      onChanged: isLoading || _isEditing
+                          ? null
+                          : (value) {
+                              if (value == null) return;
+                              setState(() => _ownerScope = value);
+                            },
+                    ),
+                  if (!_isDepartmentLocked &&
+                      _ownerScope == _EventOwnerScope.department) ...[
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       initialValue: _selectedDepartmentId,

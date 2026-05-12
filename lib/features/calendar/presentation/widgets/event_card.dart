@@ -76,6 +76,11 @@ class EventCard extends StatelessWidget {
                   style: const TextStyle(color: AppColors.textPrimary),
                 ),
               ],
+              const SizedBox(height: 2),
+              const Text(
+                '... abrir',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ],
           ),
         ),

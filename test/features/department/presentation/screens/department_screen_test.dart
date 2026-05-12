@@ -165,12 +165,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Nenhum evento encontrado.'), findsOneWidget);
-    expect(
-      find.text(
-        'Quando houver eventos deste departamento, eles aparecerão aqui.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Criar evento'), findsOneWidget);
   });
 
   testWidgets('shows department events rendered with EventCard', (
@@ -203,7 +198,7 @@ void main() {
     expect(find.text('Ensaio do Louvor'), findsOneWidget);
     expect(find.text('12 mai 19:00 - 12 mai 21:00'), findsOneWidget);
     expect(find.text('Preparação do domingo'), findsOneWidget);
-    expect(find.text('Departamento'), findsOneWidget);
+    expect(find.text('Unidade - Louvor'), findsOneWidget);
   });
 
   testWidgets('opens event detail bottom sheet from department event card', (
@@ -369,6 +364,68 @@ void main() {
 
     expect(find.text('Maria Silva'), findsOneWidget);
     expect(find.text('Adicionar participantes'), findsOneWidget);
+  });
+
+  testWidgets('shows create event button and event menu for leader', (
+    tester,
+  ) async {
+    _stubDepartmentDetail(repository);
+    _stubParticipants(repository);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) async => [_departmentEvent],
+          ),
+          calendarEventDetailProvider.overrideWith(
+            (ref, eventId) async => _departmentEvent,
+          ),
+          sessionPermissionsProvider.overrideWith(
+            (ref) async => _leaderPermissions,
+          ),
+        ],
+        child: const MaterialApp(
+          home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Criar evento'), findsOneWidget);
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+  });
+
+  testWidgets('hides create event button and event menu for integrant', (
+    tester,
+  ) async {
+    _stubDepartmentDetail(repository);
+    _stubParticipants(repository);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) async => [_departmentEvent],
+          ),
+          calendarEventDetailProvider.overrideWith(
+            (ref, eventId) async => _departmentEvent,
+          ),
+          sessionPermissionsProvider.overrideWith(
+            (ref) async => _integrantPermissions,
+          ),
+        ],
+        child: const MaterialApp(
+          home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Criar evento'), findsNothing);
+    expect(find.byIcon(Icons.more_vert), findsNothing);
   });
 }
 

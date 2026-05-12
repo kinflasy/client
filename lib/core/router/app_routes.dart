@@ -36,6 +36,7 @@ class AppRoutes {
   static const adminCalendarCreate = '/admin/calendario/criar';
   static const adminCalendarEdit = '/admin/calendario/:id/editar';
   static const departmentDetail = '/departamentos/:id';
+  static const departmentEventCreate = '/departamentos/:id/eventos/criar';
   static const departmentParticipantsAdd =
       '/departamentos/:id/participantes/adicionar';
 
@@ -74,5 +75,6 @@ class AppRoutes {
   static const adminCalendarCreateName = 'admin-calendar-create';
   static const adminCalendarEditName = 'admin-calendar-edit';
   static const departmentDetailName = 'department-detail';
+  static const departmentEventCreateName = 'department-event-create';
   static const departmentParticipantsAddName = 'department-participants-add';
 }

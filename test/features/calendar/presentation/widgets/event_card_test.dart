@@ -29,6 +29,7 @@ void main() {
     expect(find.text('Culto de Celebração'), findsOneWidget);
     expect(find.text('10 mai 18:00 - 10 mai 20:00'), findsOneWidget);
     expect(find.text('Encontro aberto para toda a unidade.'), findsOneWidget);
+    expect(find.text('... abrir'), findsOneWidget);
   });
 
   testWidgets('omite descrição quando evento não possui descrição', (

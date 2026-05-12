@@ -68,11 +68,11 @@ final _protectedRoutes = <String>{
   AppRoutes.adminGeneralInfoImages,
   AppRoutes.adminCalendar,
   AppRoutes.adminCalendarCreate,
-  AppRoutes.adminCalendarEdit,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
   AppRoutes.departmentDetail,
+  AppRoutes.departmentEventCreate,
   AppRoutes.departmentParticipantsAdd,
 };
 
@@ -94,7 +94,6 @@ final _unitAdminRoutes = <String>{
   AppRoutes.adminGeneralInfoImages,
   AppRoutes.adminCalendar,
   AppRoutes.adminCalendarCreate,
-  AppRoutes.adminCalendarEdit,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
@@ -172,6 +171,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             final departmentId = state.pathParameters['id'];
             if (departmentId != null &&
                 !permissions.canObserveDept(departmentId)) {
+              return AppRoutes.homeChurch;
+            }
+          }
+
+          if (routePath == AppRoutes.departmentEventCreate) {
+            final departmentId = state.pathParameters['id'];
+            if (departmentId != null &&
+                !permissions.canManageDept(departmentId)) {
               return AppRoutes.homeChurch;
             }
           }
@@ -386,15 +393,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: AppRoutes.departmentDetail,
-        name: AppRoutes.departmentDetailName,
+        path: AppRoutes.departmentEventCreate,
+        name: AppRoutes.departmentEventCreateName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final departmentId = state.pathParameters['id']!;
-          return DepartmentScreen(
-            departmentId: departmentId,
-            showBackButton: true,
-          );
+          return CreateEventScreen(lockedDepartmentId: departmentId);
         },
       ),
       GoRoute(
@@ -405,6 +409,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final departmentId = state.pathParameters['id']!;
           return DepartmentParticipantsSelectionScreen(
             departmentId: departmentId,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.departmentDetail,
+        name: AppRoutes.departmentDetailName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final departmentId = state.pathParameters['id']!;
+          return DepartmentScreen(
+            departmentId: departmentId,
+            showBackButton: true,
           );
         },
       ),

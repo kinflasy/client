@@ -24,6 +24,12 @@ class AppTextInputBehavior {
     enableSuggestions: false,
   );
 
+  static const longText = AppTextInputBehavior._(
+    textCapitalization: TextCapitalization.sentences,
+    autocorrect: true,
+    enableSuggestions: true,
+  );
+
   static const lowercaseId = AppTextInputBehavior._(
     textCapitalization: TextCapitalization.none,
     autocorrect: false,

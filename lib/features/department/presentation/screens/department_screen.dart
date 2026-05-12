@@ -46,9 +46,9 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
           data: (permissions) => permissions.canManageDept(widget.departmentId),
         ) ??
         false;
-    final canEditEvents =
+    final canManageEvents =
         permissionsAsync.whenOrNull(
-          data: (permissions) => permissions.isUnitAdmin,
+          data: (permissions) => permissions.canManageDept(widget.departmentId),
         ) ??
         false;
 
@@ -97,7 +97,7 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
                           _DepartmentEventsTab(
                             departmentId: widget.departmentId,
                             departmentName: department.name,
-                            canEditEvents: canEditEvents,
+                            canManageEvents: canManageEvents,
                           ),
                           _DepartmentParticipantsTab(
                             departmentId: widget.departmentId,
@@ -126,12 +126,12 @@ class _DepartmentEventsTab extends ConsumerWidget {
   const _DepartmentEventsTab({
     required this.departmentId,
     required this.departmentName,
-    required this.canEditEvents,
+    required this.canManageEvents,
   });
 
   final String departmentId;
   final String departmentName;
-  final bool canEditEvents;
+  final bool canManageEvents;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -164,12 +164,72 @@ class _DepartmentEventsTab extends ConsumerWidget {
         subtitle: 'Tente novamente em instantes.',
       ),
       data: (events) {
+        final createButton = _CreateDepartmentEventButton(
+          departmentId: departmentId,
+        );
+
+        if (events.isEmpty && canManageEvents) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              createButton,
+              const SizedBox(height: 16),
+              const Expanded(
+                child: _InlineStatus(
+                  icon: Icons.event_note_outlined,
+                  title: 'Nenhum evento encontrado.',
+                  subtitle:
+                      'Quando houver eventos deste departamento, eles aparecerÃ£o aqui.',
+                ),
+              ),
+            ],
+          );
+        }
+
         if (events.isEmpty) {
           return const _InlineStatus(
             icon: Icons.event_note_outlined,
             title: 'Nenhum evento encontrado.',
             subtitle:
                 'Quando houver eventos deste departamento, eles aparecerão aqui.',
+          );
+        }
+
+        if (canManageEvents) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              createButton,
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  itemCount: events.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final event = events[index];
+                    return EventCard(
+                      event: event,
+                      organizerLabel: organizerLabel,
+                      unitAvatarDisplayName: unitName,
+                      unitAvatarImageId: unitAvatarImageId,
+                      unitAvatarImageUrl: unitAvatarImageUrl,
+                      onEdit: () => context.pushNamed(
+                        AppRoutes.adminCalendarEditName,
+                        pathParameters: {'id': event.id},
+                      ),
+                      onDelete: () =>
+                          confirmAndDeleteCalendarEvent(context, ref, event),
+                      onTap: () => showEventDetailBottomSheet(
+                        context,
+                        eventId: event.id,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         }
 
@@ -185,13 +245,13 @@ class _DepartmentEventsTab extends ConsumerWidget {
               unitAvatarDisplayName: unitName,
               unitAvatarImageId: unitAvatarImageId,
               unitAvatarImageUrl: unitAvatarImageUrl,
-              onEdit: canEditEvents
+              onEdit: canManageEvents
                   ? () => context.pushNamed(
                       AppRoutes.adminCalendarEditName,
                       pathParameters: {'id': event.id},
                     )
                   : null,
-              onDelete: canEditEvents
+              onDelete: canManageEvents
                   ? () => confirmAndDeleteCalendarEvent(context, ref, event)
                   : null,
               onTap: () =>
@@ -200,6 +260,24 @@ class _DepartmentEventsTab extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _CreateDepartmentEventButton extends StatelessWidget {
+  const _CreateDepartmentEventButton({required this.departmentId});
+
+  final String departmentId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      onPressed: () => context.pushNamed(
+        AppRoutes.departmentEventCreateName,
+        pathParameters: {'id': departmentId},
+      ),
+      icon: const Icon(Icons.add),
+      label: const Text('Criar evento'),
     );
   }
 }

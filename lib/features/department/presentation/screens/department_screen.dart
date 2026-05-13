@@ -343,7 +343,7 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final participant = participants[index];
                   return MemberSummaryCard(
-                    fullName: participant.fullName,
+                    fullName: participant.displayName,
                     affiliation: participant.affiliation,
                     gender: participant.gender,
                     birthDate: participant.birthDate,

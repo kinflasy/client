@@ -74,7 +74,8 @@ void main() {
                 'affiliation': 'MEMBER',
                 'person': {
                   'id': 'person-1',
-                  'fullName': 'Maria Silva',
+                  'nickname': 'Maria',
+                  'username': 'maria.silva',
                   'gender': 'FEMALE',
                   'birthDate': '1990-05-12T00:00:00.000Z',
                   'age': 34,
@@ -91,7 +92,7 @@ void main() {
                 'affiliation': 'CONGREGATED',
                 'person': {
                   'id': 'person-2',
-                  'fullName': 'Joao Souza',
+                  'username': 'joao.souza',
                   'gender': 'MALE',
                   'birthDate': '',
                 },
@@ -106,15 +107,49 @@ void main() {
         expect(result.isRight(), isTrue);
         result.match((_) => fail('expected success'), (participants) {
           expect(participants, hasLength(2));
-          expect(participants.first.fullName, 'Maria Silva');
+          expect(participants.first.nickname, 'Maria');
+          expect(participants.first.username, 'maria.silva');
+          expect(participants.first.displayName, 'Maria');
           expect(
             participants.first.birthDate,
             DateTime.parse('1990-05-12T00:00:00.000Z'),
           );
           expect(participants.first.age, 34);
           expect(participants.last.personId, 'person-2');
+          expect(participants.last.nickname, isNull);
+          expect(participants.last.username, 'joao.souza');
+          expect(participants.last.displayName, 'joao.souza');
           expect(participants.last.birthDate, isNull);
           expect(participants.last.age, isNull);
+        });
+      },
+    );
+
+    test(
+      'uses neutral display name when nickname and username are absent',
+      () async {
+        when(() => api.getParticipants('dep-1')).thenAnswer(
+          (_) async => [
+            {
+              'id': 'integration-1',
+              'membership': {
+                'id': 'membership-1',
+                'affiliation': 'MEMBER',
+                'person': {'id': 'person-1', 'gender': 'FEMALE'},
+              },
+              'type': 'LEADER',
+            },
+          ],
+        );
+
+        final result = await repository.getParticipants('dep-1');
+
+        expect(result.isRight(), isTrue);
+        result.match((_) => fail('expected success'), (participants) {
+          expect(participants, hasLength(1));
+          expect(participants.first.nickname, isNull);
+          expect(participants.first.username, isNull);
+          expect(participants.first.displayName, 'Participante');
         });
       },
     );
@@ -129,7 +164,7 @@ void main() {
               'affiliation': 'MEMBER',
               'person': {
                 'id': 'person-1',
-                'fullName': 'Maria Silva',
+                'nickname': 'Maria',
                 'gender': 'FEMALE',
                 'birthDate': '1990-05-12',
               },
@@ -157,7 +192,7 @@ void main() {
             'membership': {
               'id': 'membership-1',
               'affiliation': 'MEMBER',
-              'person': {'fullName': 'Maria Silva', 'gender': 'FEMALE'},
+              'person': {'nickname': 'Maria', 'gender': 'FEMALE'},
             },
             'type': 'LEADER',
           },

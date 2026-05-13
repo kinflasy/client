@@ -103,7 +103,7 @@ void main() {
       (_) async => const Right([
         DepartmentParticipantEntity(
           personId: 'person-1',
-          fullName: 'Maria Silva',
+          nickname: 'Maria',
           affiliation: 'MEMBER',
           gender: 'FEMALE',
           age: 34,
@@ -137,7 +137,7 @@ void main() {
     await tester.tap(find.text('Participantes'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Maria Silva'), findsOneWidget);
+    expect(find.text('Maria'), findsOneWidget);
     expect(find.textContaining('34 anos'), findsOneWidget);
     expect(find.text('Adicionar participantes'), findsOneWidget);
   });
@@ -311,7 +311,7 @@ void main() {
       (_) async => const Right([
         DepartmentParticipantEntity(
           personId: 'person-1',
-          fullName: 'Maria Silva',
+          nickname: 'Maria',
           affiliation: 'MEMBER',
           gender: 'FEMALE',
           age: 34,
@@ -340,7 +340,7 @@ void main() {
     await tester.tap(find.text('Participantes'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Maria Silva'), findsOneWidget);
+    expect(find.text('Maria'), findsOneWidget);
     expect(find.text('Adicionar participantes'), findsNothing);
   });
 
@@ -351,8 +351,49 @@ void main() {
       permissions: _assistantPermissions,
     );
 
-    expect(find.text('Maria Silva'), findsOneWidget);
+    expect(find.text('Maria'), findsOneWidget);
     expect(find.text('Adicionar participantes'), findsOneWidget);
+  });
+
+  testWidgets('uses username when participant nickname is blank', (
+    tester,
+  ) async {
+    await _pumpParticipantsTab(
+      tester: tester,
+      repository: repository,
+      permissions: _assistantPermissions,
+      participants: const [
+        DepartmentParticipantEntity(
+          personId: 'person-1',
+          nickname: ' ',
+          username: 'maria.silva',
+          affiliation: 'MEMBER',
+          gender: 'FEMALE',
+        ),
+      ],
+    );
+
+    expect(find.text('maria.silva'), findsOneWidget);
+    expect(find.text('Maria'), findsNothing);
+  });
+
+  testWidgets('uses neutral label without nickname or username', (
+    tester,
+  ) async {
+    await _pumpParticipantsTab(
+      tester: tester,
+      repository: repository,
+      permissions: _assistantPermissions,
+      participants: const [
+        DepartmentParticipantEntity(
+          personId: 'person-1',
+          affiliation: 'MEMBER',
+          gender: 'FEMALE',
+        ),
+      ],
+    );
+
+    expect(find.text('Participante'), findsOneWidget);
   });
 
   testWidgets('shows add participants button for unit admin', (tester) async {
@@ -362,7 +403,7 @@ void main() {
       permissions: _unitAdminPermissions,
     );
 
-    expect(find.text('Maria Silva'), findsOneWidget);
+    expect(find.text('Maria'), findsOneWidget);
     expect(find.text('Adicionar participantes'), findsOneWidget);
   });
 
@@ -433,6 +474,15 @@ Future<void> _pumpParticipantsTab({
   required WidgetTester tester,
   required DepartmentRepository repository,
   required SessionPermissions permissions,
+  List<DepartmentParticipantEntity> participants = const [
+    DepartmentParticipantEntity(
+      personId: 'person-1',
+      nickname: 'Maria',
+      affiliation: 'MEMBER',
+      gender: 'FEMALE',
+      age: 34,
+    ),
+  ],
 }) async {
   when(() => repository.getDepartmentById('dep-1')).thenAnswer(
     (_) async => const Right(
@@ -444,17 +494,9 @@ Future<void> _pumpParticipantsTab({
       ),
     ),
   );
-  when(() => repository.getParticipants('dep-1')).thenAnswer(
-    (_) async => const Right([
-      DepartmentParticipantEntity(
-        personId: 'person-1',
-        fullName: 'Maria Silva',
-        affiliation: 'MEMBER',
-        gender: 'FEMALE',
-        age: 34,
-      ),
-    ]),
-  );
+  when(
+    () => repository.getParticipants('dep-1'),
+  ).thenAnswer((_) async => Right(participants));
 
   await tester.pumpWidget(
     ProviderScope(
@@ -494,7 +536,7 @@ void _stubParticipants(DepartmentRepository repository) {
     (_) async => const Right([
       DepartmentParticipantEntity(
         personId: 'person-1',
-        fullName: 'Maria Silva',
+        nickname: 'Maria',
         affiliation: 'MEMBER',
         gender: 'FEMALE',
         age: 34,

@@ -134,7 +134,7 @@ void main() {
       participants: const [
         DepartmentParticipantEntity(
           personId: 'person-1',
-          fullName: 'Ana Mária',
+          nickname: 'Aninha',
           affiliation: 'MEMBER',
           gender: 'FEMALE',
         ),
@@ -184,13 +184,13 @@ void main() {
       participants: const [
         DepartmentParticipantEntity(
           personId: 'person-1',
-          fullName: 'Ana Mária',
+          nickname: 'Aninha',
           affiliation: 'MEMBER',
           gender: 'FEMALE',
         ),
         DepartmentParticipantEntity(
           personId: 'person-2',
-          fullName: 'Bruno Lima',
+          username: 'bruno.lima',
           affiliation: 'MEMBER',
           gender: 'MALE',
         ),

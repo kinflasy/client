@@ -117,7 +117,7 @@ void main() {
         (_) async => const Right([
           DepartmentParticipantEntity(
             personId: 'person-1',
-            fullName: 'Maria Silva',
+            nickname: 'Maria',
             affiliation: 'MEMBER',
             gender: 'FEMALE',
           ),
@@ -130,7 +130,7 @@ void main() {
       );
 
       expect(result, hasLength(1));
-      expect(result.first.fullName, 'Maria Silva');
+      expect(result.first.displayName, 'Maria');
     });
 
     test('returns empty list when repository has no participants', () async {

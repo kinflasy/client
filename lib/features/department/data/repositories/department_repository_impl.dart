@@ -151,7 +151,8 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
 
     return DepartmentParticipantEntity(
       personId: person['id'] as String? ?? '',
-      fullName: person['fullName'] as String? ?? '',
+      nickname: person['nickname'] as String?,
+      username: person['username'] as String?,
       affiliation: membership['affiliation'] as String? ?? '',
       gender: person['gender'] as String? ?? '',
       birthDate: _parseDate(person['birthDate']),

@@ -11,6 +11,7 @@ class LoggedUserProfileModel {
     this.phone,
     this.email,
     this.addressId,
+    this.profileImageId,
   });
 
   factory LoggedUserProfileModel.fromJson(Map<String, dynamic> json) {
@@ -41,6 +42,9 @@ class LoggedUserProfileModel {
       phone: json['phone']?.toString(),
       email: json['email']?.toString(),
       addressId: json['addressId']?.toString(),
+      profileImageId:
+          json['profileImageId']?.toString() ??
+          json['profile_image_id']?.toString(),
     );
   }
 
@@ -52,6 +56,7 @@ class LoggedUserProfileModel {
   final String? phone;
   final String? email;
   final String? addressId;
+  final String? profileImageId;
 
   LoggedUserProfileEntity toEntity({AddressValue? address}) {
     return LoggedUserProfileEntity(
@@ -63,6 +68,7 @@ class LoggedUserProfileModel {
       phone: phone,
       email: email,
       address: address ?? const AddressValue.empty(),
+      profileImageId: profileImageId,
     );
   }
 }

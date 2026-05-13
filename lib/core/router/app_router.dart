@@ -1,5 +1,6 @@
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/auth/presentation/screens/edit_logged_user_screen.dart';
+import 'package:client/features/auth/presentation/screens/logged_user_profile_screen.dart';
 import 'package:client/features/auth/presentation/screens/login_screen.dart';
 import 'package:client/features/auth/presentation/screens/register_screen.dart';
 import 'package:client/features/auth/presentation/screens/splash_screen.dart';
@@ -51,6 +52,8 @@ final _protectedRoutes = <String>{
   AppRoutes.homeMenu,
   AppRoutes.homeMenuMyDepartments,
   AppRoutes.homeMenuEditProfile,
+  AppRoutes.homeMenuEditProfileInfo,
+  AppRoutes.homeMenuEditProfilePhoto,
   AppRoutes.registerChurch,
   AppRoutes.churchSearch,
   AppRoutes.churchProfile,
@@ -267,7 +270,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'editar-informacoes',
                     name: AppRoutes.homeMenuEditProfileName,
+                    builder: (context, state) =>
+                        const LoggedUserProfileScreen(),
+                  ),
+                  GoRoute(
+                    path: 'editar-informacoes/dados',
+                    name: AppRoutes.homeMenuEditProfileInfoName,
                     builder: (context, state) => const EditLoggedUserScreen(),
+                  ),
+                  GoRoute(
+                    path: 'editar-informacoes/foto',
+                    name: AppRoutes.homeMenuEditProfilePhotoName,
+                    builder: (context, state) =>
+                        const LoggedUserProfilePhotoPlaceholderScreen(),
                   ),
                 ],
               ),

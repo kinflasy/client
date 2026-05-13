@@ -102,6 +102,22 @@ class AuthNotifier extends _$AuthNotifier {
 
     return result;
   }
+
+  Future<Either<Failure, UserEntity>> updateLoggedUserProfileImage(
+    String filePath,
+  ) async {
+    final previousState = state;
+    final result = await ref
+        .read(authRepositoryProvider)
+        .updateLoggedUserProfileImage(filePath);
+
+    result.fold(
+      (_) => state = previousState,
+      (user) => state = AsyncData(user),
+    );
+
+    return result;
+  }
 }
 
 // Alias semântico para o go_router observar

@@ -10,7 +10,7 @@ import 'package:client/features/auth/domain/entities/user_entity.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValue, FutureProvider, Ref, WidgetRef;
+    show AsyncValue, FutureProvider, Provider, Ref, WidgetRef;
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -68,6 +68,15 @@ final editLoggedUserSubmitProvider =
     StateProvider.autoDispose<AsyncValue<void>>(
       (ref) => const AsyncValue.data(null),
     );
+
+final loggedUserProfileImageSubmitProvider =
+    StateProvider.autoDispose<AsyncValue<void>>(
+      (ref) => const AsyncValue.data(null),
+    );
+
+final editLoggedUserActionsProvider = Provider<EditLoggedUserActions>(
+  EditLoggedUserActions.new,
+);
 
 final editLoggedUserInitialDataProvider =
     FutureProvider.autoDispose<LoggedUserProfileEntity>((ref) async {
@@ -183,6 +192,74 @@ Future<Either<Failure, void>> submitEditLoggedUser(
   return result.fold(Left.new, (_) => const Right(null));
 }
 
+Future<Either<Failure, UserEntity>> updateLoggedUserProfileImage(
+  WidgetRef ref, {
+  required String filePath,
+}) {
+  return ref
+      .read(editLoggedUserActionsProvider)
+      .updateLoggedUserProfileImage(filePath);
+}
+
+Future<Either<Failure, void>> deleteLoggedUserProfileImage(WidgetRef ref) {
+  return ref.read(editLoggedUserActionsProvider).deleteLoggedUserProfileImage();
+}
+
+class EditLoggedUserActions {
+  const EditLoggedUserActions(this._ref);
+
+  final Ref _ref;
+
+  Future<Either<Failure, UserEntity>> updateLoggedUserProfileImage(
+    String filePath,
+  ) async {
+    _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
+        const AsyncValue.loading();
+
+    final result = await _ref
+        .read(authProvider.notifier)
+        .updateLoggedUserProfileImage(filePath);
+
+    result.fold(
+      (failure) {
+        _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
+            AsyncValue.error(failure, StackTrace.current);
+      },
+      (_) {
+        _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
+            const AsyncValue.data(null);
+        _ref.invalidate(editLoggedUserInitialDataProvider);
+      },
+    );
+
+    return result;
+  }
+
+  Future<Either<Failure, void>> deleteLoggedUserProfileImage() async {
+    _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
+        const AsyncValue.loading();
+
+    final result = await _ref
+        .read(authRepositoryProvider)
+        .deleteLoggedUserProfileImage();
+
+    result.fold(
+      (failure) {
+        _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
+            AsyncValue.error(failure, StackTrace.current);
+      },
+      (_) {
+        _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
+            const AsyncValue.data(null);
+        _ref.invalidate(authProvider);
+        _ref.invalidate(editLoggedUserInitialDataProvider);
+      },
+    );
+
+    return result;
+  }
+}
+
 Future<LoggedUserProfileEntity> resolveLoggedUserProfile(
   Ref ref,
   UserEntity authenticatedUser,
@@ -244,6 +321,7 @@ LoggedUserProfileEntity _fallbackLoggedUserProfile(UserEntity user) {
     birthDate: user.birthDate,
     phone: user.phone,
     email: user.email,
+    profileImageId: user.profileImageId,
   );
 }
 
@@ -268,6 +346,9 @@ LoggedUserProfileEntity _mergeLoggedUserProfile(
         ? profile.email
         : user.email,
     address: profile.address,
+    profileImageId: (profile.profileImageId?.trim().isNotEmpty ?? false)
+        ? profile.profileImageId
+        : user.profileImageId,
   );
 }
 

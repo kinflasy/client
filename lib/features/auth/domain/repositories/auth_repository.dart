@@ -25,4 +25,10 @@ abstract class AuthRepository {
   Future<Either<Failure, UserEntity>> updateLoggedUser(
     UpdateLoggedUserRequestModel request,
   );
+
+  Future<Either<Failure, UserEntity>> updateLoggedUserProfileImage(
+    String filePath,
+  );
+
+  Future<Either<Failure, void>> deleteLoggedUserProfileImage();
 }

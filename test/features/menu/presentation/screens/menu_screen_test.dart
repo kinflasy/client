@@ -38,8 +38,7 @@ void main() {
         GoRoute(
           path: AppRoutes.homeMenuEditProfile,
           name: AppRoutes.homeMenuEditProfileName,
-          builder: (context, state) =>
-              const Scaffold(body: Text('Editar perfil')),
+          builder: (context, state) => const Scaffold(body: Text('Meu perfil')),
         ),
         GoRoute(
           path: AppRoutes.homeMenuMyDepartments,
@@ -168,7 +167,7 @@ void main() {
     expect(find.text('Register church'), findsOneWidget);
   });
 
-  testWidgets('navigates to edit logged user screen from quick action', (
+  testWidgets('navigates to logged user profile screen from quick action', (
     tester,
   ) async {
     await tester.pumpWidget(buildApp());
@@ -177,7 +176,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.edit_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('Editar perfil'), findsOneWidget);
+    expect(find.text('Meu perfil'), findsOneWidget);
   });
 
   testWidgets('confirms and signs out', (tester) async {

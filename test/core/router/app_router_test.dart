@@ -1,10 +1,13 @@
 import 'package:client/core/domain/enums/affiliation.dart';
 import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/domain/session_permissions.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/core/router/app_router.dart';
+import 'package:client/features/auth/domain/entities/logged_user_profile_entity.dart';
 import 'package:client/features/auth/domain/entities/user_entity.dart';
 import 'package:client/features/auth/domain/repositories/auth_repository.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
+import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
@@ -19,6 +22,7 @@ import 'package:client/features/department/domain/repositories/department_reposi
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
+import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:client/features/membership/providers/unit_member_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
@@ -147,6 +151,13 @@ void main() {
       overrides: [
         authRepositoryProvider.overrideWithValue(authRepository),
         sessionPermissionsProvider.overrideWith((ref) async => permissions),
+        hasMembershipProvider.overrideWith((ref) => true),
+        editLoggedUserInitialDataProvider.overrideWith(
+          (ref) async => _loggedUserProfile(),
+        ),
+        pendingUnitMembershipsProvider.overrideWith(
+          (ref, unitId) async => const [],
+        ),
         departmentRepositoryProvider.overrideWithValue(departmentRepository),
         churchUnitRepositoryProvider.overrideWithValue(churchUnitRepository),
         activeMembershipProvider.overrideWith(
@@ -185,6 +196,12 @@ void main() {
     container.dispose();
   });
 
+  Future<void> pumpRouter(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+  }
+
   testWidgets('shell department detail keeps bottom navigation visible', (
     tester,
   ) async {
@@ -196,10 +213,10 @@ void main() {
         child: MaterialApp.router(routerConfig: router),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     router.go('/home/church/departamentos/dep-1');
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
     expect(find.text('Louvor'), findsOneWidget);
@@ -217,10 +234,10 @@ void main() {
         child: MaterialApp.router(routerConfig: router),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     router.go('/departamentos/dep-1');
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     expect(find.byType(BottomNavigationBar), findsNothing);
     expect(find.text('Louvor'), findsOneWidget);
@@ -237,11 +254,11 @@ void main() {
         child: MaterialApp.router(routerConfig: router),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     router.go('/departamentos/dep-1/participantes/adicionar');
     await tester.pump();
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     expect(find.byType(BottomNavigationBar), findsNothing);
     expect(find.text('Pesquisar nome ou apelido...'), findsOneWidget);
@@ -255,6 +272,13 @@ void main() {
         authRepositoryProvider.overrideWithValue(authRepository),
         sessionPermissionsProvider.overrideWith(
           (ref) async => leaderPermissions,
+        ),
+        hasMembershipProvider.overrideWith((ref) => true),
+        editLoggedUserInitialDataProvider.overrideWith(
+          (ref) async => _loggedUserProfile(),
+        ),
+        pendingUnitMembershipsProvider.overrideWith(
+          (ref, unitId) async => const [],
         ),
         departmentRepositoryProvider.overrideWithValue(departmentRepository),
         churchUnitRepositoryProvider.overrideWithValue(churchUnitRepository),
@@ -320,10 +344,10 @@ void main() {
           child: MaterialApp.router(routerConfig: router),
         ),
       );
-      await tester.pumpAndSettle();
+      await pumpRouter(tester);
 
       router.go('/home/church/departamentos/categoria/general');
-      await tester.pumpAndSettle();
+      await pumpRouter(tester);
 
       expect(find.byType(BottomNavigationBar), findsOneWidget);
       expect(find.text('Geral'), findsOneWidget);
@@ -342,16 +366,56 @@ void main() {
           child: MaterialApp.router(routerConfig: router),
         ),
       );
-      await tester.pumpAndSettle();
+      await pumpRouter(tester);
 
       router.go('/home/menu/meus-departamentos');
-      await tester.pumpAndSettle();
+      await pumpRouter(tester);
 
       expect(find.byType(BottomNavigationBar), findsOneWidget);
       expect(find.text('Meus departamentos'), findsOneWidget);
       expect(find.text('Igreja Batista Betel'), findsOneWidget);
     },
   );
+
+  testWidgets('menu edit profile route opens logged user profile summary', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await pumpRouter(tester);
+
+    router.go(AppRoutes.homeMenuEditProfile);
+    await pumpRouter(tester);
+
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.text('Meu perfil'), findsOneWidget);
+  });
+
+  testWidgets('menu edit profile info subroute opens textual edit screen', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await pumpRouter(tester);
+
+    router.go(AppRoutes.homeMenuEditProfileInfo);
+    await tester.pump();
+
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.text('Editar informações'), findsOneWidget);
+  });
 
   testWidgets(
     'user without integration is redirected away from department detail',
@@ -364,10 +428,10 @@ void main() {
           child: MaterialApp.router(routerConfig: router),
         ),
       );
-      await tester.pumpAndSettle();
+      await pumpRouter(tester);
 
       router.go('/departamentos/dep-2');
-      await tester.pumpAndSettle();
+      await pumpRouter(tester);
 
       expect(find.byType(BottomNavigationBar), findsOneWidget);
       expect(find.text('Midia'), findsNothing);
@@ -385,10 +449,10 @@ void main() {
           child: MaterialApp.router(routerConfig: router),
         ),
       );
-      await tester.pumpAndSettle();
+      await pumpRouter(tester);
 
       router.go('/admin/membros/solicitacoes');
-      await tester.pumpAndSettle();
+      await pumpRouter(tester);
 
       expect(find.byType(BottomNavigationBar), findsOneWidget);
     },
@@ -402,6 +466,13 @@ void main() {
         authRepositoryProvider.overrideWithValue(authRepository),
         sessionPermissionsProvider.overrideWith(
           (ref) async => adminPermissions,
+        ),
+        hasMembershipProvider.overrideWith((ref) => true),
+        editLoggedUserInitialDataProvider.overrideWith(
+          (ref) async => _loggedUserProfile(),
+        ),
+        pendingUnitMembershipsProvider.overrideWith(
+          (ref, unitId) async => const [],
         ),
         departmentRepositoryProvider.overrideWithValue(departmentRepository),
         churchUnitRepositoryProvider.overrideWithValue(churchUnitRepository),
@@ -428,10 +499,10 @@ void main() {
         child: MaterialApp.router(routerConfig: router),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     router.go('/admin/membros/solicitacoes');
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     expect(find.text('Solicita\u00e7\u00f5es de v\u00ednculo'), findsOneWidget);
     expect(
@@ -451,10 +522,10 @@ void main() {
         child: MaterialApp.router(routerConfig: router),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     router.go('/admin/informacoes-gerais');
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
   });
@@ -465,6 +536,13 @@ void main() {
         authRepositoryProvider.overrideWithValue(authRepository),
         sessionPermissionsProvider.overrideWith(
           (ref) async => adminPermissions,
+        ),
+        hasMembershipProvider.overrideWith((ref) => true),
+        editLoggedUserInitialDataProvider.overrideWith(
+          (ref) async => _loggedUserProfile(),
+        ),
+        pendingUnitMembershipsProvider.overrideWith(
+          (ref, unitId) async => const [],
         ),
         departmentRepositoryProvider.overrideWithValue(departmentRepository),
         churchUnitRepositoryProvider.overrideWithValue(churchUnitRepository),
@@ -491,10 +569,10 @@ void main() {
         child: MaterialApp.router(routerConfig: router),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     router.go('/admin/informacoes-gerais');
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     expect(find.text('Informações gerais'), findsOneWidget);
   });
@@ -508,6 +586,13 @@ void main() {
         sessionPermissionsProvider.overrideWith(
           (ref) async => adminPermissions,
         ),
+        hasMembershipProvider.overrideWith((ref) => true),
+        editLoggedUserInitialDataProvider.overrideWith(
+          (ref) async => _loggedUserProfile(),
+        ),
+        pendingUnitMembershipsProvider.overrideWith(
+          (ref, unitId) async => const [],
+        ),
         departmentRepositoryProvider.overrideWithValue(departmentRepository),
         churchUnitRepositoryProvider.overrideWithValue(churchUnitRepository),
         activeMembershipProvider.overrideWith(
@@ -533,10 +618,10 @@ void main() {
         child: MaterialApp.router(routerConfig: router),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     router.go('/departamentos/dep-2');
-    await tester.pumpAndSettle();
+    await pumpRouter(tester);
 
     expect(find.text('Midia'), findsOneWidget);
     expect(find.byType(BottomNavigationBar), findsNothing);
@@ -557,5 +642,15 @@ CurrentChurchProfileEntity _profile() {
       slug: 'igreja-pontis',
       email: 'contato@pontis.test',
     ),
+  );
+}
+
+LoggedUserProfileEntity _loggedUserProfile() {
+  return const LoggedUserProfileEntity(
+    id: 'user-1',
+    fullName: 'Lisa Silva',
+    nickname: 'Lisa',
+    gender: 'FEMALE',
+    email: 'lisa@example.com',
   );
 }

@@ -15,6 +15,7 @@ abstract class UserModel with _$UserModel {
     String? phone,
     String? gender,
     @JsonKey(name: 'birthDate') String? birthDate,
+    String? profileImageId,
   }) = _UserModel;
 
   factory UserModel.fromJson(Map<String, dynamic> json) =>
@@ -23,13 +24,14 @@ abstract class UserModel with _$UserModel {
 
 extension UserModelX on UserModel {
   UserEntity toEntity() => UserEntity(
-        id: id,
-        fullName: fullName,
-        username: username,
-        email: email,
-        nickname: nickname,
-        phone: phone,
-        gender: gender,
-        birthDate: birthDate != null ? DateTime.tryParse(birthDate!) : null,
-      );
+    id: id,
+    fullName: fullName,
+    username: username,
+    email: email,
+    nickname: nickname,
+    phone: phone,
+    gender: gender,
+    birthDate: birthDate != null ? DateTime.tryParse(birthDate!) : null,
+    profileImageId: profileImageId,
+  );
 }

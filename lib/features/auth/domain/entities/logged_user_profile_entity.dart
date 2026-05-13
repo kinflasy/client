@@ -11,6 +11,7 @@ class LoggedUserProfileEntity extends Equatable {
     this.phone,
     this.email,
     this.address = const AddressValue.empty(),
+    this.profileImageId,
   });
 
   final String id;
@@ -21,6 +22,7 @@ class LoggedUserProfileEntity extends Equatable {
   final String? phone;
   final String? email;
   final AddressValue address;
+  final String? profileImageId;
 
   @override
   List<Object?> get props => [
@@ -32,5 +34,6 @@ class LoggedUserProfileEntity extends Equatable {
     phone,
     email,
     address,
+    profileImageId,
   ];
 }

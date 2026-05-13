@@ -157,6 +157,45 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, UserEntity>> updateLoggedUserProfileImage(
+    String filePath,
+  ) async {
+    try {
+      final file = await MultipartFile.fromFile(filePath);
+      final user = (await _api.updateLoggedUserProfileImage(file)).toEntity();
+      if (user.id.trim().isEmpty || user.username.trim().isEmpty) {
+        return const Left(
+          AuthFailure('NÃ£o foi possÃ­vel carregar o usuÃ¡rio autenticado'),
+        );
+      }
+      return Right(user);
+    } on DioException catch (e) {
+      return Left(
+        NetworkFailure(
+          _extractUploadErrorMessage(e, 'Erro ao atualizar a foto de perfil.'),
+        ),
+      );
+    } catch (_) {
+      return const Left(UnknownFailure('Erro inesperado'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteLoggedUserProfileImage() async {
+    try {
+      await _api.deleteLoggedUserProfileImage();
+      return const Right(null);
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e.response?.data);
+      return Left(
+        NetworkFailure(message ?? 'Erro ao remover a foto de perfil.'),
+      );
+    } catch (_) {
+      return const Left(UnknownFailure('Erro inesperado'));
+    }
+  }
+
   Future<UserEntity> _resolveAuthenticatedUser() async {
     final user = (await _api.getLoggedUser()).toEntity();
     if (user.id.trim().isEmpty || user.username.trim().isEmpty) {
@@ -196,6 +235,20 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     return null;
+  }
+
+  String _extractUploadErrorMessage(
+    DioException error,
+    String fallbackMessage,
+  ) {
+    if (error.response?.statusCode == 413) {
+      return _extractErrorMessage(error.response?.data) ??
+          'Arquivo muito grande. Envie uma imagem de até 2 MB.';
+    }
+
+    return _extractErrorMessage(error.response?.data) ??
+        error.message ??
+        fallbackMessage;
   }
 
   String _formatApiDate(DateTime date) {

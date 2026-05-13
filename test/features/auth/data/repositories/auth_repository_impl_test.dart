@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/storage/secure_storage.dart';
 import 'package:client/features/auth/data/datasources/auth_api.dart';
@@ -28,6 +30,7 @@ void main() {
     registerFallbackValue(_FakeLoginRequestModel());
     registerFallbackValue(_FakeRegisterRequestModel());
     registerFallbackValue(_FakeUpdateLoggedUserRequestModel());
+    registerFallbackValue(MultipartFile.fromBytes([0], filename: 'foto.png'));
   });
 
   setUp(() {
@@ -330,6 +333,72 @@ void main() {
       final failure = result.getLeft().toNullable();
       expect(failure, isA<ValidationFailure>());
       expect(failure?.message, 'E-mail já está em uso');
+    });
+  });
+
+  group('profile image', () {
+    test('uploads image file and returns updated user', () async {
+      final directory = await Directory.systemTemp.createTemp('auth-image-');
+      addTearDown(() => directory.delete(recursive: true));
+      final image = File('${directory.path}/perfil.png');
+      await image.writeAsBytes([1, 2, 3]);
+
+      when(() => api.updateLoggedUserProfileImage(any())).thenAnswer(
+        (_) async => const UserModel(
+          id: 'user-123',
+          username: 'lisa',
+          profileImageId: 'image-123',
+        ),
+      );
+
+      final result = await repository.updateLoggedUserProfileImage(image.path);
+
+      expect(result.isRight(), isTrue);
+      expect(result.getRight().toNullable()?.profileImageId, 'image-123');
+      final captured =
+          verify(
+                () => api.updateLoggedUserProfileImage(captureAny()),
+              ).captured.single
+              as MultipartFile;
+      expect(captured.filename, 'perfil.png');
+    });
+
+    test('deletes logged user profile image', () async {
+      when(() => api.deleteLoggedUserProfileImage()).thenAnswer((_) async {});
+
+      final result = await repository.deleteLoggedUserProfileImage();
+
+      expect(result.isRight(), isTrue);
+      verify(() => api.deleteLoggedUserProfileImage()).called(1);
+    });
+
+    test('returns friendly message for upload error 413', () async {
+      final directory = await Directory.systemTemp.createTemp('auth-image-');
+      addTearDown(() => directory.delete(recursive: true));
+      final image = File('${directory.path}/grande.png');
+      await image.writeAsBytes([1, 2, 3]);
+
+      when(() => api.updateLoggedUserProfileImage(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/v1/core/people/profile-image'),
+          response: Response(
+            requestOptions: RequestOptions(
+              path: '/v1/core/people/profile-image',
+            ),
+            statusCode: 413,
+          ),
+        ),
+      );
+
+      final result = await repository.updateLoggedUserProfileImage(image.path);
+
+      expect(result.isLeft(), isTrue);
+      final failure = result.getLeft().toNullable();
+      expect(failure, isA<NetworkFailure>());
+      expect(
+        failure?.message,
+        'Arquivo muito grande. Envie uma imagem de até 2 MB.',
+      );
     });
   });
 }

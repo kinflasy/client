@@ -75,6 +75,142 @@ void main() {
     expect(request.birthDate, '1998-04-09');
   });
 
+  test('includes address in payload when any address field is filled', () {
+    final request = buildUpdateLoggedUserRequest(
+      EditLoggedUserFormState(
+        fullName: 'Lisa Silva',
+        gender: 'FEMALE',
+        birthDate: DateTime(1998, 4, 9),
+        address: const AddressFormState(
+          zip: ' 60000-000 ',
+          country: ' Brasil ',
+          state: ' CE ',
+          city: ' Fortaleza ',
+          neighborhood: ' Centro ',
+          street: ' Rua Alfa ',
+          number: ' 123 ',
+          complement: ' Apto 4 ',
+          reference: ' Próximo à praça ',
+        ),
+        isInitialized: true,
+      ),
+    );
+
+    expect(request.address, isNotNull);
+    expect(request.address!.zip, '60000-000');
+    expect(request.address!.country, 'Brasil');
+    expect(request.address!.state, 'CE');
+    expect(request.address!.city, 'Fortaleza');
+    expect(request.address!.neighborhood, 'Centro');
+    expect(request.address!.street, 'Rua Alfa');
+    expect(request.address!.number, '123');
+    expect(request.address!.complement, 'Apto 4');
+    expect(request.address!.reference, 'Próximo à praça');
+  });
+
+  test('resolved profile loads complete address from addressId', () async {
+    final repository = _MockAuthRepository();
+    final dio = _MockDio();
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(repository),
+        dioClientProvider.overrideWithValue(dio),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    when(
+      () => repository.getCurrentUser(),
+    ).thenAnswer((_) async => const UserEntity(id: 'user-1', username: 'lisa'));
+    when(
+      () => dio.get<Map<String, dynamic>>('/v1/core/people/user-1'),
+    ).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/v1/core/people/user-1'),
+        data: {
+          'id': 'user-1',
+          'fullName': 'Lisa Silva',
+          'gender': 'FEMALE',
+          'addressId': 'address-1',
+        },
+      ),
+    );
+    when(
+      () => dio.get<Map<String, dynamic>>('/v1/core/addresses/address-1'),
+    ).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/v1/core/addresses/address-1'),
+        data: {
+          'zip': '60000-000',
+          'country': 'Brasil',
+          'state': 'CE',
+          'city': 'Fortaleza',
+          'neighborhood': 'Centro',
+          'street': 'Rua Alfa',
+          'number': '123',
+          'complement': 'Apto 4',
+          'reference': 'Próximo à praça',
+        },
+      ),
+    );
+
+    final result = await container.read(
+      editLoggedUserInitialDataProvider.future,
+    );
+
+    expect(result.address.zip, '60000-000');
+    expect(result.address.country, 'Brasil');
+    expect(result.address.state, 'CE');
+    expect(result.address.city, 'Fortaleza');
+    expect(result.address.neighborhood, 'Centro');
+    expect(result.address.street, 'Rua Alfa');
+    expect(result.address.number, '123');
+    expect(result.address.complement, 'Apto 4');
+    expect(result.address.reference, 'Próximo à praça');
+  });
+
+  test('resolved profile uses empty address when address load fails', () async {
+    final repository = _MockAuthRepository();
+    final dio = _MockDio();
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(repository),
+        dioClientProvider.overrideWithValue(dio),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    when(
+      () => repository.getCurrentUser(),
+    ).thenAnswer((_) async => const UserEntity(id: 'user-1', username: 'lisa'));
+    when(
+      () => dio.get<Map<String, dynamic>>('/v1/core/people/user-1'),
+    ).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/v1/core/people/user-1'),
+        data: {
+          'id': 'user-1',
+          'fullName': 'Lisa Silva',
+          'gender': 'FEMALE',
+          'addressId': 'address-1',
+        },
+      ),
+    );
+    when(
+      () => dio.get<Map<String, dynamic>>('/v1/core/addresses/address-1'),
+    ).thenThrow(
+      DioException(
+        requestOptions: RequestOptions(path: '/v1/core/addresses/address-1'),
+      ),
+    );
+
+    final result = await container.read(
+      editLoggedUserInitialDataProvider.future,
+    );
+
+    expect(result.address.isBlank, isTrue);
+  });
+
   test(
     'resolved profile preserves profileImageId from detailed profile',
     () async {

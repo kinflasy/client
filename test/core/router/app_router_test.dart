@@ -414,7 +414,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Editar informações'), findsOneWidget);
+    expect(find.text('Editar dados'), findsOneWidget);
   });
 
   testWidgets(

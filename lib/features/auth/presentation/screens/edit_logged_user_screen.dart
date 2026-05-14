@@ -68,6 +68,7 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
         title: const Text('Informações atualizadas com sucesso!'),
         autoCloseDuration: const Duration(seconds: 3),
       );
+      ref.invalidate(editLoggedUserInitialDataProvider);
       context.pop();
     });
   }
@@ -80,11 +81,11 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
 
     return initialDataAsync.when(
       loading: () => const _ScaffoldFrame(
-        title: 'Editar informações',
+        title: 'Editar dados',
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (error, _) => _ScaffoldFrame(
-        title: 'Editar informações',
+        title: 'Editar dados',
         child: _LoadError(
           message: error is Failure
               ? error.message
@@ -99,7 +100,7 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
             initializeEditLoggedUserFormFromProfile(ref, profile);
           });
           return const _ScaffoldFrame(
-            title: 'Editar informações',
+            title: 'Editar dados',
             child: Center(child: CircularProgressIndicator()),
           );
         }
@@ -107,159 +108,165 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
         _seedControllersIfNeeded(formState);
 
         return _ScaffoldFrame(
-          title: 'Editar informações',
+          title: 'Editar dados',
           child: Form(
             key: _formKey,
-            child: ListView(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              children: [
-                const _SectionTitle(title: 'Dados pessoais'),
-                _field(
-                  controller: _fullNameController,
-                  label: 'Nome completo *',
-                  enabled: !isLoading,
-                  onChanged: (value) =>
-                      updateEditLoggedUserPersonalData(ref, fullName: value),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Campo obrigatório';
-                    }
-                    return null;
-                  },
-                ),
-                _field(
-                  controller: _nicknameController,
-                  label: 'Apelido',
-                  enabled: !isLoading,
-                  onChanged: (value) =>
-                      updateEditLoggedUserPersonalData(ref, nickname: value),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: DropdownButtonFormField<String>(
-                    initialValue: formState.gender,
-                    decoration: _inputDecoration('Gênero *'),
-                    items: const [
-                      DropdownMenuItem(value: 'MALE', child: Text('Masculino')),
-                      DropdownMenuItem(
-                        value: 'FEMALE',
-                        child: Text('Feminino'),
-                      ),
-                    ],
-                    onChanged: isLoading
-                        ? null
-                        : (value) => updateEditLoggedUserPersonalData(
-                            ref,
-                            gender: value,
-                          ),
-                    validator: (value) =>
-                        value == null ? 'Campo obrigatório' : null,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: AppDateTextFormField(
-                    controller: _birthDateController,
-                    decoration: _inputDecoration('Data de nascimento *'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _SectionTitle(title: 'Dados pessoais'),
+                  _field(
+                    controller: _fullNameController,
+                    label: 'Nome completo *',
                     enabled: !isLoading,
-                    initialDate:
-                        formState.birthDate ??
-                        DateTime(DateTime.now().year - 18),
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime.now(),
-                    onPicked: (picked) => updateEditLoggedUserPersonalData(
-                      ref,
-                      birthDate: picked,
-                    ),
-                    onChanged: (value) {
-                      final parsed = parseBrazilianDate(value);
-                      final isValidPastDate =
-                          parsed != null && !parsed.isAfter(DateTime.now());
-                      updateEditLoggedUserPersonalData(
-                        ref,
-                        birthDate: isValidPastDate ? parsed : null,
-                        clearBirthDate: !isValidPastDate,
-                      );
-                    },
+                    onChanged: (value) =>
+                        updateEditLoggedUserPersonalData(ref, fullName: value),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Campo obrigatório';
                       }
-                      final parsed = parseBrazilianDate(value);
-                      if (parsed == null) return 'Data inválida';
-                      if (parsed.isAfter(DateTime.now())) {
-                        return 'Data não pode ser futura';
-                      }
                       return null;
                     },
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: AppPhoneTextFormField(
-                    controller: _phoneController,
-                    decoration: _inputDecoration(
-                      'Telefone',
-                    ).copyWith(hintText: '(00) 00000-0000'),
+                  _field(
+                    controller: _nicknameController,
+                    label: 'Apelido',
                     enabled: !isLoading,
                     onChanged: (value) =>
-                        updateEditLoggedUserPersonalData(ref, phone: value),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) return null;
-                      return isCompleteBrazilianPhone(value)
+                        updateEditLoggedUserPersonalData(ref, nickname: value),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: DropdownButtonFormField<String>(
+                      initialValue: formState.gender,
+                      decoration: _inputDecoration('Gênero *'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'MALE',
+                          child: Text('Masculino'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'FEMALE',
+                          child: Text('Feminino'),
+                        ),
+                      ],
+                      onChanged: isLoading
                           ? null
-                          : 'Telefone inválido';
-                    },
+                          : (value) => updateEditLoggedUserPersonalData(
+                              ref,
+                              gender: value,
+                            ),
+                      validator: (value) =>
+                          value == null ? 'Campo obrigatório' : null,
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: AppEmailTextFormField(
-                    controller: _emailController,
-                    decoration: _inputDecoration('E-mail'),
-                    enabled: !isLoading,
-                    onChanged: (value) =>
-                        updateEditLoggedUserPersonalData(ref, email: value),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) return null;
-                      final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-                      return emailRegex.hasMatch(value.trim())
-                          ? null
-                          : 'E-mail inválido';
-                    },
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: AppDateTextFormField(
+                      controller: _birthDateController,
+                      decoration: _inputDecoration('Data de nascimento *'),
+                      enabled: !isLoading,
+                      initialDate:
+                          formState.birthDate ??
+                          DateTime(DateTime.now().year - 18),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
+                      onPicked: (picked) => updateEditLoggedUserPersonalData(
+                        ref,
+                        birthDate: picked,
+                      ),
+                      onChanged: (value) {
+                        final parsed = parseBrazilianDate(value);
+                        final isValidPastDate =
+                            parsed != null && !parsed.isAfter(DateTime.now());
+                        updateEditLoggedUserPersonalData(
+                          ref,
+                          birthDate: isValidPastDate ? parsed : null,
+                          clearBirthDate: !isValidPastDate,
+                        );
+                      },
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Campo obrigatório';
+                        }
+                        final parsed = parseBrazilianDate(value);
+                        if (parsed == null) return 'Data inválida';
+                        if (parsed.isAfter(DateTime.now())) {
+                          return 'Data não pode ser futura';
+                        }
+                        return null;
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const _SectionTitle(title: 'Endereço'),
-                AbsorbPointer(
-                  absorbing: isLoading,
-                  child: AddressFormSection(
-                    value: formState.address,
-                    onChanged: (next) => ref
-                        .read(editLoggedUserFormProvider.notifier)
-                        .update((state) => state.copyWith(address: next)),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: AppPhoneTextFormField(
+                      controller: _phoneController,
+                      decoration: _inputDecoration(
+                        'Telefone',
+                      ).copyWith(hintText: '(00) 00000-0000'),
+                      enabled: !isLoading,
+                      onChanged: (value) =>
+                          updateEditLoggedUserPersonalData(ref, phone: value),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) return null;
+                        return isCompleteBrazilianPhone(value)
+                            ? null
+                            : 'Telefone inválido';
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: AppEmailTextFormField(
+                      controller: _emailController,
+                      decoration: _inputDecoration('E-mail'),
+                      enabled: !isLoading,
+                      onChanged: (value) =>
+                          updateEditLoggedUserPersonalData(ref, email: value),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) return null;
+                        final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+                        return emailRegex.hasMatch(value.trim())
+                            ? null
+                            : 'E-mail inválido';
+                      },
+                    ),
                   ),
-                  child: isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Salvar'),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  const _SectionTitle(title: 'Endereço'),
+                  AbsorbPointer(
+                    absorbing: isLoading,
+                    child: AddressFormSection(
+                      value: formState.address,
+                      onChanged: (next) => ref
+                          .read(editLoggedUserFormProvider.notifier)
+                          .update((state) => state.copyWith(address: next)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: isLoading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Salvar'),
+                  ),
+                ],
+              ),
             ),
           ),
         );

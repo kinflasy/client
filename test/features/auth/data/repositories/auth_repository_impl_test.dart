@@ -282,13 +282,13 @@ void main() {
 
   group('updateLoggedUser', () {
     test('returns updated user when api succeeds', () async {
-      when(() => api.updateLoggedUser(any())).thenAnswer(
+      when(() => api.updateLoggedUser(any())).thenAnswer((_) async {});
+      when(() => api.getLoggedUser()).thenAnswer(
         (_) async => const UserModel(
           id: 'user-123',
           username: 'lisa',
-          email: 'novo@example.com',
-          fullName: 'Lisa Atualizada',
-          nickname: 'Lili',
+          email: 'lisa@example.com',
+          fullName: 'Lisa Silva',
         ),
       );
 
@@ -307,6 +307,8 @@ void main() {
       final user = result.getRight().toNullable();
       expect(user?.fullName, 'Lisa Atualizada');
       expect(user?.email, 'novo@example.com');
+      expect(user?.birthDate, DateTime(1998, 4, 9));
+      verify(() => api.getLoggedUser()).called(1);
     });
 
     test('returns validation failure for 422 with backend message', () async {
@@ -333,6 +335,36 @@ void main() {
       final failure = result.getLeft().toNullable();
       expect(failure, isA<ValidationFailure>());
       expect(failure?.message, 'E-mail já está em uso');
+    });
+
+    test('returns validation failure from field error map', () async {
+      when(() => api.updateLoggedUser(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/v1/core/users'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/v1/core/users'),
+            statusCode: 422,
+            data: {
+              'errors': {
+                'birthDate': ['Data de nascimento é obrigatória'],
+              },
+            },
+          ),
+        ),
+      );
+
+      final result = await repository.updateLoggedUser(
+        const UpdateLoggedUserRequestModel(
+          fullName: 'Lisa Atualizada',
+          gender: 'FEMALE',
+          birthDate: '1998-04-09',
+        ),
+      );
+
+      expect(result.isLeft(), isTrue);
+      final failure = result.getLeft().toNullable();
+      expect(failure, isA<ValidationFailure>());
+      expect(failure?.message, 'Data de nascimento é obrigatória');
     });
   });
 

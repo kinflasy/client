@@ -16,7 +16,8 @@ class LoggedUserProfileModel {
 
   factory LoggedUserProfileModel.fromJson(Map<String, dynamic> json) {
     final id = json['id']?.toString();
-    final fullName = json['fullName']?.toString();
+    final fullName =
+        json['fullName']?.toString() ?? json['full_name']?.toString();
     final gender = json['gender']?.toString();
 
     if (id == null || id.isEmpty) {
@@ -29,7 +30,8 @@ class LoggedUserProfileModel {
       throw const FormatException('Campo obrigatório ausente: gender');
     }
 
-    final birthDateRaw = json['birthDate']?.toString();
+    final birthDateRaw =
+        json['birthDate']?.toString() ?? json['birth_date']?.toString();
 
     return LoggedUserProfileModel(
       id: id,
@@ -41,7 +43,8 @@ class LoggedUserProfileModel {
           : DateTime.tryParse(birthDateRaw),
       phone: json['phone']?.toString(),
       email: json['email']?.toString(),
-      addressId: json['addressId']?.toString(),
+      addressId:
+          json['addressId']?.toString() ?? json['address_id']?.toString(),
       profileImageId:
           json['profileImageId']?.toString() ??
           json['profile_image_id']?.toString(),

@@ -1,3 +1,4 @@
+import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -14,7 +15,7 @@ class ChurchFloatingBackButton extends StatelessWidget {
       left: 4,
       child: IconButton(
         key: buttonKey,
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
         onPressed: () => Navigator.of(context).pop(),
       ),
     );

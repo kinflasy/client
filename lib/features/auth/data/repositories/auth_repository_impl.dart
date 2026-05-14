@@ -47,7 +47,7 @@ class AuthRepositoryImpl implements AuthRepository {
         );
       }
 
-      return Left(NetworkFailure('Erro de conexao'));
+      return Left(NetworkFailure('Erro de conexão'));
     } on _InvalidAuthenticatedUser catch (_) {
       if (tokenSaved) {
         await _storage.deleteToken();
@@ -85,7 +85,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = await _api.register(request);
       return Right(user.toEntity());
     } on DioException catch (e) {
-      return Left(NetworkFailure('Erro de conexao: ${e.message}'));
+      return Left(NetworkFailure('Erro de conexão: ${e.message}'));
     } catch (_) {
       return Left(UnknownFailure('Erro inesperado'));
     }
@@ -131,7 +131,11 @@ class AuthRepositoryImpl implements AuthRepository {
     UpdateLoggedUserRequestModel request,
   ) async {
     try {
-      final user = (await _api.updateLoggedUser(request)).toEntity();
+      await _api.updateLoggedUser(request);
+      final user = _mergeUpdatedLoggedUser(
+        await _resolveAuthenticatedUser(),
+        request,
+      );
       if (user.id.trim().isEmpty || user.username.trim().isEmpty) {
         return const Left(
           AuthFailure('Não foi possível carregar o usuário autenticado'),
@@ -166,7 +170,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = (await _api.updateLoggedUserProfileImage(file)).toEntity();
       if (user.id.trim().isEmpty || user.username.trim().isEmpty) {
         return const Left(
-          AuthFailure('NÃ£o foi possÃ­vel carregar o usuÃ¡rio autenticado'),
+          AuthFailure('Não foi possível carregar o usuário autenticado'),
         );
       }
       return Right(user);
@@ -216,6 +220,12 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       final errors = data['errors'];
+      if (errors is Map) {
+        for (final value in errors.values) {
+          final message = _extractErrorMessage(value);
+          if (message != null) return message;
+        }
+      }
       if (errors is List) {
         for (final error in errors) {
           if (error is Map<String, dynamic>) {
@@ -227,6 +237,20 @@ class AuthRepositoryImpl implements AuthRepository {
             return error.trim();
           }
         }
+      }
+    }
+
+    if (data is Map) {
+      for (final value in data.values) {
+        final message = _extractErrorMessage(value);
+        if (message != null) return message;
+      }
+    }
+
+    if (data is List) {
+      for (final value in data) {
+        final message = _extractErrorMessage(value);
+        if (message != null) return message;
       }
     }
 
@@ -255,6 +279,23 @@ class AuthRepositoryImpl implements AuthRepository {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '${date.year}-$month-$day';
+  }
+
+  UserEntity _mergeUpdatedLoggedUser(
+    UserEntity user,
+    UpdateLoggedUserRequestModel request,
+  ) {
+    return UserEntity(
+      id: user.id,
+      username: user.username,
+      email: request.email ?? user.email,
+      fullName: request.fullName,
+      nickname: request.nickname,
+      phone: request.phone,
+      gender: request.gender,
+      birthDate: DateTime.tryParse(request.birthDate) ?? user.birthDate,
+      profileImageId: user.profileImageId,
+    );
   }
 }
 

@@ -20,69 +20,67 @@ class AddressFormSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: padding ?? EdgeInsets.zero,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (showTitle) ...[
-              Text(
-                title ?? 'Endereco',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-            ],
-            _field(
-              label: 'CEP',
-              fieldValue: value.zip,
-              behavior: AppTextInputBehavior.plain,
-              keyboardType: TextInputType.number,
-              onChanged: (next) => onChanged(value.copyWith(zip: next)),
+    return Padding(
+      padding: padding ?? EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (showTitle) ...[
+            Text(
+              title ?? 'Endereço',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-            _field(
-              label: 'País',
-              fieldValue: value.country,
-              onChanged: (next) => onChanged(value.copyWith(country: next)),
-            ),
-            _field(
-              label: 'Estado',
-              fieldValue: value.state,
-              onChanged: (next) => onChanged(value.copyWith(state: next)),
-            ),
-            _field(
-              label: 'Cidade',
-              fieldValue: value.city,
-              onChanged: (next) => onChanged(value.copyWith(city: next)),
-            ),
-            _field(
-              label: 'Bairro',
-              fieldValue: value.neighborhood,
-              onChanged: (next) => onChanged(value.copyWith(neighborhood: next)),
-            ),
-            _field(
-              label: 'Rua',
-              fieldValue: value.street,
-              onChanged: (next) => onChanged(value.copyWith(street: next)),
-            ),
-            _field(
-              label: 'Número',
-              fieldValue: value.number,
-              behavior: AppTextInputBehavior.plain,
-              onChanged: (next) => onChanged(value.copyWith(number: next)),
-            ),
-            _field(
-              label: 'Complemento',
-              fieldValue: value.complement,
-              onChanged: (next) => onChanged(value.copyWith(complement: next)),
-            ),
-            _field(
-              label: 'Referência',
-              fieldValue: value.reference,
-              onChanged: (next) => onChanged(value.copyWith(reference: next)),
-            ),
+            const SizedBox(height: 12),
           ],
-        ),
+          _field(
+            label: 'CEP',
+            fieldValue: value.zip,
+            behavior: AppTextInputBehavior.plain,
+            keyboardType: TextInputType.number,
+            onChanged: (next) => onChanged(value.copyWith(zip: next)),
+          ),
+          _field(
+            label: 'País',
+            fieldValue: value.country,
+            onChanged: (next) => onChanged(value.copyWith(country: next)),
+          ),
+          _field(
+            label: 'Estado',
+            fieldValue: value.state,
+            onChanged: (next) => onChanged(value.copyWith(state: next)),
+          ),
+          _field(
+            label: 'Cidade',
+            fieldValue: value.city,
+            onChanged: (next) => onChanged(value.copyWith(city: next)),
+          ),
+          _field(
+            label: 'Bairro',
+            fieldValue: value.neighborhood,
+            onChanged: (next) => onChanged(value.copyWith(neighborhood: next)),
+          ),
+          _field(
+            label: 'Rua',
+            fieldValue: value.street,
+            onChanged: (next) => onChanged(value.copyWith(street: next)),
+          ),
+          _field(
+            label: 'Número',
+            fieldValue: value.number,
+            behavior: AppTextInputBehavior.plain,
+            onChanged: (next) => onChanged(value.copyWith(number: next)),
+          ),
+          _field(
+            label: 'Complemento',
+            fieldValue: value.complement,
+            onChanged: (next) => onChanged(value.copyWith(complement: next)),
+          ),
+          _field(
+            label: 'Referência',
+            fieldValue: value.reference,
+            onChanged: (next) => onChanged(value.copyWith(reference: next)),
+          ),
+        ],
       ),
     );
   }

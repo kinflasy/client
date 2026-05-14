@@ -28,4 +28,21 @@ void main() {
     expect(model.profileImageId, 'image-456');
     expect(model.toEntity().profileImageId, 'image-456');
   });
+
+  test('parses snake_case person fields', () {
+    final model = LoggedUserProfileModel.fromJson(
+      profileJson(
+        extra: {
+          'fullName': null,
+          'full_name': 'Lisa Silva',
+          'birth_date': '1998-04-09',
+          'address_id': 'address-123',
+        },
+      ),
+    );
+
+    expect(model.fullName, 'Lisa Silva');
+    expect(model.birthDate, DateTime(1998, 4, 9));
+    expect(model.addressId, 'address-123');
+  });
 }

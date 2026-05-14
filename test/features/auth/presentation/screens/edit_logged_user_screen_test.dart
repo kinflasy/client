@@ -279,6 +279,23 @@ void main() {
     expect(find.text('Lisa Souza'), findsWidgets);
     expect(profileLoads, 2);
   });
+
+  testWidgets('returns to profile summary after direct edit success', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+
+    expect(find.text('Editar dados'), findsOneWidget);
+
+    await _scrollToSaveButton(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(_saveButton());
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.text('Meu perfil'), findsOneWidget);
+    expect(find.byType(EditLoggedUserScreen), findsNothing);
+  });
 }
 
 Finder _saveButton() => find.widgetWithText(ElevatedButton, 'Salvar');

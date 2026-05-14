@@ -103,13 +103,15 @@ class _AuthApi implements AuthApi {
   }
 
   @override
-  Future<void> updateLoggedUser(UpdateLoggedUserRequestModel body) async {
+  Future<HttpResponse<Map<String, dynamic>?>> updateLoggedUser(
+    UpdateLoggedUserRequestModel body,
+  ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(body.toJson());
-    final _options = _setStreamType<void>(
+    final _options = _setStreamType<HttpResponse<Map<String, dynamic>?>>(
       Options(method: 'PUT', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -119,7 +121,10 @@ class _AuthApi implements AuthApi {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    await _dio.fetch<void>(_options);
+    final _result = await _dio.fetch<Map<String, dynamic>?>(_options);
+    final _value = _result.data;
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
   }
 
   @override

@@ -189,6 +189,10 @@ Future<Either<Failure, void>> submitEditLoggedUser(
     (_) => const AsyncValue.data(null),
   );
 
+  if (result.isRight()) {
+    ref.invalidate(editLoggedUserInitialDataProvider);
+  }
+
   return result.fold(Left.new, (_) => const Right(null));
 }
 

@@ -1,5 +1,6 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/storage/secure_storage.dart';
+import 'package:client/core/utils/backend_date_parser.dart';
 import 'package:client/features/auth/data/datasources/auth_api.dart';
 import 'package:client/features/auth/data/datasources/auth_request_models.dart';
 import 'package:client/features/auth/data/models/user_model.dart';
@@ -131,11 +132,11 @@ class AuthRepositoryImpl implements AuthRepository {
     UpdateLoggedUserRequestModel request,
   ) async {
     try {
-      await _api.updateLoggedUser(request);
-      final user = _mergeUpdatedLoggedUser(
-        await _resolveAuthenticatedUser(),
-        request,
-      );
+      final response = await _api.updateLoggedUser(request);
+      final authenticatedUser = await _resolveAuthenticatedUser();
+      final user =
+          _mergeCanonicalLoggedUser(authenticatedUser, response.data) ??
+          _mergeUpdatedLoggedUser(authenticatedUser, request);
       if (user.id.trim().isEmpty || user.username.trim().isEmpty) {
         return const Left(
           AuthFailure('Não foi possível carregar o usuário autenticado'),
@@ -296,6 +297,48 @@ class AuthRepositoryImpl implements AuthRepository {
       birthDate: DateTime.tryParse(request.birthDate) ?? user.birthDate,
       profileImageId: user.profileImageId,
     );
+  }
+
+  UserEntity? _mergeCanonicalLoggedUser(
+    UserEntity user,
+    Map<String, dynamic>? data,
+  ) {
+    if (data == null || data.isEmpty) return null;
+
+    final id = _readString(data, 'id') ?? user.id;
+    final username = _readString(data, 'username') ?? user.username;
+    if (id.trim().isEmpty || username.trim().isEmpty) return null;
+
+    return UserEntity(
+      id: id,
+      username: username,
+      email: _readString(data, 'email') ?? user.email,
+      fullName:
+          _readString(data, 'fullName') ??
+          _readString(data, 'full_name') ??
+          user.fullName,
+      nickname: _readString(data, 'nickname') ?? user.nickname,
+      phone: _readString(data, 'phone') ?? user.phone,
+      gender: _readString(data, 'gender') ?? user.gender,
+      birthDate:
+          parseBackendDate(
+            data.containsKey('birthDate')
+                ? data['birthDate']
+                : data['birth_date'],
+          ) ??
+          user.birthDate,
+      profileImageId:
+          _readString(data, 'profileImageId') ??
+          _readString(data, 'profile_image_id') ??
+          user.profileImageId,
+    );
+  }
+
+  String? _readString(Map<String, dynamic> data, String key) {
+    final value = data[key];
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
   }
 }
 

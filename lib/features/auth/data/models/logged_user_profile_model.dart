@@ -1,4 +1,5 @@
 import 'package:client/core/address/address_value.dart';
+import 'package:client/core/utils/backend_date_parser.dart';
 import 'package:client/features/auth/domain/entities/logged_user_profile_entity.dart';
 
 class LoggedUserProfileModel {
@@ -30,17 +31,16 @@ class LoggedUserProfileModel {
       throw const FormatException('Campo obrigatório ausente: gender');
     }
 
-    final birthDateRaw =
-        json['birthDate']?.toString() ?? json['birth_date']?.toString();
+    final birthDateRaw = json.containsKey('birthDate')
+        ? json['birthDate']
+        : json['birth_date'];
 
     return LoggedUserProfileModel(
       id: id,
       fullName: fullName,
       nickname: json['nickname']?.toString(),
       gender: gender,
-      birthDate: birthDateRaw == null || birthDateRaw.isEmpty
-          ? null
-          : DateTime.tryParse(birthDateRaw),
+      birthDate: parseBackendDate(birthDateRaw),
       phone: json['phone']?.toString(),
       email: json['email']?.toString(),
       addressId:

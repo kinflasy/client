@@ -9,6 +9,7 @@ import 'package:client/features/auth/data/repositories/auth_repository_impl.dart
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:retrofit/retrofit.dart';
 
 class _MockAuthApi extends Mock implements AuthApi {}
 
@@ -281,8 +282,70 @@ void main() {
   });
 
   group('updateLoggedUser', () {
-    test('returns updated user when api succeeds', () async {
-      when(() => api.updateLoggedUser(any())).thenAnswer((_) async {});
+    test(
+      'returns canonical backend user when PUT responds with payload',
+      () async {
+        when(() => api.updateLoggedUser(any())).thenAnswer(
+          (_) async => HttpResponse(
+            {
+              'id': 'user-123',
+              'username': 'lisa',
+              'email': 'normalizado@example.com',
+              'fullName': 'Lisa Normalizada',
+              'nickname': 'Lis',
+              'gender': 'FEMALE',
+              'birthDate': [1998, 4, 9],
+              'phone': '85999990000',
+              'profileImageId': 'image-123',
+            },
+            Response(
+              requestOptions: RequestOptions(path: '/v1/core/users'),
+              statusCode: 200,
+            ),
+          ),
+        );
+        when(() => api.getLoggedUser()).thenAnswer(
+          (_) async => const UserModel(
+            id: 'user-123',
+            username: 'lisa',
+            email: 'lisa@example.com',
+            fullName: 'Lisa Silva',
+          ),
+        );
+
+        final result = await repository.updateLoggedUser(
+          const UpdateLoggedUserRequestModel(
+            fullName: 'Lisa Atualizada',
+            nickname: 'Lili',
+            gender: 'FEMALE',
+            birthDate: '1998-04-09',
+            phone: '85999991111',
+            email: 'novo@example.com',
+          ),
+        );
+
+        expect(result.isRight(), isTrue);
+        final user = result.getRight().toNullable();
+        expect(user?.fullName, 'Lisa Normalizada');
+        expect(user?.nickname, 'Lis');
+        expect(user?.email, 'normalizado@example.com');
+        expect(user?.birthDate, DateTime(1998, 4, 9));
+        expect(user?.phone, '85999990000');
+        expect(user?.profileImageId, 'image-123');
+        verify(() => api.getLoggedUser()).called(1);
+      },
+    );
+
+    test('falls back to local merge when PUT returns no body', () async {
+      when(() => api.updateLoggedUser(any())).thenAnswer(
+        (_) async => HttpResponse(
+          null,
+          Response(
+            requestOptions: RequestOptions(path: '/v1/core/users'),
+            statusCode: 204,
+          ),
+        ),
+      );
       when(() => api.getLoggedUser()).thenAnswer(
         (_) async => const UserModel(
           id: 'user-123',

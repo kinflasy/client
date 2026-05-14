@@ -169,6 +169,54 @@ void main() {
     expect(result.address.reference, 'Próximo à praça');
   });
 
+  test(
+    'resolved profile uses detailed people data over minimal auth data',
+    () async {
+      final repository = _MockAuthRepository();
+      final dio = _MockDio();
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(repository),
+          dioClientProvider.overrideWithValue(dio),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      when(() => repository.getCurrentUser()).thenAnswer(
+        (_) async => const UserEntity(
+          id: 'user-1',
+          username: 'lisa',
+          fullName: 'Auth Name',
+          email: 'auth@example.com',
+        ),
+      );
+      when(
+        () => dio.get<Map<String, dynamic>>('/v1/core/people/user-1'),
+      ).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/v1/core/people/user-1'),
+          data: {
+            'id': 'user-1',
+            'fullName': 'Lisa Silva',
+            'gender': 'FEMALE',
+            'birthDate': [1998, 4, 9],
+            'phone': '85999991111',
+            'email': 'profile@example.com',
+          },
+        ),
+      );
+
+      final result = await container.read(
+        editLoggedUserInitialDataProvider.future,
+      );
+
+      expect(result.fullName, 'Lisa Silva');
+      expect(result.email, 'profile@example.com');
+      expect(result.phone, '85999991111');
+      expect(result.birthDate, DateTime(1998, 4, 9));
+    },
+  );
+
   test('resolved profile uses empty address when address load fails', () async {
     final repository = _MockAuthRepository();
     final dio = _MockDio();

@@ -45,4 +45,36 @@ void main() {
     expect(model.birthDate, DateTime(1998, 4, 9));
     expect(model.addressId, 'address-123');
   });
+
+  test('parses camelCase ISO birthDate', () {
+    final model = LoggedUserProfileModel.fromJson(
+      profileJson(extra: {'birthDate': '1998-04-09'}),
+    );
+
+    expect(model.birthDate, DateTime(1998, 4, 9));
+  });
+
+  test('parses Jackson array birthDate', () {
+    final model = LoggedUserProfileModel.fromJson(
+      profileJson(
+        extra: {
+          'birthDate': [1998, 4, 9],
+        },
+      ),
+    );
+
+    expect(model.birthDate, DateTime(1998, 4, 9));
+  });
+
+  test('parses Java time map birthDate', () {
+    final model = LoggedUserProfileModel.fromJson(
+      profileJson(
+        extra: {
+          'birthDate': {'year': 1998, 'monthValue': 4, 'dayOfMonth': 9},
+        },
+      ),
+    );
+
+    expect(model.birthDate, DateTime(1998, 4, 9));
+  });
 }

@@ -19,7 +19,9 @@ abstract class AuthApi {
   Future<UserModel> getLoggedUser();
 
   @PUT('/v1/core/users')
-  Future<void> updateLoggedUser(@Body() UpdateLoggedUserRequestModel body);
+  Future<HttpResponse<Map<String, dynamic>?>> updateLoggedUser(
+    @Body() UpdateLoggedUserRequestModel body,
+  );
 
   @MultiPart()
   @PUT('/v1/core/people/profile-image')

@@ -6,6 +6,7 @@ import 'package:client/core/presentation/widgets/address_form_section.dart';
 import 'package:client/core/presentation/widgets/app_date_text_form_field.dart';
 import 'package:client/core/presentation/widgets/app_email_text_form_field.dart';
 import 'package:client/core/presentation/widgets/app_phone_text_form_field.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
 import 'package:client/features/church/presentation/widgets/church_shared_widgets.dart';
 import 'package:flutter/material.dart';
@@ -69,7 +70,7 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
         autoCloseDuration: const Duration(seconds: 3),
       );
       ref.invalidate(editLoggedUserInitialDataProvider);
-      context.pop();
+      context.goNamed(AppRoutes.homeMenuEditProfileName);
     });
   }
 

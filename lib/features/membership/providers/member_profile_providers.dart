@@ -97,6 +97,7 @@ Future<MemberProfileEntity> resolveMemberProfile({
     entryDate: membership.entryDate != null
         ? DateTime.tryParse(membership.entryDate!)
         : null,
+    profileImageId: person.profileImageId,
     integrations: integrations,
   );
 }

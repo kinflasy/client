@@ -1,6 +1,7 @@
 import 'package:client/core/address/address_form_state.dart';
 import 'package:client/core/address/address_value.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/media/media_providers.dart';
 import 'package:client/core/network/dio_client.dart';
 import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/features/auth/data/datasources/auth_request_models.dart';
@@ -217,6 +218,7 @@ class EditLoggedUserActions {
   Future<Either<Failure, UserEntity>> updateLoggedUserProfileImage(
     String filePath,
   ) async {
+    final previousImageId = _currentProfileImageId();
     _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
         const AsyncValue.loading();
 
@@ -229,9 +231,11 @@ class EditLoggedUserActions {
         _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
             AsyncValue.error(failure, StackTrace.current);
       },
-      (_) {
+      (user) {
         _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
             const AsyncValue.data(null);
+        _invalidateMediaImage(previousImageId);
+        _invalidateMediaImage(user.profileImageId);
         _ref.invalidate(editLoggedUserInitialDataProvider);
       },
     );
@@ -240,6 +244,7 @@ class EditLoggedUserActions {
   }
 
   Future<Either<Failure, void>> deleteLoggedUserProfileImage() async {
+    final previousImageId = _currentProfileImageId();
     _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
         const AsyncValue.loading();
 
@@ -255,12 +260,28 @@ class EditLoggedUserActions {
       (_) {
         _ref.read(loggedUserProfileImageSubmitProvider.notifier).state =
             const AsyncValue.data(null);
+        _invalidateMediaImage(previousImageId);
         _ref.invalidate(authProvider);
         _ref.invalidate(editLoggedUserInitialDataProvider);
       },
     );
 
     return result;
+  }
+
+  String? _currentProfileImageId() {
+    final authImageId = _ref.read(authProvider).value?.profileImageId?.trim();
+    if (authImageId != null && authImageId.isNotEmpty) {
+      return authImageId;
+    }
+
+    return null;
+  }
+
+  void _invalidateMediaImage(String? imageId) {
+    final normalizedImageId = imageId?.trim();
+    if (normalizedImageId == null || normalizedImageId.isEmpty) return;
+    _ref.invalidate(mediaImageUrlProvider(normalizedImageId));
   }
 }
 

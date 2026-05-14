@@ -1,5 +1,6 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
+import 'package:client/core/presentation/widgets/user_avatar.dart';
 import 'package:client/core/utils/string_utils.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/providers/department_detail_providers.dart';
@@ -325,16 +326,10 @@ class _SelectedMemberChip extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              CircleAvatar(
+              UserAvatar(
+                displayName: member.fullName,
                 radius: 22,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                child: Text(
-                  _initials(member.fullName),
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                profileImageId: member.profileImageId,
               ),
               Positioned(
                 right: -8,
@@ -393,15 +388,10 @@ class _SelectableMemberTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           side: const BorderSide(color: _borderColor),
         ),
-        leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-          child: Text(
-            _initials(member.fullName),
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+        leading: UserAvatar(
+          displayName: member.fullName,
+          radius: 20,
+          profileImageId: member.profileImageId,
         ),
         title: Text(
           member.fullName,
@@ -454,19 +444,6 @@ class _SelectionStatus extends StatelessWidget {
       ),
     );
   }
-}
-
-String _initials(String name) {
-  final parts = name
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .toList();
-  if (parts.isEmpty) return '?';
-
-  final first = parts.first.characters.first;
-  final second = parts.length > 1 ? parts.last.characters.first : '';
-  return '$first$second'.toUpperCase();
 }
 
 String _participantsLabel(int count) {

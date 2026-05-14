@@ -305,7 +305,7 @@ $UnitMemberPersonModelCopyWith<$Res> get person {
 /// @nodoc
 mixin _$UnitMemberPersonModel {
 
- String get id; String get fullName; String? get nickname; String get gender; String? get birthDate; String? get phone; String? get addressId;
+ String get id; String get fullName; String? get nickname; String get gender; String? get birthDate; String? get phone; String? get addressId; String? get profileImageId;
 /// Create a copy of UnitMemberPersonModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -318,16 +318,16 @@ $UnitMemberPersonModelCopyWith<UnitMemberPersonModel> get copyWith => _$UnitMemb
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnitMemberPersonModel&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.addressId, addressId) || other.addressId == addressId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnitMemberPersonModel&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.addressId, addressId) || other.addressId == addressId)&&(identical(other.profileImageId, profileImageId) || other.profileImageId == profileImageId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fullName,nickname,gender,birthDate,phone,addressId);
+int get hashCode => Object.hash(runtimeType,id,fullName,nickname,gender,birthDate,phone,addressId,profileImageId);
 
 @override
 String toString() {
-  return 'UnitMemberPersonModel(id: $id, fullName: $fullName, nickname: $nickname, gender: $gender, birthDate: $birthDate, phone: $phone, addressId: $addressId)';
+  return 'UnitMemberPersonModel(id: $id, fullName: $fullName, nickname: $nickname, gender: $gender, birthDate: $birthDate, phone: $phone, addressId: $addressId, profileImageId: $profileImageId)';
 }
 
 
@@ -338,7 +338,7 @@ abstract mixin class $UnitMemberPersonModelCopyWith<$Res>  {
   factory $UnitMemberPersonModelCopyWith(UnitMemberPersonModel value, $Res Function(UnitMemberPersonModel) _then) = _$UnitMemberPersonModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String fullName, String? nickname, String gender, String? birthDate, String? phone, String? addressId
+ String id, String fullName, String? nickname, String gender, String? birthDate, String? phone, String? addressId, String? profileImageId
 });
 
 
@@ -355,7 +355,7 @@ class _$UnitMemberPersonModelCopyWithImpl<$Res>
 
 /// Create a copy of UnitMemberPersonModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fullName = null,Object? nickname = freezed,Object? gender = null,Object? birthDate = freezed,Object? phone = freezed,Object? addressId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fullName = null,Object? nickname = freezed,Object? gender = null,Object? birthDate = freezed,Object? phone = freezed,Object? addressId = freezed,Object? profileImageId = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fullName: null == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
@@ -364,6 +364,7 @@ as String?,gender: null == gender ? _self.gender : gender // ignore: cast_nullab
 as String,birthDate: freezed == birthDate ? _self.birthDate : birthDate // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,addressId: freezed == addressId ? _self.addressId : addressId // ignore: cast_nullable_to_non_nullable
+as String?,profileImageId: freezed == profileImageId ? _self.profileImageId : profileImageId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -449,10 +450,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String fullName,  String? nickname,  String gender,  String? birthDate,  String? phone,  String? addressId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String fullName,  String? nickname,  String gender,  String? birthDate,  String? phone,  String? addressId,  String? profileImageId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UnitMemberPersonModel() when $default != null:
-return $default(_that.id,_that.fullName,_that.nickname,_that.gender,_that.birthDate,_that.phone,_that.addressId);case _:
+return $default(_that.id,_that.fullName,_that.nickname,_that.gender,_that.birthDate,_that.phone,_that.addressId,_that.profileImageId);case _:
   return orElse();
 
 }
@@ -470,10 +471,10 @@ return $default(_that.id,_that.fullName,_that.nickname,_that.gender,_that.birthD
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String fullName,  String? nickname,  String gender,  String? birthDate,  String? phone,  String? addressId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String fullName,  String? nickname,  String gender,  String? birthDate,  String? phone,  String? addressId,  String? profileImageId)  $default,) {final _that = this;
 switch (_that) {
 case _UnitMemberPersonModel():
-return $default(_that.id,_that.fullName,_that.nickname,_that.gender,_that.birthDate,_that.phone,_that.addressId);case _:
+return $default(_that.id,_that.fullName,_that.nickname,_that.gender,_that.birthDate,_that.phone,_that.addressId,_that.profileImageId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -490,10 +491,10 @@ return $default(_that.id,_that.fullName,_that.nickname,_that.gender,_that.birthD
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String fullName,  String? nickname,  String gender,  String? birthDate,  String? phone,  String? addressId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String fullName,  String? nickname,  String gender,  String? birthDate,  String? phone,  String? addressId,  String? profileImageId)?  $default,) {final _that = this;
 switch (_that) {
 case _UnitMemberPersonModel() when $default != null:
-return $default(_that.id,_that.fullName,_that.nickname,_that.gender,_that.birthDate,_that.phone,_that.addressId);case _:
+return $default(_that.id,_that.fullName,_that.nickname,_that.gender,_that.birthDate,_that.phone,_that.addressId,_that.profileImageId);case _:
   return null;
 
 }
@@ -505,7 +506,7 @@ return $default(_that.id,_that.fullName,_that.nickname,_that.gender,_that.birthD
 @JsonSerializable()
 
 class _UnitMemberPersonModel implements UnitMemberPersonModel {
-  const _UnitMemberPersonModel({required this.id, required this.fullName, this.nickname, required this.gender, this.birthDate, this.phone, this.addressId});
+  const _UnitMemberPersonModel({required this.id, required this.fullName, this.nickname, required this.gender, this.birthDate, this.phone, this.addressId, this.profileImageId});
   factory _UnitMemberPersonModel.fromJson(Map<String, dynamic> json) => _$UnitMemberPersonModelFromJson(json);
 
 @override final  String id;
@@ -515,6 +516,7 @@ class _UnitMemberPersonModel implements UnitMemberPersonModel {
 @override final  String? birthDate;
 @override final  String? phone;
 @override final  String? addressId;
+@override final  String? profileImageId;
 
 /// Create a copy of UnitMemberPersonModel
 /// with the given fields replaced by the non-null parameter values.
@@ -529,16 +531,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UnitMemberPersonModel&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.addressId, addressId) || other.addressId == addressId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UnitMemberPersonModel&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.addressId, addressId) || other.addressId == addressId)&&(identical(other.profileImageId, profileImageId) || other.profileImageId == profileImageId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fullName,nickname,gender,birthDate,phone,addressId);
+int get hashCode => Object.hash(runtimeType,id,fullName,nickname,gender,birthDate,phone,addressId,profileImageId);
 
 @override
 String toString() {
-  return 'UnitMemberPersonModel(id: $id, fullName: $fullName, nickname: $nickname, gender: $gender, birthDate: $birthDate, phone: $phone, addressId: $addressId)';
+  return 'UnitMemberPersonModel(id: $id, fullName: $fullName, nickname: $nickname, gender: $gender, birthDate: $birthDate, phone: $phone, addressId: $addressId, profileImageId: $profileImageId)';
 }
 
 
@@ -549,7 +551,7 @@ abstract mixin class _$UnitMemberPersonModelCopyWith<$Res> implements $UnitMembe
   factory _$UnitMemberPersonModelCopyWith(_UnitMemberPersonModel value, $Res Function(_UnitMemberPersonModel) _then) = __$UnitMemberPersonModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String fullName, String? nickname, String gender, String? birthDate, String? phone, String? addressId
+ String id, String fullName, String? nickname, String gender, String? birthDate, String? phone, String? addressId, String? profileImageId
 });
 
 
@@ -566,7 +568,7 @@ class __$UnitMemberPersonModelCopyWithImpl<$Res>
 
 /// Create a copy of UnitMemberPersonModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fullName = null,Object? nickname = freezed,Object? gender = null,Object? birthDate = freezed,Object? phone = freezed,Object? addressId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fullName = null,Object? nickname = freezed,Object? gender = null,Object? birthDate = freezed,Object? phone = freezed,Object? addressId = freezed,Object? profileImageId = freezed,}) {
   return _then(_UnitMemberPersonModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fullName: null == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
@@ -575,6 +577,7 @@ as String?,gender: null == gender ? _self.gender : gender // ignore: cast_nullab
 as String,birthDate: freezed == birthDate ? _self.birthDate : birthDate // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,addressId: freezed == addressId ? _self.addressId : addressId // ignore: cast_nullable_to_non_nullable
+as String?,profileImageId: freezed == profileImageId ? _self.profileImageId : profileImageId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

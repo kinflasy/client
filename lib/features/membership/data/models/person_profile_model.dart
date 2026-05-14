@@ -12,6 +12,7 @@ class PersonProfileModel {
     this.addressId,
     this.age,
     this.email,
+    this.profileImageId,
   });
 
   factory PersonProfileModel.fromJson(Map<String, dynamic> json) {
@@ -56,6 +57,9 @@ class PersonProfileModel {
       addressId: json['addressId']?.toString(),
       age: parsedAge,
       email: json['email']?.toString(),
+      profileImageId:
+          json['profileImageId']?.toString() ??
+          json['profile_image_id']?.toString(),
     );
   }
 
@@ -69,4 +73,5 @@ class PersonProfileModel {
   final String? addressId;
   final int? age;
   final String? email;
+  final String? profileImageId;
 }

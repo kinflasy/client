@@ -58,7 +58,7 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
           icon: Icons.error_outline,
           title: error is Failure
               ? error.message
-              : 'NÃ£o foi possÃ­vel carregar a unidade ativa.',
+              : 'NÃ£o foi possível carregar a unidade ativa.',
         ),
         data: (membership) {
           final unitId = membership?.unitId;
@@ -66,8 +66,7 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
             return const _InlineStatus(
               icon: Icons.people_outline,
               title: 'Nenhuma unidade ativa encontrada.',
-              subtitle:
-                  'NÃ£o foi possÃ­vel identificar os membros para listar.',
+              subtitle: 'Não foi possível identificar os membros para listar.',
             );
           }
 
@@ -123,7 +122,7 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
                     icon: Icons.group_off_outlined,
                     title: error is Failure
                         ? error.message
-                        : 'NÃ£o foi possÃ­vel carregar os membros.',
+                        : 'Não foi possível carregar os membros.',
                     subtitle: 'Tente novamente em instantes.',
                   ),
                   data: (members) {
@@ -148,6 +147,7 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
                           affiliation: member.affiliation,
                           gender: member.gender,
                           birthDate: member.birthDate,
+                          profileImageId: member.profileImageId,
                           onTap: () => context.pushNamed(
                             AppRoutes.peopleDetailName,
                             pathParameters: {'id': member.personId},

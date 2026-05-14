@@ -34,6 +34,7 @@ _UnitMemberPersonModel _$UnitMemberPersonModelFromJson(
   birthDate: json['birthDate'] as String?,
   phone: json['phone'] as String?,
   addressId: json['addressId'] as String?,
+  profileImageId: json['profileImageId'] as String?,
 );
 
 Map<String, dynamic> _$UnitMemberPersonModelToJson(
@@ -46,4 +47,5 @@ Map<String, dynamic> _$UnitMemberPersonModelToJson(
   'birthDate': instance.birthDate,
   'phone': instance.phone,
   'addressId': instance.addressId,
+  'profileImageId': instance.profileImageId,
 };

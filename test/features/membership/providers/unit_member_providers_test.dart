@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:client/features/membership/data/models/unit_member_model.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
 import 'package:client/features/membership/domain/repositories/unit_member_repository.dart';
 import 'package:client/features/membership/providers/register_member_providers.dart';
@@ -81,41 +82,67 @@ void main() {
     container.dispose();
   });
 
-  test('memberFilterProvider starts with default state and reset restores it', () {
-    expect(
-      container.read(memberFilterProvider),
-      MemberFilterState.defaultState,
-    );
+  test(
+    'memberFilterProvider starts with default state and reset restores it',
+    () {
+      expect(
+        container.read(memberFilterProvider),
+        MemberFilterState.defaultState,
+      );
 
-    container.read(memberFilterProvider.notifier).setGender('FEMALE');
-    expect(container.read(memberFilterProvider).gender, 'FEMALE');
+      container.read(memberFilterProvider.notifier).setGender('FEMALE');
+      expect(container.read(memberFilterProvider).gender, 'FEMALE');
 
-    container.read(memberFilterProvider.notifier).reset();
-    expect(
-      container.read(memberFilterProvider),
-      MemberFilterState.defaultState,
-    );
-  });
+      container.read(memberFilterProvider.notifier).reset();
+      expect(
+        container.read(memberFilterProvider),
+        MemberFilterState.defaultState,
+      );
+    },
+  );
 
-  test('filteredMembers applies affiliations, gender, age range and search', () async {
-    container.read(memberFilterProvider.notifier).setAffiliations({
-      'MEMBER',
-      'VISITOR',
+  test('UnitMemberModel maps profileImageId to entity', () {
+    final model = UnitMemberModel.fromJson({
+      'id': 'membership-1',
+      'unitId': 'unit-1',
+      'affiliation': 'MEMBER',
+      'person': {
+        'id': 'person-1',
+        'fullName': 'Ana Maria',
+        'gender': 'FEMALE',
+        'profileImageId': 'image-1',
+      },
     });
-    container.read(memberFilterProvider.notifier).setGender('FEMALE');
-    container.read(memberFilterProvider.notifier).setAgeRange(25, 35);
-    container.read(memberSearchQueryProvider.notifier).update('ana');
 
-    final result = await _readFilteredMembers(container, 'unit-1');
-
-    expect(result.map((member) => member.fullName).toList(), ['Ana Maria']);
+    expect(model.person.profileImageId, 'image-1');
+    expect(model.toEntity().profileImageId, 'image-1');
   });
 
-  test('filteredMembers returns empty list when no affiliation is selected', () async {
-    container.read(memberFilterProvider.notifier).setAffiliations({});
+  test(
+    'filteredMembers applies affiliations, gender, age range and search',
+    () async {
+      container.read(memberFilterProvider.notifier).setAffiliations({
+        'MEMBER',
+        'VISITOR',
+      });
+      container.read(memberFilterProvider.notifier).setGender('FEMALE');
+      container.read(memberFilterProvider.notifier).setAgeRange(25, 35);
+      container.read(memberSearchQueryProvider.notifier).update('ana');
 
-    final result = await _readFilteredMembers(container, 'unit-1');
+      final result = await _readFilteredMembers(container, 'unit-1');
 
-    expect(result, isEmpty);
-  });
+      expect(result.map((member) => member.fullName).toList(), ['Ana Maria']);
+    },
+  );
+
+  test(
+    'filteredMembers returns empty list when no affiliation is selected',
+    () async {
+      container.read(memberFilterProvider.notifier).setAffiliations({});
+
+      final result = await _readFilteredMembers(container, 'unit-1');
+
+      expect(result, isEmpty);
+    },
+  );
 }

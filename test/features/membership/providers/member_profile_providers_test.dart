@@ -65,12 +65,14 @@ void main() {
       'addressId': 'address-1',
       'age': 36,
       'email': 'ana@dev.com',
+      'profileImageId': 'image-1',
     });
 
     expect(model.type, PersonType.user);
     expect(model.email, 'ana@dev.com');
     expect(model.age, 36);
     expect(model.addressId, 'address-1');
+    expect(model.profileImageId, 'image-1');
   });
 
   test('PersonProfileModel parses INACTIVE payload', () {
@@ -82,11 +84,13 @@ void main() {
       'birthDate': '1988-01-01',
       'age': '38',
       'email': 'carlos@dev.com',
+      'profile_image_id': 'image-2',
     });
 
     expect(model.type, PersonType.inactive);
     expect(model.age, 38);
     expect(model.email, 'carlos@dev.com');
+    expect(model.profileImageId, 'image-2');
   });
 
   test(
@@ -144,6 +148,7 @@ void main() {
             'age': 40,
             'addressId': 'address-1',
             'email': 'ana@dev.com',
+            'profileImageId': 'image-1',
           }),
         ),
         membershipResult: Right(
@@ -185,6 +190,7 @@ void main() {
       );
 
       expect(profile.age, 40);
+      expect(profile.profileImageId, 'image-1');
       expect(profile.address, 'Rua A, 10, Fortaleza, CE');
       expect(profile.addressDetails?.city, 'Fortaleza');
       expect(profile.integrations.single.departmentName, 'Louvor');

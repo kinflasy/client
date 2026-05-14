@@ -128,7 +128,7 @@ final class FilteredDepartmentsProvider
 }
 
 String _$filteredDepartmentsHash() =>
-    r'c657b3c840ee7408ef1b2db904f61ec081b93be9';
+    r'2da9a348c78b5027aee375fd7cf6d726aac6d350';
 
 final class FilteredDepartmentsFamily extends $Family
     with $FunctionalFamilyOverride<AsyncValue<List<DepartmentEntity>>, String> {

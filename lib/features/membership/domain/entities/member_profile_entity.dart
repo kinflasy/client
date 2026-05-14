@@ -19,6 +19,7 @@ class MemberProfileEntity extends Equatable {
     this.addressDetails,
     required this.affiliation,
     this.entryDate,
+    this.profileImageId,
     this.integrations = const [],
   });
 
@@ -36,6 +37,7 @@ class MemberProfileEntity extends Equatable {
   final AddressDetailsEntity? addressDetails;
   final String affiliation;
   final DateTime? entryDate;
+  final String? profileImageId;
   final List<MemberProfileIntegrationEntity> integrations;
 
   @override
@@ -54,6 +56,7 @@ class MemberProfileEntity extends Equatable {
     addressDetails,
     affiliation,
     entryDate,
+    profileImageId,
     integrations,
   ];
 }

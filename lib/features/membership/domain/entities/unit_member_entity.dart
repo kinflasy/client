@@ -11,6 +11,7 @@ class UnitMemberEntity extends Equatable {
     this.birthDate,
     this.phone,
     this.addressId,
+    this.profileImageId,
   });
 
   final String membershipId;
@@ -22,6 +23,7 @@ class UnitMemberEntity extends Equatable {
   final DateTime? birthDate;
   final String? phone;
   final String? addressId;
+  final String? profileImageId;
 
   @override
   List<Object?> get props => [
@@ -34,5 +36,6 @@ class UnitMemberEntity extends Equatable {
     birthDate,
     phone,
     addressId,
+    profileImageId,
   ];
 }

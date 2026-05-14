@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:client/core/address/address_value.dart';
 import 'package:client/core/address/address_form_state.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/media/media_providers.dart';
 import 'package:client/core/network/dio_client.dart';
 import 'package:client/features/auth/domain/entities/logged_user_profile_entity.dart';
 import 'package:client/features/auth/domain/entities/user_entity.dart';
@@ -338,21 +339,30 @@ void main() {
   });
 
   test(
-    'profile image update marks loading, data and reloads profile',
+    'profile image update marks loading, reloads profile and invalidates media',
     () async {
       final repository = _MockAuthRepository();
       final dio = _MockDio();
       var profileLoads = 0;
+      final mediaLoads = <String, int>{};
       final container = ProviderContainer(
         overrides: [
           authRepositoryProvider.overrideWithValue(repository),
           dioClientProvider.overrideWithValue(dio),
+          mediaImageUrlProvider.overrideWith((ref, imageId) async {
+            mediaLoads[imageId] = (mediaLoads[imageId] ?? 0) + 1;
+            return 'https://cdn.example/$imageId/${mediaLoads[imageId]}';
+          }),
         ],
       );
       addTearDown(container.dispose);
 
       when(() => repository.getCurrentUser()).thenAnswer(
-        (_) async => const UserEntity(id: 'user-1', username: 'lisa'),
+        (_) async => const UserEntity(
+          id: 'user-1',
+          username: 'lisa',
+          profileImageId: 'old-image',
+        ),
       );
       final completer = Completer<Either<Failure, UserEntity>>();
       when(
@@ -362,9 +372,15 @@ void main() {
         () => dio.get<Map<String, dynamic>>('/v1/core/people/user-1'),
       ).thenAnswer((_) async {
         profileLoads++;
+        final profileImageId = profileLoads == 1 ? 'old-image' : 'image-123';
         return Response<Map<String, dynamic>>(
           requestOptions: RequestOptions(path: '/v1/core/people/user-1'),
-          data: {'id': 'user-1', 'fullName': 'Lisa Silva', 'gender': 'FEMALE'},
+          data: {
+            'id': 'user-1',
+            'fullName': 'Lisa Silva',
+            'gender': 'FEMALE',
+            'profileImageId': profileImageId,
+          },
         );
       });
 
@@ -381,6 +397,20 @@ void main() {
         fireImmediately: true,
       );
       addTearDown(submitSubscription.close);
+      final oldMediaSubscription = container.listen(
+        mediaImageUrlProvider('old-image'),
+        (previous, next) {},
+        fireImmediately: true,
+      );
+      addTearDown(oldMediaSubscription.close);
+      final newMediaSubscription = container.listen(
+        mediaImageUrlProvider('image-123'),
+        (previous, next) {},
+        fireImmediately: true,
+      );
+      addTearDown(newMediaSubscription.close);
+      await container.read(mediaImageUrlProvider('old-image').future);
+      await container.read(mediaImageUrlProvider('image-123').future);
 
       final actionFuture = container
           .read(editLoggedUserActionsProvider)
@@ -414,6 +444,10 @@ void main() {
       );
       expect(profile.profileImageId, 'image-123');
       expect(profileLoads, 2);
+      await container.read(mediaImageUrlProvider('old-image').future);
+      await container.read(mediaImageUrlProvider('image-123').future);
+      expect(mediaLoads['old-image'], 2);
+      expect(mediaLoads['image-123'], 2);
     },
   );
 
@@ -444,56 +478,85 @@ void main() {
     );
   });
 
-  test('profile image delete marks data and reloads auth profile', () async {
-    final repository = _MockAuthRepository();
-    final dio = _MockDio();
-    var authLoads = 0;
-    var profileLoads = 0;
-    final container = ProviderContainer(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(repository),
-        dioClientProvider.overrideWithValue(dio),
-      ],
-    );
-    addTearDown(container.dispose);
-
-    when(() => repository.getCurrentUser()).thenAnswer((_) async {
-      authLoads++;
-      return const UserEntity(id: 'user-1', username: 'lisa');
-    });
-    when(
-      () => repository.deleteLoggedUserProfileImage(),
-    ).thenAnswer((_) async => const Right(null));
-    when(
-      () => dio.get<Map<String, dynamic>>('/v1/core/people/user-1'),
-    ).thenAnswer((_) async {
-      profileLoads++;
-      return Response<Map<String, dynamic>>(
-        requestOptions: RequestOptions(path: '/v1/core/people/user-1'),
-        data: {'id': 'user-1', 'fullName': 'Lisa Silva', 'gender': 'FEMALE'},
+  test(
+    'profile image delete marks data, reloads auth profile and invalidates media',
+    () async {
+      final repository = _MockAuthRepository();
+      final dio = _MockDio();
+      var authLoads = 0;
+      var profileLoads = 0;
+      final mediaLoads = <String, int>{};
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(repository),
+          dioClientProvider.overrideWithValue(dio),
+          mediaImageUrlProvider.overrideWith((ref, imageId) async {
+            mediaLoads[imageId] = (mediaLoads[imageId] ?? 0) + 1;
+            return 'https://cdn.example/$imageId/${mediaLoads[imageId]}';
+          }),
+        ],
       );
-    });
+      addTearDown(container.dispose);
 
-    final subscription = container.listen(
-      editLoggedUserInitialDataProvider,
-      (previous, next) {},
-      fireImmediately: true,
-    );
-    addTearDown(subscription.close);
-    await container.read(editLoggedUserInitialDataProvider.future);
+      when(() => repository.getCurrentUser()).thenAnswer((_) async {
+        authLoads++;
+        return UserEntity(
+          id: 'user-1',
+          username: 'lisa',
+          profileImageId: authLoads == 1 ? 'old-image' : null,
+        );
+      });
+      when(
+        () => repository.deleteLoggedUserProfileImage(),
+      ).thenAnswer((_) async => const Right(null));
+      when(
+        () => dio.get<Map<String, dynamic>>('/v1/core/people/user-1'),
+      ).thenAnswer((_) async {
+        profileLoads++;
+        final data = <String, dynamic>{
+          'id': 'user-1',
+          'fullName': 'Lisa Silva',
+          'gender': 'FEMALE',
+        };
+        if (profileLoads == 1) {
+          data['profileImageId'] = 'old-image';
+        }
+        return Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/v1/core/people/user-1'),
+          data: data,
+        );
+      });
 
-    final result = await container
-        .read(editLoggedUserActionsProvider)
-        .deleteLoggedUserProfileImage();
+      final subscription = container.listen(
+        editLoggedUserInitialDataProvider,
+        (previous, next) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+      await container.read(editLoggedUserInitialDataProvider.future);
+      final mediaSubscription = container.listen(
+        mediaImageUrlProvider('old-image'),
+        (previous, next) {},
+        fireImmediately: true,
+      );
+      addTearDown(mediaSubscription.close);
+      await container.read(mediaImageUrlProvider('old-image').future);
 
-    expect(result.isRight(), isTrue);
-    expect(
-      container.read(loggedUserProfileImageSubmitProvider),
-      const AsyncValue<void>.data(null),
-    );
+      final result = await container
+          .read(editLoggedUserActionsProvider)
+          .deleteLoggedUserProfileImage();
 
-    await container.read(editLoggedUserInitialDataProvider.future);
-    expect(authLoads, 2);
-    expect(profileLoads, 2);
-  });
+      expect(result.isRight(), isTrue);
+      expect(
+        container.read(loggedUserProfileImageSubmitProvider),
+        const AsyncValue<void>.data(null),
+      );
+
+      await container.read(editLoggedUserInitialDataProvider.future);
+      await container.read(mediaImageUrlProvider('old-image').future);
+      expect(authLoads, 2);
+      expect(profileLoads, 2);
+      expect(mediaLoads['old-image'], 2);
+    },
+  );
 }

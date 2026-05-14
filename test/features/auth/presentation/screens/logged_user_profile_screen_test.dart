@@ -1,14 +1,20 @@
 import 'dart:async';
 
 import 'package:client/core/address/address_value.dart';
+import 'package:client/core/media/media_providers.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/auth/domain/entities/logged_user_profile_entity.dart';
 import 'package:client/features/auth/presentation/screens/logged_user_profile_screen.dart';
 import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+final _profileStateProvider = StateProvider<LoggedUserProfileEntity>(
+  (ref) => _fullProfile(),
+);
 
 void main() {
   Widget buildApp({
@@ -150,9 +156,62 @@ void main() {
 
     expect(find.text('Tela de edição de foto'), findsOneWidget);
   });
+
+  testWidgets('avatar do resumo muda quando o provider atualiza', (
+    tester,
+  ) async {
+    final resolvedImageIds = <String>[];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          _profileStateProvider.overrideWith(
+            (ref) => _fullProfile(profileImageId: 'old-image'),
+          ),
+          editLoggedUserInitialDataProvider.overrideWith(
+            (ref) async => ref.watch(_profileStateProvider),
+          ),
+          mediaImageUrlProvider.overrideWith((ref, imageId) async {
+            resolvedImageIds.add(imageId);
+            return 'https://cdn.example/$imageId.png';
+          }),
+        ],
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, ref, child) {
+              return Scaffold(
+                body: Column(
+                  children: [
+                    FilledButton(
+                      onPressed: () {
+                        ref.read(_profileStateProvider.notifier).state =
+                            _fullProfile(profileImageId: 'new-image');
+                      },
+                      child: const Text('Atualizar foto'),
+                    ),
+                    const Expanded(child: LoggedUserProfileScreen()),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(resolvedImageIds, contains('old-image'));
+
+    await tester.tap(find.text('Atualizar foto'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(resolvedImageIds, contains('new-image'));
+  });
 }
 
-LoggedUserProfileEntity _fullProfile() {
+LoggedUserProfileEntity _fullProfile({String? profileImageId}) {
   return LoggedUserProfileEntity(
     id: 'user-1',
     fullName: 'Lisa Silva',
@@ -171,6 +230,7 @@ LoggedUserProfileEntity _fullProfile() {
       number: '123',
       complement: 'Apto 4',
     ),
+    profileImageId: profileImageId,
   );
 }
 

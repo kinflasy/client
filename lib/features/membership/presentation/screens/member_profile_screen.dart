@@ -1,5 +1,6 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/presentation/widgets/user_avatar.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/presentation/widgets/church_shared_widgets.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
@@ -57,6 +58,7 @@ class _LoadingState extends StatelessWidget {
                       title: initialMember!.fullName,
                       subtitle: initialMember!.nickname,
                       type: null,
+                      profileImageId: initialMember!.profileImageId,
                     ),
                   ),
                   const SliverFillRemaining(
@@ -96,6 +98,7 @@ class _ProfileContent extends StatelessWidget {
                 title: profile.fullName,
                 subtitle: profile.nickname,
                 type: profile.personType,
+                profileImageId: profile.profileImageId,
               ),
             ),
             if (profile.age != null || _hasText(profile.gender))
@@ -203,11 +206,13 @@ class _Header extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.type,
+    this.profileImageId,
   });
 
   final String title;
   final String? subtitle;
   final PersonType? type;
+  final String? profileImageId;
 
   @override
   Widget build(BuildContext context) {
@@ -226,16 +231,18 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: Colors.white.withValues(alpha: 0.18),
-                child: Text(
-                  churchInitials(title),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
+              Container(
+                width: 68,
+                height: 68,
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.22),
+                ),
+                child: UserAvatar(
+                  displayName: title,
+                  radius: 32,
+                  profileImageId: profileImageId,
                 ),
               ),
               const SizedBox(height: 16),

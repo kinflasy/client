@@ -1,4 +1,5 @@
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/media/media_providers.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/domain/enums/person_type.dart';
@@ -32,6 +33,7 @@ void main() {
       ),
       affiliation: 'MEMBER',
       entryDate: DateTime(2020, 4, 10),
+      profileImageId: 'image-1',
       integrations: const [
         MemberProfileIntegrationEntity(
           departmentId: 'dept-1',
@@ -63,6 +65,9 @@ void main() {
           memberProfileProvider.overrideWith(
             (ref, personId) async => buildUserProfile(),
           ),
+          mediaImageUrlProvider.overrideWith(
+            (ref, imageId) async => 'https://cdn.example/$imageId.png',
+          ),
         ],
         child: const MaterialApp(
           home: MemberProfileScreen(personId: 'person-1'),
@@ -80,6 +85,7 @@ void main() {
     await tester.scrollUntilVisible(find.textContaining('Louvor'), 200);
     expect(find.textContaining('Louvor'), findsOneWidget);
     expect(find.text('Editar cadastro'), findsNothing);
+    expect(find.byType(Image), findsOneWidget);
   });
 
   testWidgets('renders inactive profile with edit button only', (tester) async {
@@ -159,6 +165,9 @@ void main() {
         overrides: [
           memberProfileProvider.overrideWith(
             (ref, personId) async => buildUserProfile(),
+          ),
+          mediaImageUrlProvider.overrideWith(
+            (ref, imageId) async => 'https://cdn.example/$imageId.png',
           ),
         ],
         child: MaterialApp.router(routerConfig: router),

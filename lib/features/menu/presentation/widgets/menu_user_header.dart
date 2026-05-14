@@ -1,36 +1,48 @@
+import 'package:client/core/presentation/widgets/user_avatar.dart';
+import 'package:client/features/auth/domain/entities/logged_user_profile_entity.dart';
 import 'package:client/features/auth/domain/entities/user_entity.dart';
+import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class MenuUserHeader extends StatelessWidget {
+class MenuUserHeader extends ConsumerWidget {
   const MenuUserHeader({super.key, required this.authState});
 
   final AsyncValue<UserEntity?> authState;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return switch (authState) {
       AsyncLoading<UserEntity?>() => const MenuUserHeaderLoading(),
       AsyncError<UserEntity?>() => const MenuUserHeaderContent(user: null),
-      AsyncData<UserEntity?>(:final value) => MenuUserHeaderContent(
-        user: value,
-      ),
+      AsyncData<UserEntity?>(:final value) => _buildContent(ref, value),
     };
+  }
+
+  Widget _buildContent(WidgetRef ref, UserEntity? user) {
+    if (user == null) return const MenuUserHeaderContent(user: null);
+
+    final profile = ref.watch(editLoggedUserInitialDataProvider).asData?.value;
+
+    return MenuUserHeaderContent(
+      user: user,
+      profile: profile?.id == user.id ? profile : null,
+    );
   }
 }
 
 class MenuUserHeaderContent extends StatelessWidget {
-  const MenuUserHeaderContent({super.key, required this.user});
+  const MenuUserHeaderContent({super.key, required this.user, this.profile});
 
   final UserEntity? user;
+  final LoggedUserProfileEntity? profile;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final displayName = _displayName(user);
-    final initials = _userInitials(user);
+    final displayName = _displayName(user, profile);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -40,16 +52,10 @@ class MenuUserHeaderContent extends StatelessWidget {
       ),
       child: Column(
         children: [
-          CircleAvatar(
+          UserAvatar(
+            displayName: displayName,
             radius: 40,
-            backgroundColor: colorScheme.primaryContainer,
-            child: Text(
-              initials,
-              style: textTheme.titleLarge?.copyWith(
-                color: colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            profileImageId: _profileImageId(user, profile),
           ),
           const SizedBox(height: 16),
           Text(
@@ -104,25 +110,26 @@ class MenuUserHeaderLoading extends StatelessWidget {
   }
 }
 
-String _displayName(UserEntity? user) {
-  return user?.nickname?.trim().isNotEmpty == true
+String _displayName(UserEntity? user, LoggedUserProfileEntity? profile) {
+  return profile?.nickname?.trim().isNotEmpty == true
+      ? profile!.nickname!.trim()
+      : profile?.fullName.trim().isNotEmpty == true
+      ? profile!.fullName.trim()
+      : user?.nickname?.trim().isNotEmpty == true
       ? user!.nickname!.trim()
       : user?.fullName?.trim().isNotEmpty == true
       ? user!.fullName!.trim()
       : user?.username.trim().isNotEmpty == true
       ? user!.username.trim()
-      : 'UsuÃ¡rio';
+      : 'Usuário';
 }
 
-String _userInitials(UserEntity? user) {
-  final rawName = _displayName(user);
-  final parts = rawName
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .take(2)
-      .toList();
+String? _profileImageId(UserEntity? user, LoggedUserProfileEntity? profile) {
+  final profileImageId = profile?.profileImageId?.trim();
+  if (profileImageId != null && profileImageId.isNotEmpty) {
+    return profileImageId;
+  }
 
-  return parts.isEmpty
-      ? 'U'
-      : parts.map((part) => part[0].toUpperCase()).join();
+  final authImageId = user?.profileImageId?.trim();
+  return authImageId == null || authImageId.isEmpty ? null : authImageId;
 }

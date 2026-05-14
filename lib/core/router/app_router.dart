@@ -1,4 +1,5 @@
 import 'package:client/core/router/app_routes.dart';
+import 'package:client/features/auth/presentation/screens/edit_logged_user_profile_image_screen.dart';
 import 'package:client/features/auth/presentation/screens/edit_logged_user_screen.dart';
 import 'package:client/features/auth/presentation/screens/logged_user_profile_screen.dart';
 import 'package:client/features/auth/presentation/screens/login_screen.dart';
@@ -282,7 +283,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'editar-informacoes/foto',
                     name: AppRoutes.homeMenuEditProfilePhotoName,
                     builder: (context, state) =>
-                        const LoggedUserProfilePhotoPlaceholderScreen(),
+                        const EditLoggedUserProfileImageScreen(),
                   ),
                 ],
               ),

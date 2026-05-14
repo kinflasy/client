@@ -1,4 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/media/media_providers.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
@@ -19,6 +20,7 @@ void main() {
       affiliation: 'MEMBER',
       gender: 'FEMALE',
       birthDate: DateTime(1996, 4, 10),
+      profileImageId: 'image-1',
     ),
     UnitMemberEntity(
       membershipId: '2',
@@ -41,6 +43,9 @@ void main() {
           ),
         ),
         rawUnitMembersProvider.overrideWith((ref, unitId) async => members),
+        mediaImageUrlProvider.overrideWith(
+          (ref, imageId) async => 'https://cdn.example/$imageId.png',
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -56,6 +61,7 @@ void main() {
     expect(find.text('1 pessoas'), findsOneWidget);
     expect(find.text('Ana Maria'), findsOneWidget);
     expect(find.text('Bruno Lima'), findsNothing);
+    expect(find.byType(Image), findsOneWidget);
 
     await tester.tap(find.byTooltip('Filtrar membros'));
     await tester.pumpAndSettle();
@@ -116,6 +122,9 @@ void main() {
           ),
         ),
         rawUnitMembersProvider.overrideWith((ref, unitId) async => members),
+        mediaImageUrlProvider.overrideWith(
+          (ref, imageId) async => 'https://cdn.example/$imageId.png',
+        ),
       ],
     );
     addTearDown(container.dispose);

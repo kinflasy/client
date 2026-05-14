@@ -27,6 +27,7 @@ abstract class UnitMemberPersonModel with _$UnitMemberPersonModel {
     String? birthDate,
     String? phone,
     String? addressId,
+    String? profileImageId,
   }) = _UnitMemberPersonModel;
 
   factory UnitMemberPersonModel.fromJson(Map<String, dynamic> json) =>
@@ -46,5 +47,6 @@ extension UnitMemberModelX on UnitMemberModel {
         : null,
     phone: person.phone,
     addressId: person.addressId,
+    profileImageId: person.profileImageId,
   );
 }

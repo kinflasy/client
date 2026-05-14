@@ -1,4 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/presentation/widgets/user_avatar.dart';
 import 'package:flutter/material.dart';
 
 class MemberSummaryCard extends StatelessWidget {
@@ -9,6 +10,7 @@ class MemberSummaryCard extends StatelessWidget {
     required this.gender,
     this.birthDate,
     this.age,
+    this.profileImageId,
     this.onTap,
   });
 
@@ -17,6 +19,7 @@ class MemberSummaryCard extends StatelessWidget {
   final String gender;
   final DateTime? birthDate;
   final int? age;
+  final String? profileImageId;
   final VoidCallback? onTap;
 
   @override
@@ -26,7 +29,6 @@ class MemberSummaryCard extends StatelessWidget {
     final subtitle = resolvedAge == null
         ? translatedAffiliation
         : '$translatedAffiliation · $resolvedAge anos';
-    final isMale = gender.toUpperCase() == 'MALE';
 
     return Container(
       decoration: BoxDecoration(
@@ -36,12 +38,10 @@ class MemberSummaryCard extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-          child: Icon(
-            isMale ? Icons.person : Icons.person_2,
-            color: AppColors.primary,
-          ),
+        leading: UserAvatar(
+          displayName: fullName,
+          radius: 20,
+          profileImageId: profileImageId,
         ),
         title: Text(
           fullName,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/media/media_providers.dart';
 import 'package:client/features/department/data/models/integration_request_model.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
@@ -78,6 +79,29 @@ void main() {
     expect(find.byTooltip('Remover Ana Mária'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
     expect(find.text('Adicionar 1'), findsOneWidget);
+  });
+
+  testWidgets('shows member profile image in list and selected strip', (
+    tester,
+  ) async {
+    await _pumpScreen(tester, const [
+      UnitMemberEntity(
+        membershipId: 'membership-1',
+        personId: 'person-1',
+        fullName: 'Ana Maria',
+        affiliation: 'MEMBER',
+        gender: 'FEMALE',
+        profileImageId: 'image-1',
+      ),
+    ]);
+    await tester.pump();
+
+    expect(find.byType(Image), findsOneWidget);
+
+    await tester.tap(find.text('Ana Maria'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Image), findsNWidgets(2));
   });
 
   testWidgets('removing selected member from strip updates selection', (
@@ -360,6 +384,9 @@ Future<void> _pumpScreen(
         rawUnitMembersProvider.overrideWith((ref, unitId) async => members),
         departmentParticipantsProvider.overrideWith(
           (ref, departmentId) async => participants,
+        ),
+        mediaImageUrlProvider.overrideWith(
+          (ref, imageId) async => 'https://cdn.example/$imageId.png',
         ),
       ],
       child: const MaterialApp(

@@ -58,7 +58,7 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
           icon: Icons.error_outline,
           title: error is Failure
               ? error.message
-              : 'NÃ£o foi possível carregar a unidade ativa.',
+              : 'Não foi possível carregar a unidade ativa.',
         ),
         data: (membership) {
           final unitId = membership?.unitId;
@@ -352,7 +352,7 @@ class _MemberFilterSheetState extends ConsumerState<_MemberFilterSheet> {
                 ),
               ),
               const SizedBox(height: 20),
-              const _SectionTitle('FiliaÃ§Ã£o'),
+              const _SectionTitle('Filiação'),
               const SizedBox(height: 8),
               for (final affiliation in _allAffiliations)
                 SwitchListTile(
@@ -395,7 +395,7 @@ class _MemberFilterSheetState extends ConsumerState<_MemberFilterSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              const _SectionTitle('Faixa etÃ¡ria'),
+              const _SectionTitle('Faixa etária'),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Filtrar por idade'),

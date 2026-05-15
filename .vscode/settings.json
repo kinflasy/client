@@ -4,6 +4,7 @@
     },
     "conventionalCommits.scopes": [
         "event",
-        "user"
+        "user",
+        "member"
     ]
 }

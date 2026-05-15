@@ -105,6 +105,10 @@ Map<String, dynamic> _normalizeUnitMemberJson(Map<String, dynamic> json) {
       'birthDate': _optionalString(person, ['birthDate', 'birth_date']),
       'phone': _optionalString(person, ['phone']),
       'addressId': _optionalString(person, ['addressId', 'address_id']),
+      'profileImageId': _optionalString(person, [
+        'profileImageId',
+        'profile_image_id',
+      ]),
     },
   };
 }

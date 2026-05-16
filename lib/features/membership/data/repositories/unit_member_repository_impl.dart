@@ -88,7 +88,7 @@ class UnitMemberRepositoryImpl implements UnitMemberRepository {
 Map<String, dynamic> _normalizeUnitMemberJson(Map<String, dynamic> json) {
   final personRaw = json['person'];
   if (personRaw is! Map) {
-    throw const FormatException('Campo person ausente ou invalido');
+    throw const FormatException('Campo person ausente ou inválido');
   }
 
   final person = Map<String, dynamic>.from(personRaw);
@@ -116,7 +116,7 @@ Map<String, dynamic> _normalizeUnitMemberJson(Map<String, dynamic> json) {
 String _requiredString(Map<String, dynamic> json, List<String> keys) {
   final value = _firstValue(json, keys);
   if (value == null) {
-    throw FormatException('Campo obrigatorio ausente: ${keys.join('/')}');
+    throw FormatException('Campo obrigatório ausente: ${keys.join('/')}');
   }
   if (value is String) return value;
   return value.toString();

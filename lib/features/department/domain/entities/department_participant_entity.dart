@@ -1,10 +1,14 @@
 import 'package:equatable/equatable.dart';
+import 'package:client/core/domain/enums/integration_type.dart';
 
 class DepartmentParticipantEntity extends Equatable {
   const DepartmentParticipantEntity({
     required this.personId,
+    required this.membershipId,
+    required this.integrationType,
     this.nickname,
     this.username,
+    this.profileImageId,
     required this.affiliation,
     required this.gender,
     this.birthDate,
@@ -12,8 +16,11 @@ class DepartmentParticipantEntity extends Equatable {
   });
 
   final String personId;
+  final String membershipId;
+  final IntegrationType integrationType;
   final String? nickname;
   final String? username;
+  final String? profileImageId;
   final String affiliation;
   final String gender;
   final DateTime? birthDate;
@@ -36,8 +43,11 @@ class DepartmentParticipantEntity extends Equatable {
   @override
   List<Object?> get props => [
     personId,
+    membershipId,
+    integrationType,
     nickname,
     username,
+    profileImageId,
     affiliation,
     gender,
     birthDate,

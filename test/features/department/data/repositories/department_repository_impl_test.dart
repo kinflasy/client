@@ -1,4 +1,5 @@
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/features/department/data/datasources/department_api.dart';
 import 'package:client/features/department/data/models/integration_request_model.dart';
 import 'package:client/features/department/data/repositories/department_repository_impl.dart';
@@ -76,6 +77,7 @@ void main() {
                   'id': 'person-1',
                   'nickname': 'Maria',
                   'username': 'maria.silva',
+                  'profileImageId': 'profile-image-1',
                   'gender': 'FEMALE',
                   'birthDate': '1990-05-12T00:00:00.000Z',
                   'age': 34,
@@ -107,8 +109,11 @@ void main() {
         expect(result.isRight(), isTrue);
         result.match((_) => fail('expected success'), (participants) {
           expect(participants, hasLength(2));
+          expect(participants.first.membershipId, 'membership-1');
+          expect(participants.first.integrationType, IntegrationType.leader);
           expect(participants.first.nickname, 'Maria');
           expect(participants.first.username, 'maria.silva');
+          expect(participants.first.profileImageId, 'profile-image-1');
           expect(participants.first.displayName, 'Maria');
           expect(
             participants.first.birthDate,
@@ -116,6 +121,8 @@ void main() {
           );
           expect(participants.first.age, 34);
           expect(participants.last.personId, 'person-2');
+          expect(participants.last.membershipId, 'membership-2');
+          expect(participants.last.integrationType, IntegrationType.observer);
           expect(participants.last.nickname, isNull);
           expect(participants.last.username, 'joao.souza');
           expect(participants.last.displayName, 'joao.souza');
@@ -124,6 +131,38 @@ void main() {
         });
       },
     );
+
+    test('maps assistant and unknown integration types safely', () async {
+      when(() => api.getParticipants('dep-1')).thenAnswer(
+        (_) async => [
+          {
+            'membership': {
+              'id': 'membership-1',
+              'affiliation': 'MEMBER',
+              'person': {'id': 'person-1', 'gender': 'FEMALE'},
+            },
+            'type': 'ASSISTANT',
+          },
+          {
+            'membership': {
+              'id': 'membership-2',
+              'affiliation': 'MEMBER',
+              'person': {'id': 'person-2', 'gender': 'MALE'},
+            },
+            'type': 'UNKNOWN',
+          },
+        ],
+      );
+
+      final result = await repository.getParticipants('dep-1');
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (participants) {
+        expect(participants, hasLength(2));
+        expect(participants.first.integrationType, IntegrationType.assistant);
+        expect(participants.last.integrationType, IntegrationType.observer);
+      });
+    });
 
     test(
       'uses neutral display name when nickname and username are absent',

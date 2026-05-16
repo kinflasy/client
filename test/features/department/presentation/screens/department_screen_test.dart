@@ -2,14 +2,18 @@ import 'package:client/core/domain/enums/affiliation.dart';
 import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/media/media_providers.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
 import 'package:client/features/department/presentation/screens/department_screen.dart';
+import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/department/providers/department_providers.dart';
+import 'package:client/features/membership/data/models/person_profile_model.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
+import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,6 +107,8 @@ void main() {
       (_) async => const Right([
         DepartmentParticipantEntity(
           personId: 'person-1',
+          membershipId: 'membership-1',
+          integrationType: IntegrationType.integrant,
           nickname: 'Maria',
           affiliation: 'MEMBER',
           gender: 'FEMALE',
@@ -311,6 +317,8 @@ void main() {
       (_) async => const Right([
         DepartmentParticipantEntity(
           personId: 'person-1',
+          membershipId: 'membership-1',
+          integrationType: IntegrationType.integrant,
           nickname: 'Maria',
           affiliation: 'MEMBER',
           gender: 'FEMALE',
@@ -355,6 +363,61 @@ void main() {
     expect(find.text('Adicionar participantes'), findsOneWidget);
   });
 
+  testWidgets('opens participant bottom sheet from participant card', (
+    tester,
+  ) async {
+    await _pumpParticipantsTab(
+      tester: tester,
+      repository: repository,
+      permissions: _assistantPermissions,
+      extraOverrides: [
+        departmentParticipantPersonProvider.overrideWith(
+          (ref, personId) async => const PersonProfileModel(
+            type: PersonType.user,
+            id: 'person-1',
+            fullName: 'Maria Silva',
+            nickname: 'Maria',
+            gender: 'FEMALE',
+            phone: '(85) 99999-0000',
+          ),
+        ),
+      ],
+    );
+
+    await tester.tap(find.text('Maria'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('(85) 99999-0000'), findsOneWidget);
+    expect(find.text('Integrante'), findsOneWidget);
+  });
+
+  testWidgets('passes profile image id to participant card', (tester) async {
+    await _pumpParticipantsTab(
+      tester: tester,
+      repository: repository,
+      permissions: _assistantPermissions,
+      participants: const [
+        DepartmentParticipantEntity(
+          personId: 'person-1',
+          membershipId: 'membership-1',
+          integrationType: IntegrationType.integrant,
+          nickname: 'Maria',
+          affiliation: 'MEMBER',
+          gender: 'FEMALE',
+          profileImageId: 'image-1',
+        ),
+      ],
+      extraOverrides: [
+        mediaImageUrlProvider.overrideWith(
+          (ref, imageId) async => 'https://cdn.example/$imageId.png',
+        ),
+      ],
+    );
+    await tester.pump();
+
+    expect(find.byType(Image), findsOneWidget);
+  });
+
   testWidgets('uses username when participant nickname is blank', (
     tester,
   ) async {
@@ -365,6 +428,8 @@ void main() {
       participants: const [
         DepartmentParticipantEntity(
           personId: 'person-1',
+          membershipId: 'membership-1',
+          integrationType: IntegrationType.integrant,
           nickname: ' ',
           username: 'maria.silva',
           affiliation: 'MEMBER',
@@ -387,6 +452,8 @@ void main() {
       participants: const [
         DepartmentParticipantEntity(
           personId: 'person-1',
+          membershipId: 'membership-1',
+          integrationType: IntegrationType.integrant,
           affiliation: 'MEMBER',
           gender: 'FEMALE',
         ),
@@ -474,9 +541,12 @@ Future<void> _pumpParticipantsTab({
   required WidgetTester tester,
   required DepartmentRepository repository,
   required SessionPermissions permissions,
+  List extraOverrides = const [],
   List<DepartmentParticipantEntity> participants = const [
     DepartmentParticipantEntity(
       personId: 'person-1',
+      membershipId: 'membership-1',
+      integrationType: IntegrationType.integrant,
       nickname: 'Maria',
       affiliation: 'MEMBER',
       gender: 'FEMALE',
@@ -506,6 +576,7 @@ Future<void> _pumpParticipantsTab({
           (ref, request) async => const [],
         ),
         sessionPermissionsProvider.overrideWith((ref) async => permissions),
+        ...extraOverrides,
       ],
       child: const MaterialApp(
         home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
@@ -536,6 +607,8 @@ void _stubParticipants(DepartmentRepository repository) {
     (_) async => const Right([
       DepartmentParticipantEntity(
         personId: 'person-1',
+        membershipId: 'membership-1',
+        integrationType: IntegrationType.integrant,
         nickname: 'Maria',
         affiliation: 'MEMBER',
         gender: 'FEMALE',

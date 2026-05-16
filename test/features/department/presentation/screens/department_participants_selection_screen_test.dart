@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/media/media_providers.dart';
 import 'package:client/features/department/data/models/integration_request_model.dart';
@@ -158,6 +159,8 @@ void main() {
       participants: const [
         DepartmentParticipantEntity(
           personId: 'person-1',
+          membershipId: 'membership-1',
+          integrationType: IntegrationType.integrant,
           nickname: 'Aninha',
           affiliation: 'MEMBER',
           gender: 'FEMALE',
@@ -208,12 +211,16 @@ void main() {
       participants: const [
         DepartmentParticipantEntity(
           personId: 'person-1',
+          membershipId: 'membership-1',
+          integrationType: IntegrationType.integrant,
           nickname: 'Aninha',
           affiliation: 'MEMBER',
           gender: 'FEMALE',
         ),
         DepartmentParticipantEntity(
           personId: 'person-2',
+          membershipId: 'membership-2',
+          integrationType: IntegrationType.integrant,
           username: 'bruno.lima',
           affiliation: 'MEMBER',
           gender: 'MALE',

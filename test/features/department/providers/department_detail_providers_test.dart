@@ -13,6 +13,9 @@ import 'package:client/features/department/providers/department_detail_providers
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
+import 'package:client/features/membership/domain/enums/person_type.dart';
+import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
+import 'package:client/features/membership/data/models/person_profile_model.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +24,9 @@ import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockDepartmentRepository extends Mock implements DepartmentRepository {}
+
+class _MockMemberProfileRepository extends Mock
+    implements MemberProfileRepository {}
 
 class _FakeIntegrationRequestModel extends Fake
     implements IntegrationRequestModel {}
@@ -50,6 +56,7 @@ Future<T> _readFutureProvider<T>(
 
 void main() {
   late _MockDepartmentRepository repository;
+  late _MockMemberProfileRepository memberProfileRepository;
   late ProviderContainer container;
 
   setUpAll(() {
@@ -58,9 +65,13 @@ void main() {
 
   setUp(() {
     repository = _MockDepartmentRepository();
+    memberProfileRepository = _MockMemberProfileRepository();
     container = ProviderContainer(
       overrides: [
         departmentRepositoryProvider.overrideWithValue(repository),
+        memberProfileRepositoryProvider.overrideWithValue(
+          memberProfileRepository,
+        ),
         activeMembershipProvider.overrideWith(
           (ref) async => const MembershipEntity(
             id: 'active-membership',
@@ -117,6 +128,8 @@ void main() {
         (_) async => const Right([
           DepartmentParticipantEntity(
             personId: 'person-1',
+            membershipId: 'membership-1',
+            integrationType: IntegrationType.integrant,
             nickname: 'Maria',
             affiliation: 'MEMBER',
             gender: 'FEMALE',
@@ -154,6 +167,54 @@ void main() {
 
       await expectLater(
         _readFutureProvider(container, departmentParticipantsProvider('dep-1')),
+        throwsA(isA<NetworkFailure>()),
+      );
+    });
+  });
+
+  group('departmentParticipantPersonProvider', () {
+    test('returns the lean person details used by the sheet', () async {
+      when(
+        () => memberProfileRepository.getPersonProfile('person-1'),
+      ).thenAnswer(
+        (_) async => const Right(
+          PersonProfileModel(
+            type: PersonType.user,
+            id: 'person-1',
+            fullName: 'Maria Silva',
+            nickname: 'Maria',
+            gender: 'FEMALE',
+            phone: '(85) 99999-0000',
+            profileImageId: 'image-1',
+          ),
+        ),
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentParticipantPersonProvider('person-1'),
+      );
+
+      expect(result.nickname, 'Maria');
+      expect(result.phone, '(85) 99999-0000');
+      expect(result.profileImageId, 'image-1');
+      verify(
+        () => memberProfileRepository.getPersonProfile('person-1'),
+      ).called(1);
+    });
+
+    test('surfaces repository failure', () async {
+      when(
+        () => memberProfileRepository.getPersonProfile('person-1'),
+      ).thenAnswer(
+        (_) async => const Left(NetworkFailure('Falha ao carregar pessoa')),
+      );
+
+      await expectLater(
+        _readFutureProvider(
+          container,
+          departmentParticipantPersonProvider('person-1'),
+        ),
         throwsA(isA<NetworkFailure>()),
       );
     });

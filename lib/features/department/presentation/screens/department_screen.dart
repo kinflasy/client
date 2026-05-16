@@ -6,6 +6,7 @@ import 'package:client/features/calendar/presentation/widgets/event_detail_botto
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
+import 'package:client/features/department/presentation/widgets/department_participant_bottom_sheet.dart';
 import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/membership/presentation/widgets/member_summary_card.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
@@ -348,6 +349,11 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
                     gender: participant.gender,
                     birthDate: participant.birthDate,
                     age: participant.age,
+                    profileImageId: participant.profileImageId,
+                    onTap: () => showDepartmentParticipantBottomSheet(
+                      context,
+                      participant: participant,
+                    ),
                   );
                 },
               ),

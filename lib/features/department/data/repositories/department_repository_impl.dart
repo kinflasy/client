@@ -1,4 +1,5 @@
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/features/church/data/models/church_read_models.dart';
 import 'package:client/features/department/data/datasources/department_api.dart';
 import 'package:client/features/department/data/models/department_request_model.dart';
@@ -151,8 +152,13 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
 
     return DepartmentParticipantEntity(
       personId: person['id'] as String? ?? '',
+      membershipId: membership['id'] as String? ?? '',
+      integrationType: IntegrationType.fromString(
+        json['type'] as String? ?? '',
+      ),
       nickname: person['nickname'] as String?,
       username: person['username'] as String?,
+      profileImageId: person['profileImageId'] as String?,
       affiliation: membership['affiliation'] as String? ?? '',
       gender: person['gender'] as String? ?? '',
       birthDate: _parseDate(person['birthDate']),

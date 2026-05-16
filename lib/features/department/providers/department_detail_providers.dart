@@ -4,6 +4,7 @@ import 'package:client/features/department/domain/entities/add_department_partic
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
 import 'package:client/features/department/providers/department_providers.dart';
+import 'package:client/features/membership/data/models/person_profile_model.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,6 +37,19 @@ final departmentParticipantsProvider =
         (failure) => throw failure,
         (participants) => participants,
       );
+    });
+
+/// Carrega apenas os dados de pessoa necessários para a sheet de participante.
+///
+/// Este fluxo evita `memberProfileProvider`, que também busca membresia ativa,
+/// endereço e integrações — dados além do necessário para esta abertura.
+final departmentParticipantPersonProvider =
+    FutureProvider.family<PersonProfileModel, String>((ref, personId) async {
+      final result = await ref
+          .read(memberProfileRepositoryProvider)
+          .getPersonProfile(personId);
+
+      return result.fold((failure) => throw failure, (person) => person);
     });
 
 final addDepartmentParticipantsProvider =

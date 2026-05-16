@@ -93,6 +93,54 @@ void main() {
     expect(model.profileImageId, 'image-2');
   });
 
+  test('PersonProfileModel parses ISO birthDate', () {
+    final model = PersonProfileModel.fromJson({
+      'type': 'INACTIVE',
+      'id': 'person-3',
+      'fullName': 'Helena Costa',
+      'gender': 'FEMALE',
+      'birthDate': '1995-02-03',
+    });
+
+    expect(model.birthDate, DateTime(1995, 2, 3));
+  });
+
+  test('PersonProfileModel parses Jackson array birthDate', () {
+    final model = PersonProfileModel.fromJson({
+      'type': 'INACTIVE',
+      'id': 'person-4',
+      'fullName': 'Joao Silva',
+      'gender': 'MALE',
+      'birthDate': [1995, 2, 3],
+    });
+
+    expect(model.birthDate, DateTime(1995, 2, 3));
+  });
+
+  test('PersonProfileModel parses Java time map birthDate', () {
+    final model = PersonProfileModel.fromJson({
+      'type': 'INACTIVE',
+      'id': 'person-5',
+      'fullName': 'Livia Rocha',
+      'gender': 'FEMALE',
+      'birthDate': {'year': 1995, 'monthValue': 2, 'dayOfMonth': 3},
+    });
+
+    expect(model.birthDate, DateTime(1995, 2, 3));
+  });
+
+  test('PersonProfileModel parses snake_case birth_date', () {
+    final model = PersonProfileModel.fromJson({
+      'type': 'INACTIVE',
+      'id': 'person-6',
+      'fullName': 'Mateus Lima',
+      'gender': 'MALE',
+      'birth_date': '1995-02-03',
+    });
+
+    expect(model.birthDate, DateTime(1995, 2, 3));
+  });
+
   test(
     'loadMembershipIntegrations returns integrations from repository',
     () async {

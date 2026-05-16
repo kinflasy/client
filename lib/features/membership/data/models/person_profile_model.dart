@@ -1,3 +1,4 @@
+import 'package:client/core/utils/backend_date_parser.dart';
 import 'package:client/features/membership/domain/enums/person_type.dart';
 
 class PersonProfileModel {
@@ -34,10 +35,9 @@ class PersonProfileModel {
       throw const FormatException('Campo obrigatorio ausente: gender');
     }
 
-    final birthDateRaw = json['birthDate']?.toString();
-    final parsedBirthDate = birthDateRaw == null || birthDateRaw.isEmpty
-        ? null
-        : DateTime.tryParse(birthDateRaw);
+    final birthDateRaw = json.containsKey('birthDate')
+        ? json['birthDate']
+        : json['birth_date'];
 
     final ageRaw = json['age'];
     final parsedAge = switch (ageRaw) {
@@ -52,7 +52,7 @@ class PersonProfileModel {
       fullName: fullName,
       nickname: json['nickname']?.toString(),
       gender: gender,
-      birthDate: parsedBirthDate,
+      birthDate: parseBackendDate(birthDateRaw),
       phone: json['phone']?.toString(),
       addressId: json['addressId']?.toString(),
       age: parsedAge,

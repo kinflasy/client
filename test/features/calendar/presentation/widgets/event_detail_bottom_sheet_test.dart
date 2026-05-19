@@ -125,6 +125,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Editar'), findsOneWidget);
+    expect(find.text('Duplicar'), findsOneWidget);
     expect(find.text('Excluir'), findsOneWidget);
     expect(find.text('Trocar imagem'), findsNothing);
     expect(find.text('Adicionar imagem'), findsNothing);
@@ -146,6 +147,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Editar'), findsOneWidget);
+    expect(find.text('Duplicar'), findsOneWidget);
+    expect(find.text('Excluir'), findsOneWidget);
+  });
+
+  testWidgets('mostra ações para auxiliar do departamento do evento', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _build(
+        loadDetail: (_) async =>
+            _event(type: CalendarEventType.department, departmentId: 'dep-1'),
+        departmentRole: IntegrationType.assistant,
+        roleDepartmentId: 'dep-1',
+      ),
+    );
+
+    await tester.tap(find.text('Abrir detalhe'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar'), findsOneWidget);
+    expect(find.text('Duplicar'), findsOneWidget);
     expect(find.text('Excluir'), findsOneWidget);
   });
 
@@ -165,6 +187,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Editar'), findsNothing);
+    expect(find.text('Duplicar'), findsNothing);
     expect(find.text('Excluir'), findsNothing);
   });
 }

@@ -26,10 +26,16 @@ import 'package:go_router/go_router.dart';
 enum _EventOwnerScope { unit, department }
 
 class CreateEventScreen extends ConsumerStatefulWidget {
-  const CreateEventScreen({super.key, this.eventId, this.lockedDepartmentId});
+  const CreateEventScreen({
+    super.key,
+    this.eventId,
+    this.lockedDepartmentId,
+    this.duplicateFromEventId,
+  });
 
   final String? eventId;
   final String? lockedDepartmentId;
+  final String? duplicateFromEventId;
 
   @override
   ConsumerState<CreateEventScreen> createState() => _CreateEventScreenState();
@@ -53,8 +59,15 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   String? _initializedEventId;
 
   bool get _isEditing => widget.eventId != null;
+  bool get _isDuplicating => widget.duplicateFromEventId != null;
   bool get _isDepartmentLocked =>
       !_isEditing && widget.lockedDepartmentId != null;
+
+  String get _screenTitle {
+    if (_isEditing) return 'Editar evento';
+    if (_isDuplicating) return 'Duplicar evento';
+    return 'Criar evento';
+  }
 
   @override
   void dispose() {
@@ -197,7 +210,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(_isEditing ? 'Editar evento' : 'Criar evento'),
+        title: Text(_screenTitle),
         backgroundColor: AppColors.surface,
       ),
       body: _isEditing
@@ -220,6 +233,26 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                       isLoading,
                       event: event,
                     );
+                  },
+                )
+          : _isDuplicating
+          ? ref
+                .watch(
+                  calendarEventDetailProvider(widget.duplicateFromEventId!),
+                )
+                .when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, _) => _InlineStatus(
+                    icon: Icons.error_outline,
+                    title: error is Failure
+                        ? error.message
+                        : 'Não foi possível carregar o evento.',
+                    subtitle: 'Tente novamente em instantes.',
+                  ),
+                  data: (event) {
+                    _initializeForDuplicate(event);
+                    return _buildFormWithProfile(profileAsync, isLoading);
                   },
                 )
           : _buildFormWithProfile(profileAsync, isLoading),
@@ -254,6 +287,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             subtitle: 'Tente novamente em instantes.',
           ),
           data: (departments) {
+            final ownerSelectionLocked = _isEditing || _isDuplicating;
             if (_isDepartmentLocked) {
               _ownerScope = _EventOwnerScope.department;
               _selectedDepartmentId = widget.lockedDepartmentId;
@@ -261,6 +295,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             if (_selectedDepartmentId == null && departments.isNotEmpty) {
               _selectedDepartmentId = departments.first.id;
             }
+            final selectedDepartmentIsListed =
+                _selectedDepartmentId == null ||
+                departments.any(
+                  (department) => department.id == _selectedDepartmentId,
+                );
 
             return Form(
               key: _formKey,
@@ -325,7 +364,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                           child: Text('Departamento'),
                         ),
                       ],
-                      onChanged: isLoading || _isEditing
+                      onChanged: isLoading || ownerSelectionLocked
                           ? null
                           : (value) {
                               if (value == null) return;
@@ -338,15 +377,21 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     DropdownButtonFormField<String>(
                       initialValue: _selectedDepartmentId,
                       decoration: _inputDecoration('Departamento *'),
-                      items: departments
-                          .map(
-                            (department) => DropdownMenuItem(
-                              value: department.id,
-                              child: Text(department.name),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: isLoading || _isEditing
+                      items: [
+                        if (!selectedDepartmentIsListed &&
+                            _selectedDepartmentId != null)
+                          DropdownMenuItem(
+                            value: _selectedDepartmentId,
+                            child: const Text('Departamento original'),
+                          ),
+                        ...departments.map(
+                          (department) => DropdownMenuItem(
+                            value: department.id,
+                            child: Text(department.name),
+                          ),
+                        ),
+                      ],
+                      onChanged: isLoading || ownerSelectionLocked
                           ? null
                           : (value) =>
                                 setState(() => _selectedDepartmentId = value),
@@ -420,6 +465,31 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       TimeOfDay.fromDateTime(event.startDateTime),
     );
     _endDateController.text = formatBrazilianDate(event.endDateTime);
+    _endTimeController.text = formatBrazilianTime(
+      TimeOfDay.fromDateTime(event.endDateTime),
+    );
+    _ownerScope = event.type == CalendarEventType.department
+        ? _EventOwnerScope.department
+        : _EventOwnerScope.unit;
+    _selectedDepartmentId = event.departmentId ?? _selectedDepartmentId;
+    _visibilityRules = event.visibilityRules;
+    _endDateWasAutoFilled = false;
+    _pickedImage = null;
+    _dateTimeError = null;
+  }
+
+  void _initializeForDuplicate(CalendarEventEntity event) {
+    final initializationKey = 'duplicate:${event.id}';
+    if (_initializedEventId == initializationKey) return;
+
+    _initializedEventId = initializationKey;
+    _titleController.text = event.title;
+    _descriptionController.text = event.description ?? '';
+    _startDateController.clear();
+    _endDateController.clear();
+    _startTimeController.text = formatBrazilianTime(
+      TimeOfDay.fromDateTime(event.startDateTime),
+    );
     _endTimeController.text = formatBrazilianTime(
       TimeOfDay.fromDateTime(event.endDateTime),
     );

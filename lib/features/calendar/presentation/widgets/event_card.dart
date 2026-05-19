@@ -11,6 +11,7 @@ class EventCard extends StatelessWidget {
     required this.event,
     this.onTap,
     this.onEdit,
+    this.onDuplicate,
     this.onDelete,
     this.organizerLabel,
     this.unitAvatarDisplayName,
@@ -21,6 +22,7 @@ class EventCard extends StatelessWidget {
   final CalendarEventEntity event;
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
+  final VoidCallback? onDuplicate;
   final VoidCallback? onDelete;
   final String? organizerLabel;
   final String? unitAvatarDisplayName;
@@ -49,6 +51,7 @@ class EventCard extends StatelessWidget {
                   event.endDateTime,
                 ),
                 onEdit: onEdit,
+                onDuplicate: onDuplicate,
                 onDelete: onDelete,
                 unitAvatarDisplayName: unitAvatarDisplayName,
                 unitAvatarImageId: unitAvatarImageId,
@@ -99,6 +102,7 @@ class _EventOrganizerHeader extends StatelessWidget {
     required this.label,
     required this.dateLabel,
     required this.onEdit,
+    required this.onDuplicate,
     required this.onDelete,
     required this.unitAvatarDisplayName,
     required this.unitAvatarImageId,
@@ -108,6 +112,7 @@ class _EventOrganizerHeader extends StatelessWidget {
   final String? label;
   final String dateLabel;
   final VoidCallback? onEdit;
+  final VoidCallback? onDuplicate;
   final VoidCallback? onDelete;
   final String? unitAvatarDisplayName;
   final String? unitAvatarImageId;
@@ -149,7 +154,7 @@ class _EventOrganizerHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (onEdit != null || onDelete != null) ...[
+        if (onEdit != null || onDuplicate != null || onDelete != null) ...[
           const SizedBox(width: 8),
           PopupMenuButton<_EventCardMenuAction>(
             tooltip: 'Opções do evento',
@@ -158,6 +163,9 @@ class _EventOrganizerHeader extends StatelessWidget {
               switch (action) {
                 case _EventCardMenuAction.edit:
                   onEdit?.call();
+                  break;
+                case _EventCardMenuAction.duplicate:
+                  onDuplicate?.call();
                   break;
                 case _EventCardMenuAction.delete:
                   onDelete?.call();
@@ -169,6 +177,11 @@ class _EventOrganizerHeader extends StatelessWidget {
                 const PopupMenuItem(
                   value: _EventCardMenuAction.edit,
                   child: Text('Editar'),
+                ),
+              if (onDuplicate != null)
+                const PopupMenuItem(
+                  value: _EventCardMenuAction.duplicate,
+                  child: Text('Duplicar'),
                 ),
               if (onDelete != null)
                 PopupMenuItem(
@@ -196,7 +209,7 @@ class _EventOrganizerHeader extends StatelessWidget {
   }
 }
 
-enum _EventCardMenuAction { edit, delete }
+enum _EventCardMenuAction { edit, duplicate, delete }
 
 class _EventOrganizerAvatar extends StatelessWidget {
   const _EventOrganizerAvatar({

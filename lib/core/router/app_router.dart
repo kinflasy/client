@@ -72,6 +72,7 @@ final _protectedRoutes = <String>{
   AppRoutes.adminGeneralInfoImages,
   AppRoutes.adminCalendar,
   AppRoutes.adminCalendarCreate,
+  AppRoutes.adminCalendarDuplicate,
   AppRoutes.peopleList,
   AppRoutes.peopleDetail,
   AppRoutes.peopleEdit,
@@ -406,6 +407,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final eventId = state.pathParameters['id']!;
           return CreateEventScreen(eventId: eventId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.adminCalendarDuplicate,
+        name: AppRoutes.adminCalendarDuplicateName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final eventId = state.pathParameters['id']!;
+          return CreateEventScreen(duplicateFromEventId: eventId);
         },
       ),
       GoRoute(

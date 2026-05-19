@@ -8,7 +8,9 @@ import 'package:client/features/auth/domain/entities/user_entity.dart';
 import 'package:client/features/auth/domain/repositories/auth_repository.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
+import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/calendar/sub_features/create_event/presentation/screens/create_event_screen.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
@@ -133,6 +135,12 @@ void main() {
     ).thenAnswer(
       (_) async => const Right([
         DepartmentEntity(
+          id: 'dep-1',
+          name: 'Louvor',
+          slug: 'louvor',
+          type: 'MINISTRY',
+        ),
+        DepartmentEntity(
           id: 'dep-2',
           name: 'Midia',
           slug: 'midia',
@@ -171,6 +179,9 @@ void main() {
         departmentCalendarEventsProvider.overrideWith(
           (ref, request) async => const [],
         ),
+        calendarEventDetailProvider(
+          'event-1',
+        ).overrideWith((ref) async => _routerEvent()),
         myDepartmentsByUnitProvider.overrideWith(
           (ref) async => const [
             MyDepartmentsUnitGroup(
@@ -290,6 +301,9 @@ void main() {
           ),
         ),
         currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+        calendarEventDetailProvider(
+          'event-1',
+        ).overrideWith((ref) async => _routerEvent()),
       ],
     );
     addTearDown(leaderContainer.dispose);
@@ -311,6 +325,100 @@ void main() {
     expect(find.text('Criar evento'), findsOneWidget);
     expect(find.text('Organizado por *'), findsNothing);
   });
+
+  testWidgets(
+    'admin calendar duplicate route opens create screen with source id',
+    (tester) async {
+      expect(
+        AppRoutes.adminCalendarDuplicate,
+        '/admin/calendario/:id/duplicar',
+      );
+      expect(AppRoutes.adminCalendarDuplicateName, 'admin-calendar-duplicate');
+
+      final router = container.read(appRouterProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 3));
+
+      router.goNamed(
+        AppRoutes.adminCalendarDuplicateName,
+        pathParameters: {'id': 'event-1'},
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CreateEventScreen &&
+              widget.duplicateFromEventId == 'event-1' &&
+              widget.eventId == null,
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Duplicar evento'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'department leader is not blocked before opening duplicate route',
+    (tester) async {
+      final leaderContainer = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(authRepository),
+          sessionPermissionsProvider.overrideWith(
+            (ref) async => leaderPermissions,
+          ),
+          hasMembershipProvider.overrideWith((ref) => true),
+          editLoggedUserInitialDataProvider.overrideWith(
+            (ref) async => _loggedUserProfile(),
+          ),
+          pendingUnitMembershipsProvider.overrideWith(
+            (ref, unitId) async => const [],
+          ),
+          departmentRepositoryProvider.overrideWithValue(departmentRepository),
+          churchUnitRepositoryProvider.overrideWithValue(churchUnitRepository),
+          activeMembershipProvider.overrideWith(
+            (ref) async => const MembershipEntity(
+              id: 'membership-1',
+              unitId: 'unit-1',
+              affiliation: 'MEMBER',
+            ),
+          ),
+          currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+          calendarEventDetailProvider(
+            'event-1',
+          ).overrideWith((ref) async => _routerEvent()),
+        ],
+      );
+      addTearDown(leaderContainer.dispose);
+
+      final router = leaderContainer.read(appRouterProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: leaderContainer,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 3));
+
+      router.goNamed(
+        AppRoutes.adminCalendarDuplicateName,
+        pathParameters: {'id': 'event-1'},
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(find.text('Duplicar evento'), findsOneWidget);
+      expect(find.byType(BottomNavigationBar), findsNothing);
+    },
+  );
 
   testWidgets('integrant is redirected away from department event create', (
     tester,
@@ -652,5 +760,17 @@ LoggedUserProfileEntity _loggedUserProfile() {
     nickname: 'Lisa',
     gender: 'FEMALE',
     email: 'lisa@example.com',
+  );
+}
+
+CalendarEventEntity _routerEvent() {
+  return CalendarEventEntity(
+    id: 'event-1',
+    title: 'Culto especial',
+    description: 'Celebração com toda a unidade.',
+    startDateTime: DateTime(2026, 5, 10, 18),
+    endDateTime: DateTime(2026, 5, 10, 20),
+    type: CalendarEventType.department,
+    departmentId: 'dep-1',
   );
 }

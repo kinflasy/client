@@ -86,12 +86,29 @@ void main() {
     expect(editCalled, isFalse);
     expect(deleteCalled, isTrue);
   });
+
+  testWidgets('menu de três pontos chama duplicação', (tester) async {
+    var duplicateCalled = false;
+    await tester.pumpWidget(
+      _build(event: _event(), onDuplicate: () => duplicateCalled = true),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    expect(find.text('Duplicar'), findsOneWidget);
+
+    await tester.tap(find.text('Duplicar'));
+    await tester.pumpAndSettle();
+
+    expect(duplicateCalled, isTrue);
+  });
 }
 
 Widget _build({
   required CalendarEventEntity event,
   String? organizerLabel,
   VoidCallback? onEdit,
+  VoidCallback? onDuplicate,
   VoidCallback? onDelete,
 }) {
   return ProviderScope(
@@ -101,6 +118,7 @@ Widget _build({
           event: event,
           organizerLabel: organizerLabel,
           onEdit: onEdit,
+          onDuplicate: onDuplicate,
           onDelete: onDelete,
         ),
       ),

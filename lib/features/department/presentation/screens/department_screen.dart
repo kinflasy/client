@@ -220,6 +220,10 @@ class _DepartmentEventsTab extends ConsumerWidget {
                         AppRoutes.adminCalendarEditName,
                         pathParameters: {'id': event.id},
                       ),
+                      onDuplicate: () => context.pushNamed(
+                        AppRoutes.adminCalendarDuplicateName,
+                        pathParameters: {'id': event.id},
+                      ),
                       onDelete: () =>
                           confirmAndDeleteCalendarEvent(context, ref, event),
                       onTap: () => showEventDetailBottomSheet(
@@ -249,6 +253,12 @@ class _DepartmentEventsTab extends ConsumerWidget {
               onEdit: canManageEvents
                   ? () => context.pushNamed(
                       AppRoutes.adminCalendarEditName,
+                      pathParameters: {'id': event.id},
+                    )
+                  : null,
+              onDuplicate: canManageEvents
+                  ? () => context.pushNamed(
+                      AppRoutes.adminCalendarDuplicateName,
                       pathParameters: {'id': event.id},
                     )
                   : null,

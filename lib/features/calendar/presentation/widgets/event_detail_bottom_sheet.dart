@@ -214,6 +214,19 @@ class _AdminActions extends ConsumerWidget {
             OutlinedButton.icon(
               onPressed: isSubmitting
                   ? null
+                  : () {
+                      context.pop();
+                      context.pushNamed(
+                        AppRoutes.adminCalendarDuplicateName,
+                        pathParameters: {'id': event.id},
+                      );
+                    },
+              icon: const Icon(Icons.copy_outlined),
+              label: const Text('Duplicar'),
+            ),
+            OutlinedButton.icon(
+              onPressed: isSubmitting
+                  ? null
                   : () => _confirmAndDeleteEvent(context, ref),
               icon: const Icon(Icons.delete_outline),
               label: const Text('Excluir'),

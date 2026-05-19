@@ -188,6 +188,12 @@ class ChurchEventsTab extends ConsumerWidget {
                       pathParameters: {'id': event.id},
                     )
                   : null,
+              onDuplicate: canEdit
+                  ? () => context.pushNamed(
+                      AppRoutes.adminCalendarDuplicateName,
+                      pathParameters: {'id': event.id},
+                    )
+                  : null,
               onDelete: canEdit
                   ? () => confirmAndDeleteCalendarEvent(context, ref, event)
                   : null,

@@ -26,6 +26,7 @@ void main() {
     CalendarEventEntity? event,
     EventImagePicker? picker,
     String? lockedDepartmentId,
+    String? duplicateFromEventId,
   }) {
     return ProviderScope(
       overrides: [
@@ -48,6 +49,7 @@ void main() {
         home: CreateEventScreen(
           eventId: eventId,
           lockedDepartmentId: lockedDepartmentId,
+          duplicateFromEventId: duplicateFromEventId,
         ),
       ),
     );
@@ -303,6 +305,111 @@ void main() {
     expect(repository.deletedCardImageEventId, 'event-1');
     expect(find.text('Imagem do evento removida.'), findsOneWidget);
   });
+
+  testWidgets('modo duplicação preenche dados copiáveis do evento original', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      buildApp(duplicateFromEventId: 'event-1', event: _event()),
+    );
+
+    expect(find.text('Duplicar evento'), findsOneWidget);
+    expect(_fieldTextAt(tester, 0), 'Culto especial');
+    expect(_fieldTextAt(tester, 1), 'Celebração com toda a unidade.');
+    expect(_fieldText(tester, 'start-date-field'), isEmpty);
+    expect(_fieldText(tester, 'end-date-field'), isEmpty);
+    expect(_fieldText(tester, 'start-time-field'), '18:00');
+    expect(_fieldText(tester, 'end-time-field'), '20:00');
+    expect(find.text('Salvar evento'), findsOneWidget);
+  });
+
+  testWidgets('modo duplicação não exibe imagem original como selecionada', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      buildApp(
+        duplicateFromEventId: 'event-1',
+        event: _event(cardImageId: 'image-1'),
+      ),
+    );
+
+    expect(find.text('Selecionar imagem'), findsOneWidget);
+    expect(find.text('Trocar imagem'), findsNothing);
+    expect(find.byKey(const Key('event-image-network')), findsNothing);
+  });
+
+  testWidgets('modo duplicação exige datas mesmo com horários copiados', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      buildApp(duplicateFromEventId: 'event-1', event: _event()),
+    );
+
+    await tester.tap(find.byKey(const Key('save-event-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Campo obrigatório'), findsNWidgets(2));
+  });
+
+  testWidgets('modo duplicação cria novo evento de unidade', (tester) async {
+    final repository = _CapturingCalendarEventRepository();
+    await _pumpApp(
+      tester,
+      buildApp(
+        repository: repository,
+        duplicateFromEventId: 'event-1',
+        event: _event(),
+      ),
+    );
+
+    await tester.enterText(_field('start-date-field'), '12/05/2026');
+    await tester.enterText(_field('end-date-field'), '12/05/2026');
+    await tester.tap(find.byKey(const Key('save-event-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository.createdUnitEventRequest, isNotNull);
+    expect(repository.updatedEventId, isNull);
+    expect(repository.createdUnitEventRequest!.title, 'Culto especial');
+    expect(
+      repository.createdUnitEventRequest!.startDateTime,
+      DateTime(2026, 5, 12, 18),
+    );
+    expect(
+      repository.createdUnitEventRequest!.endDateTime,
+      DateTime(2026, 5, 12, 20),
+    );
+  });
+
+  testWidgets('modo duplicação cria evento no departamento original', (
+    tester,
+  ) async {
+    final repository = _CapturingCalendarEventRepository();
+    await _pumpApp(
+      tester,
+      buildApp(
+        repository: repository,
+        duplicateFromEventId: 'event-1',
+        event: _event(
+          type: CalendarEventType.department,
+          departmentId: 'dep-1',
+        ),
+      ),
+    );
+
+    await tester.enterText(_field('start-date-field'), '12/05/2026');
+    await tester.enterText(_field('end-date-field'), '12/05/2026');
+    await tester.tap(find.byKey(const Key('save-event-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository.createdDepartmentId, 'dep-1');
+    expect(repository.createdDepartmentEventRequest, isNotNull);
+    expect(repository.createdUnitEventRequest, isNull);
+    expect(repository.updatedEventId, isNull);
+  });
+
   testWidgets('modo departamento travado cria evento para o departamento', (
     tester,
   ) async {
@@ -470,6 +577,8 @@ class _FakeEventImagePicker implements EventImagePicker {
 CalendarEventEntity _event({
   String title = 'Culto especial',
   String? cardImageId,
+  CalendarEventType type = CalendarEventType.unit,
+  String? departmentId,
 }) {
   return CalendarEventEntity(
     id: 'event-1',
@@ -477,8 +586,9 @@ CalendarEventEntity _event({
     description: 'Celebração com toda a unidade.',
     startDateTime: DateTime(2026, 5, 10, 18),
     endDateTime: DateTime(2026, 5, 10, 20),
-    type: CalendarEventType.unit,
-    unitId: 'unit-1',
+    type: type,
+    unitId: type == CalendarEventType.unit ? 'unit-1' : null,
+    departmentId: type == CalendarEventType.department ? departmentId : null,
     cardImageId: cardImageId,
     visibilityRules: const [VisibilityRuleEntity.user(userId: '*')],
   );

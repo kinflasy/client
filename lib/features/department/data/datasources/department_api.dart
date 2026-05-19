@@ -48,6 +48,27 @@ class DepartmentApi {
     return response.data ?? <String, dynamic>{};
   }
 
+  Future<Map<String, dynamic>> updateParticipantRole(
+    String departmentId,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      '/v1/core/church/unit/departments/$departmentId/integrants',
+      data: payload,
+    );
+    return response.data ?? <String, dynamic>{};
+  }
+
+  Future<void> removeParticipant(
+    String departmentId,
+    Map<String, dynamic> payload,
+  ) async {
+    await _dio.delete<void>(
+      '/v1/core/church/unit/departments/$departmentId/integrants',
+      data: payload,
+    );
+  }
+
   Future<Map<String, dynamic>> getDepartmentExtension(
     String departmentId,
     String extension,

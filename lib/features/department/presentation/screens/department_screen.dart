@@ -352,6 +352,7 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
                     profileImageId: participant.profileImageId,
                     onTap: () => showDepartmentParticipantBottomSheet(
                       context,
+                      departmentId: departmentId,
                       participant: participant,
                     ),
                   );

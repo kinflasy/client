@@ -5,6 +5,7 @@
     "conventionalCommits.scopes": [
         "event",
         "user",
-        "member"
+        "member",
+        "department"
     ]
 }

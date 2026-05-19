@@ -9,11 +9,8 @@ import 'package:client/features/department/domain/entities/department_detail_ent
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
 import 'package:client/features/department/presentation/screens/department_screen.dart';
-import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/department/providers/department_providers.dart';
-import 'package:client/features/membership/data/models/person_profile_model.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
-import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -370,16 +367,16 @@ void main() {
       tester: tester,
       repository: repository,
       permissions: _assistantPermissions,
-      extraOverrides: [
-        departmentParticipantPersonProvider.overrideWith(
-          (ref, personId) async => const PersonProfileModel(
-            type: PersonType.user,
-            id: 'person-1',
-            fullName: 'Maria Silva',
-            nickname: 'Maria',
-            gender: 'FEMALE',
-            phone: '(85) 99999-0000',
-          ),
+      participants: const [
+        DepartmentParticipantEntity(
+          personId: 'person-1',
+          membershipId: 'membership-1',
+          integrationType: IntegrationType.integrant,
+          nickname: 'Maria',
+          phone: '(85) 99999-0000',
+          affiliation: 'MEMBER',
+          gender: 'FEMALE',
+          age: 34,
         ),
       ],
     );

@@ -28,4 +28,14 @@ abstract class DepartmentRepository {
     String departmentId,
     IntegrationRequestModel request,
   );
+
+  Future<Either<Failure, Unit>> updateParticipantRole(
+    String departmentId,
+    IntegrationRequestModel request,
+  );
+
+  Future<Either<Failure, Unit>> removeParticipant(
+    String departmentId,
+    IntegrationRequestModel request,
+  );
 }

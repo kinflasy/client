@@ -126,6 +126,72 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, Unit>> updateParticipantRole(
+    String departmentId,
+    IntegrationRequestModel request,
+  ) async {
+    try {
+      await _api.updateParticipantRole(departmentId, request.toJson());
+      return const Right(unit);
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 400 || statusCode == 403 || statusCode == 409) {
+        return Left(
+          ValidationFailure(
+            _readMessage(e.response?.data) ??
+                'Não foi possível alterar o papel deste participante.',
+          ),
+        );
+      }
+      if (statusCode == 404) {
+        return Left(
+          NotFoundFailure(
+            _readMessage(e.response?.data) ??
+                'Participante não encontrado neste ministério.',
+          ),
+        );
+      }
+      return Left(
+        NetworkFailure(e.message ?? 'Erro ao alterar papel do participante.'),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> removeParticipant(
+    String departmentId,
+    IntegrationRequestModel request,
+  ) async {
+    try {
+      await _api.removeParticipant(departmentId, request.toJson());
+      return const Right(unit);
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 400 || statusCode == 403 || statusCode == 409) {
+        return Left(
+          ValidationFailure(
+            _readMessage(e.response?.data) ??
+                'Não foi possível retirar este participante.',
+          ),
+        );
+      }
+      if (statusCode == 404) {
+        return Left(
+          NotFoundFailure(
+            _readMessage(e.response?.data) ??
+                'Participante não encontrado neste ministério.',
+          ),
+        );
+      }
+      return Left(NetworkFailure(e.message ?? 'Erro ao retirar participante.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
   DepartmentEntity _mapModelToEntity(DepartmentReadModel model) {
     return DepartmentEntity(
       id: model.id,
@@ -158,6 +224,7 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
       ),
       nickname: person['nickname'] as String?,
       username: person['username'] as String?,
+      phone: membership['phone'] as String? ?? person['phone'] as String?,
       profileImageId: person['profileImageId'] as String?,
       affiliation: membership['affiliation'] as String? ?? '',
       gender: person['gender'] as String? ?? '',
@@ -177,6 +244,8 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
     }
     return const <String, dynamic>{};
   }
+
+  String? _readMessage(Object? value) => _readMap(value)['message'] as String?;
 
   int? _parseInt(Object? value) {
     if (value is int) return value;

@@ -54,6 +54,11 @@ class SessionPermissions {
   bool canObserveDept(String departmentId) =>
       isUnitAdmin || roleInDept(departmentId) != null;
 
+  bool canEditDept(String departmentId) {
+    if (isUnitAdmin) return true;
+    return roleInDept(departmentId) == IntegrationType.leader;
+  }
+
   bool canManageDept(String departmentId) {
     if (isUnitAdmin) return true;
     final role = roleInDept(departmentId);

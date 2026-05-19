@@ -73,6 +73,7 @@ void main() {
                 'id': 'membership-1',
                 'unitId': 'unit-1',
                 'affiliation': 'MEMBER',
+                'phone': '(85) 99999-0000',
                 'person': {
                   'id': 'person-1',
                   'nickname': 'Maria',
@@ -113,6 +114,7 @@ void main() {
           expect(participants.first.integrationType, IntegrationType.leader);
           expect(participants.first.nickname, 'Maria');
           expect(participants.first.username, 'maria.silva');
+          expect(participants.first.phone, '(85) 99999-0000');
           expect(participants.first.profileImageId, 'profile-image-1');
           expect(participants.first.displayName, 'Maria');
           expect(
@@ -346,5 +348,98 @@ void main() {
         expect(failure.message, 'Participante já vinculado.');
       }, (_) => fail('expected failure'));
     });
+  });
+
+  group('DepartmentRepositoryImpl.updateParticipantRole', () {
+    test('sends payload and returns unit on success', () async {
+      when(
+        () => api.updateParticipantRole('dep-1', any()),
+      ).thenAnswer((_) async => <String, dynamic>{});
+
+      final result = await repository.updateParticipantRole(
+        'dep-1',
+        const IntegrationRequestModel(
+          membershipId: 'membership-1',
+          type: IntegrationType.leader,
+        ),
+      );
+
+      expect(result.isRight(), isTrue);
+      expect(
+        verify(
+          () => api.updateParticipantRole('dep-1', captureAny()),
+        ).captured.single,
+        {'membershipId': 'membership-1', 'type': 'LEADER'},
+      );
+    });
+
+    test('maps not found into NotFoundFailure', () async {
+      when(() => api.updateParticipantRole('dep-1', any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/integrants'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/integrants'),
+            statusCode: 404,
+          ),
+        ),
+      );
+
+      final result = await repository.updateParticipantRole(
+        'dep-1',
+        const IntegrationRequestModel(membershipId: 'membership-1'),
+      );
+
+      result.match(
+        (failure) => expect(failure, isA<NotFoundFailure>()),
+        (_) => fail('expected failure'),
+      );
+    });
+  });
+
+  group('DepartmentRepositoryImpl.removeParticipant', () {
+    test('sends payload and returns unit on success', () async {
+      when(
+        () => api.removeParticipant('dep-1', any()),
+      ).thenAnswer((_) async {});
+
+      final result = await repository.removeParticipant(
+        'dep-1',
+        const IntegrationRequestModel(membershipId: 'membership-1'),
+      );
+
+      expect(result.isRight(), isTrue);
+      expect(
+        verify(
+          () => api.removeParticipant('dep-1', captureAny()),
+        ).captured.single,
+        {'membershipId': 'membership-1', 'type': 'INTEGRANT'},
+      );
+    });
+
+    test(
+      'maps forbidden into ValidationFailure with backend message',
+      () async {
+        when(() => api.removeParticipant('dep-1', any())).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/integrants'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/integrants'),
+              statusCode: 403,
+              data: {'message': 'Sem permissão.'},
+            ),
+          ),
+        );
+
+        final result = await repository.removeParticipant(
+          'dep-1',
+          const IntegrationRequestModel(membershipId: 'membership-1'),
+        );
+
+        result.match((failure) {
+          expect(failure, isA<ValidationFailure>());
+          expect(failure.message, 'Sem permissão.');
+        }, (_) => fail('expected failure'));
+      },
+    );
   });
 }

@@ -8,6 +8,7 @@ class DepartmentParticipantEntity extends Equatable {
     required this.integrationType,
     this.nickname,
     this.username,
+    this.phone,
     this.profileImageId,
     required this.affiliation,
     required this.gender,
@@ -20,6 +21,7 @@ class DepartmentParticipantEntity extends Equatable {
   final IntegrationType integrationType;
   final String? nickname;
   final String? username;
+  final String? phone;
   final String? profileImageId;
   final String affiliation;
   final String gender;
@@ -47,6 +49,7 @@ class DepartmentParticipantEntity extends Equatable {
     integrationType,
     nickname,
     username,
+    phone,
     profileImageId,
     affiliation,
     gender,

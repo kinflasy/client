@@ -13,9 +13,6 @@ import 'package:client/features/department/providers/department_detail_providers
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
-import 'package:client/features/membership/domain/enums/person_type.dart';
-import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
-import 'package:client/features/membership/data/models/person_profile_model.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,9 +21,6 @@ import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockDepartmentRepository extends Mock implements DepartmentRepository {}
-
-class _MockMemberProfileRepository extends Mock
-    implements MemberProfileRepository {}
 
 class _FakeIntegrationRequestModel extends Fake
     implements IntegrationRequestModel {}
@@ -56,7 +50,6 @@ Future<T> _readFutureProvider<T>(
 
 void main() {
   late _MockDepartmentRepository repository;
-  late _MockMemberProfileRepository memberProfileRepository;
   late ProviderContainer container;
 
   setUpAll(() {
@@ -65,13 +58,9 @@ void main() {
 
   setUp(() {
     repository = _MockDepartmentRepository();
-    memberProfileRepository = _MockMemberProfileRepository();
     container = ProviderContainer(
       overrides: [
         departmentRepositoryProvider.overrideWithValue(repository),
-        memberProfileRepositoryProvider.overrideWithValue(
-          memberProfileRepository,
-        ),
         activeMembershipProvider.overrideWith(
           (ref) async => const MembershipEntity(
             id: 'active-membership',
@@ -167,54 +156,6 @@ void main() {
 
       await expectLater(
         _readFutureProvider(container, departmentParticipantsProvider('dep-1')),
-        throwsA(isA<NetworkFailure>()),
-      );
-    });
-  });
-
-  group('departmentParticipantPersonProvider', () {
-    test('returns the lean person details used by the sheet', () async {
-      when(
-        () => memberProfileRepository.getPersonProfile('person-1'),
-      ).thenAnswer(
-        (_) async => const Right(
-          PersonProfileModel(
-            type: PersonType.user,
-            id: 'person-1',
-            fullName: 'Maria Silva',
-            nickname: 'Maria',
-            gender: 'FEMALE',
-            phone: '(85) 99999-0000',
-            profileImageId: 'image-1',
-          ),
-        ),
-      );
-
-      final result = await _readFutureProvider(
-        container,
-        departmentParticipantPersonProvider('person-1'),
-      );
-
-      expect(result.nickname, 'Maria');
-      expect(result.phone, '(85) 99999-0000');
-      expect(result.profileImageId, 'image-1');
-      verify(
-        () => memberProfileRepository.getPersonProfile('person-1'),
-      ).called(1);
-    });
-
-    test('surfaces repository failure', () async {
-      when(
-        () => memberProfileRepository.getPersonProfile('person-1'),
-      ).thenAnswer(
-        (_) async => const Left(NetworkFailure('Falha ao carregar pessoa')),
-      );
-
-      await expectLater(
-        _readFutureProvider(
-          container,
-          departmentParticipantPersonProvider('person-1'),
-        ),
         throwsA(isA<NetworkFailure>()),
       );
     });
@@ -391,6 +332,127 @@ void main() {
 
       expect(integrationsLoadCount, 2);
       expect(permissionsLoadCount, 2);
+    });
+  });
+
+  group('participant mutation notifiers', () {
+    test('update role invalidates participants after success', () async {
+      when(
+        () => repository.getParticipants('dep-1'),
+      ).thenAnswer((_) async => const Right(<DepartmentParticipantEntity>[]));
+      when(
+        () => repository.updateParticipantRole('dep-1', any()),
+      ).thenAnswer((_) async => const Right(unit));
+
+      final subscription = container.listen(
+        departmentParticipantsProvider('dep-1'),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      await container.read(departmentParticipantsProvider('dep-1').future);
+      await container
+          .read(updateDepartmentParticipantRoleProvider.notifier)
+          .updateRole(
+            departmentId: 'dep-1',
+            membershipId: 'membership-1',
+            role: IntegrationType.leader,
+          );
+      await container.read(departmentParticipantsProvider('dep-1').future);
+
+      verify(() => repository.getParticipants('dep-1')).called(2);
+    });
+
+    test(
+      'remove invalidates permissions when active membership is affected',
+      () async {
+        var integrationsLoadCount = 0;
+        var permissionsLoadCount = 0;
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            departmentRepositoryProvider.overrideWithValue(repository),
+            activeMembershipProvider.overrideWith(
+              (ref) async => const MembershipEntity(
+                id: 'active-membership',
+                unitId: 'unit-1',
+                affiliation: 'MEMBER',
+              ),
+            ),
+            myDepartmentIntegrationsProvider.overrideWith((ref) async {
+              integrationsLoadCount++;
+              return const <IntegrationEntity>[];
+            }),
+            sessionPermissionsProvider.overrideWith((ref) async {
+              permissionsLoadCount++;
+              return const SessionPermissions(
+                isAuthenticated: true,
+                affiliation: Affiliation.member,
+                activeUnitId: 'unit-1',
+                hasMembership: true,
+                integrations: [],
+                isUnitAdmin: false,
+              );
+            }),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        when(
+          () => repository.removeParticipant('dep-1', any()),
+        ).thenAnswer((_) async => const Right(unit));
+
+        await scopedContainer.read(myDepartmentIntegrationsProvider.future);
+        await scopedContainer.read(sessionPermissionsProvider.future);
+        await scopedContainer
+            .read(removeDepartmentParticipantProvider.notifier)
+            .remove(departmentId: 'dep-1', membershipId: 'active-membership');
+        await scopedContainer.read(myDepartmentIntegrationsProvider.future);
+        await scopedContainer.read(sessionPermissionsProvider.future);
+
+        expect(integrationsLoadCount, 2);
+        expect(permissionsLoadCount, 2);
+      },
+    );
+
+    test('remove invalidates participants after success', () async {
+      when(
+        () => repository.getParticipants('dep-1'),
+      ).thenAnswer((_) async => const Right(<DepartmentParticipantEntity>[]));
+      when(
+        () => repository.removeParticipant('dep-1', any()),
+      ).thenAnswer((_) async => const Right(unit));
+
+      final subscription = container.listen(
+        departmentParticipantsProvider('dep-1'),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      await container.read(departmentParticipantsProvider('dep-1').future);
+      await container
+          .read(removeDepartmentParticipantProvider.notifier)
+          .remove(departmentId: 'dep-1', membershipId: 'membership-1');
+      await container.read(departmentParticipantsProvider('dep-1').future);
+
+      verify(() => repository.getParticipants('dep-1')).called(2);
+    });
+
+    test('failure does not invalidate participants', () async {
+      when(
+        () => repository.getParticipants('dep-1'),
+      ).thenAnswer((_) async => const Right(<DepartmentParticipantEntity>[]));
+      when(
+        () => repository.removeParticipant('dep-1', any()),
+      ).thenAnswer((_) async => const Left(NetworkFailure('offline')));
+
+      await container.read(departmentParticipantsProvider('dep-1').future);
+      await container
+          .read(removeDepartmentParticipantProvider.notifier)
+          .remove(departmentId: 'dep-1', membershipId: 'membership-1');
+      await container.read(departmentParticipantsProvider('dep-1').future);
+
+      verify(() => repository.getParticipants('dep-1')).called(1);
     });
   });
 }

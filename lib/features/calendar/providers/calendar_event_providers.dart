@@ -212,7 +212,7 @@ bool _meetsAffiliation(Affiliation? actual, Affiliation? required) {
 
 int _affiliationRank(Affiliation? affiliation) {
   return switch (affiliation) {
-    Affiliation.unauthenticated || null => 0,
+    null => 0,
     Affiliation.visitor => 1,
     Affiliation.congregated => 2,
     Affiliation.member => 3,

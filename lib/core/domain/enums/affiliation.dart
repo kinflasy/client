@@ -1,5 +1,4 @@
 enum Affiliation {
-  unauthenticated, // sem sessao ativa
   visitor, // affiliation=VISITOR
   congregated, // affiliation=CONGREGATED
   member, // affiliation=MEMBER

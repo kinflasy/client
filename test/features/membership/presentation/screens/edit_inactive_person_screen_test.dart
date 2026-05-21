@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:go_router/go_router.dart';
 
 class _FakeMemberProfileRepository implements MemberProfileRepository {
   UpdateInactivePersonRequestModel? lastRequest;
@@ -61,7 +62,7 @@ void main() {
     nickname: 'Mari',
     gender: 'FEMALE',
     birthDate: DateTime(1995, 2, 3),
-    phone: '99999-1111',
+    phone: '(85) 99999-1111',
     email: 'maria@dev.com',
     address:
         'Rua A, 123, Centro, Fortaleza, CE | Apto 2 - Perto da praca - 60000-000',
@@ -109,7 +110,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final formState = container.read(editInactivePersonFormProvider('person-1'));
+    final formState = container.read(
+      editInactivePersonFormProvider('person-1'),
+    );
 
     expect(find.text('Maria Souza'), findsOneWidget);
     expect(find.text('maria@dev.com'), findsOneWidget);
@@ -117,4 +120,111 @@ void main() {
     expect(formState.address.reference, 'Perto da praca');
     expect(find.text('Editar cadastro'), findsOneWidget);
   });
+
+  testWidgets('submits valid edited email for inactive person', (tester) async {
+    _useLargeViewport(tester);
+    final repository = _FakeMemberProfileRepository();
+    final container = ProviderContainer(
+      overrides: [
+        memberProfileRepositoryProvider.overrideWithValue(repository),
+        activeMembershipProvider.overrideWith(
+          (ref) async => const MembershipEntity(
+            id: 'membership-1',
+            unitId: 'unit-1',
+            affiliation: 'VISITOR',
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final router = _router(profile);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    router.push('/edit');
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'E-mail'),
+      'novo@dev.com',
+    );
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+
+    expect(repository.lastRequest?.email, 'novo@dev.com');
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('blocks submit for invalid inactive person email', (
+    tester,
+  ) async {
+    _useLargeViewport(tester);
+    final repository = _FakeMemberProfileRepository();
+    final container = ProviderContainer(
+      overrides: [
+        memberProfileRepositoryProvider.overrideWithValue(repository),
+        activeMembershipProvider.overrideWith(
+          (ref) async => const MembershipEntity(
+            id: 'membership-1',
+            unitId: 'unit-1',
+            affiliation: 'VISITOR',
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: EditInactivePersonScreen(
+            personId: 'person-1',
+            initialProfile: profile,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'E-mail'),
+      'email-invalido',
+    );
+    await tester.tap(find.text('Salvar'));
+    await tester.pump();
+
+    expect(find.text('E-mail invalido'), findsOneWidget);
+    expect(repository.lastRequest, isNull);
+  });
+}
+
+void _useLargeViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 1800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
+GoRouter _router(MemberProfileEntity profile) {
+  return GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const Scaffold(body: Text('Home')),
+      ),
+      GoRoute(
+        path: '/edit',
+        builder: (context, state) => EditInactivePersonScreen(
+          personId: 'person-1',
+          initialProfile: profile,
+        ),
+      ),
+    ],
+  );
 }

@@ -522,7 +522,27 @@ void main() {
     await tester.pump();
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.text('Editar dados pessoais'), findsOneWidget);
+  });
+
+  testWidgets('menu edit profile address subroute opens address edit screen', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await pumpRouter(tester);
+
+    router.go(AppRoutes.homeMenuEditProfileAddress);
+    await tester.pump();
+
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.text('Editar endereço'), findsOneWidget);
   });
 
   testWidgets(

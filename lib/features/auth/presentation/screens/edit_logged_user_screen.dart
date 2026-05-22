@@ -2,7 +2,6 @@ import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/forms/app_form_formatters.dart';
 import 'package:client/core/presentation/forms/app_text_input_behavior.dart';
-import 'package:client/core/presentation/widgets/address_form_section.dart';
 import 'package:client/core/presentation/widgets/app_date_text_form_field.dart';
 import 'package:client/core/presentation/widgets/app_email_text_form_field.dart';
 import 'package:client/core/presentation/widgets/app_phone_text_form_field.dart';
@@ -54,9 +53,16 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final formState = ref.read(editLoggedUserFormProvider);
-    final request = buildUpdateLoggedUserRequest(formState);
-    final result = await submitEditLoggedUser(ref, request: request);
+    final formState = ref.read(editLoggedUserPersonalDataFormProvider);
+    final profile = await ref.read(editLoggedUserInitialDataProvider.future);
+    final request = buildUpdateLoggedUserPersonalDataRequest(
+      formState,
+      profile,
+    );
+    final result = await submitEditLoggedUserPersonalData(
+      ref,
+      request: request,
+    );
 
     if (!mounted) return;
 
@@ -66,10 +72,9 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
       toastification.show(
         context: context,
         type: ToastificationType.success,
-        title: const Text('Informações atualizadas com sucesso!'),
+        title: const Text('Dados pessoais atualizados com sucesso!'),
         autoCloseDuration: const Duration(seconds: 3),
       );
-      ref.invalidate(editLoggedUserInitialDataProvider);
       context.goNamed(AppRoutes.homeMenuEditProfileName);
     });
   }
@@ -77,16 +82,18 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
   @override
   Widget build(BuildContext context) {
     final initialDataAsync = ref.watch(editLoggedUserInitialDataProvider);
-    final formState = ref.watch(editLoggedUserFormProvider);
-    final isLoading = ref.watch(editLoggedUserSubmitProvider).isLoading;
+    final formState = ref.watch(editLoggedUserPersonalDataFormProvider);
+    final isLoading = ref
+        .watch(editLoggedUserPersonalDataSubmitProvider)
+        .isLoading;
 
     return initialDataAsync.when(
       loading: () => const _ScaffoldFrame(
-        title: 'Editar dados',
+        title: 'Editar dados pessoais',
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (error, _) => _ScaffoldFrame(
-        title: 'Editar dados',
+        title: 'Editar dados pessoais',
         child: _LoadError(
           message: error is Failure
               ? error.message
@@ -98,10 +105,10 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
         if (!formState.isInitialized) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            initializeEditLoggedUserFormFromProfile(ref, profile);
+            initializeEditLoggedUserPersonalDataFormFromProfile(ref, profile);
           });
           return const _ScaffoldFrame(
-            title: 'Editar dados',
+            title: 'Editar dados pessoais',
             child: Center(child: CircularProgressIndicator()),
           );
         }
@@ -109,7 +116,7 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
         _seedControllersIfNeeded(formState);
 
         return _ScaffoldFrame(
-          title: 'Editar dados',
+          title: 'Editar dados pessoais',
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
@@ -122,8 +129,10 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
                     controller: _fullNameController,
                     label: 'Nome completo *',
                     enabled: !isLoading,
-                    onChanged: (value) =>
-                        updateEditLoggedUserPersonalData(ref, fullName: value),
+                    onChanged: (value) => updateEditLoggedUserPersonalDataForm(
+                      ref,
+                      fullName: value,
+                    ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Campo obrigatório';
@@ -135,8 +144,10 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
                     controller: _nicknameController,
                     label: 'Apelido',
                     enabled: !isLoading,
-                    onChanged: (value) =>
-                        updateEditLoggedUserPersonalData(ref, nickname: value),
+                    onChanged: (value) => updateEditLoggedUserPersonalDataForm(
+                      ref,
+                      nickname: value,
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
@@ -155,7 +166,7 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
                       ],
                       onChanged: isLoading
                           ? null
-                          : (value) => updateEditLoggedUserPersonalData(
+                          : (value) => updateEditLoggedUserPersonalDataForm(
                               ref,
                               gender: value,
                             ),
@@ -174,15 +185,16 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
                           DateTime(DateTime.now().year - 18),
                       firstDate: DateTime(1900),
                       lastDate: DateTime.now(),
-                      onPicked: (picked) => updateEditLoggedUserPersonalData(
-                        ref,
-                        birthDate: picked,
-                      ),
+                      onPicked: (picked) =>
+                          updateEditLoggedUserPersonalDataForm(
+                            ref,
+                            birthDate: picked,
+                          ),
                       onChanged: (value) {
                         final parsed = parseBrazilianDate(value);
                         final isValidPastDate =
                             parsed != null && !parsed.isAfter(DateTime.now());
-                        updateEditLoggedUserPersonalData(
+                        updateEditLoggedUserPersonalDataForm(
                           ref,
                           birthDate: isValidPastDate ? parsed : null,
                           clearBirthDate: !isValidPastDate,
@@ -210,7 +222,10 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
                       ).copyWith(hintText: '(00) 00000-0000'),
                       enabled: !isLoading,
                       onChanged: (value) =>
-                          updateEditLoggedUserPersonalData(ref, phone: value),
+                          updateEditLoggedUserPersonalDataForm(
+                            ref,
+                            phone: value,
+                          ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) return null;
                         return isCompleteBrazilianPhone(value)
@@ -226,7 +241,10 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
                       decoration: _inputDecoration('E-mail'),
                       enabled: !isLoading,
                       onChanged: (value) =>
-                          updateEditLoggedUserPersonalData(ref, email: value),
+                          updateEditLoggedUserPersonalDataForm(
+                            ref,
+                            email: value,
+                          ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) return null;
                         final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
@@ -234,17 +252,6 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
                             ? null
                             : 'E-mail inválido';
                       },
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const _SectionTitle(title: 'Endereço'),
-                  AbsorbPointer(
-                    absorbing: isLoading,
-                    child: AddressFormSection(
-                      value: formState.address,
-                      onChanged: (next) => ref
-                          .read(editLoggedUserFormProvider.notifier)
-                          .update((state) => state.copyWith(address: next)),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -275,7 +282,7 @@ class _EditLoggedUserScreenState extends ConsumerState<EditLoggedUserScreen> {
     );
   }
 
-  void _seedControllersIfNeeded(EditLoggedUserFormState formState) {
+  void _seedControllersIfNeeded(EditLoggedUserPersonalDataFormState formState) {
     if (!formState.isInitialized || _controllersSeeded) return;
     _setControllerValue(_fullNameController, formState.fullName);
     _setControllerValue(_nicknameController, formState.nickname);

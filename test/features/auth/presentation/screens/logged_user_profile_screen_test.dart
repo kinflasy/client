@@ -36,7 +36,13 @@ void main() {
           path: AppRoutes.homeMenuEditProfileInfo,
           name: AppRoutes.homeMenuEditProfileInfoName,
           builder: (context, state) =>
-              const Scaffold(body: Text('Tela de edição de dados')),
+              const Scaffold(body: Text('Tela de edição de dados pessoais')),
+        ),
+        GoRoute(
+          path: AppRoutes.homeMenuEditProfileAddress,
+          name: AppRoutes.homeMenuEditProfileAddressName,
+          builder: (context, state) =>
+              const Scaffold(body: Text('Tela de edição de endereço')),
         ),
         GoRoute(
           path: AppRoutes.homeMenuEditProfilePhoto,
@@ -135,16 +141,34 @@ void main() {
     expect(find.text('null'), findsNothing);
   });
 
-  testWidgets('confirma botões Editar dados e Editar foto', (tester) async {
+  testWidgets('confirma botões de dados pessoais, endereço e foto', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildApp(loadProfile: () async => _fullProfile()));
     await tester.pump();
 
-    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.text('Editar dados pessoais'), findsOneWidget);
+    expect(find.text('Editar endereço'), findsOneWidget);
     expect(find.text('Editar foto'), findsOneWidget);
+  });
 
-    await tester.tap(find.text('Editar dados'));
+  testWidgets('navega para edição de dados pessoais', (tester) async {
+    await tester.pumpWidget(buildApp(loadProfile: () async => _fullProfile()));
+    await tester.pump();
+
+    await tester.tap(find.text('Editar dados pessoais'));
     await tester.pumpAndSettle();
-    expect(find.text('Tela de edição de dados'), findsOneWidget);
+    expect(find.text('Tela de edição de dados pessoais'), findsOneWidget);
+  });
+
+  testWidgets('navega para edição de endereço', (tester) async {
+    await tester.pumpWidget(buildApp(loadProfile: () async => _fullProfile()));
+    await tester.pump();
+
+    await tester.tap(find.text('Editar endereço'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tela de edição de endereço'), findsOneWidget);
   });
 
   testWidgets('navega para edição de foto', (tester) async {

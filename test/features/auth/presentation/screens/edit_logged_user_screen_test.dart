@@ -108,6 +108,25 @@ void main() {
           'birthDate': '1998-04-09',
           'phone': '(85) 99999-1111',
           'email': 'lisa@example.com',
+          'addressId': 'address-1',
+        },
+      ),
+    );
+    when(
+      () => dio.get<Map<String, dynamic>>('/v1/core/addresses/address-1'),
+    ).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/v1/core/addresses/address-1'),
+        data: {
+          'zip': '60000-000',
+          'country': 'Brasil',
+          'state': 'CE',
+          'city': 'Fortaleza',
+          'neighborhood': 'Centro',
+          'street': 'Rua Alfa',
+          'number': '123',
+          'complement': 'Apto 4',
+          'reference': 'Próximo à praça',
         },
       ),
     );
@@ -116,18 +135,40 @@ void main() {
   testWidgets('shows prefilled authenticated user data', (tester) async {
     await pumpApp(tester);
 
-    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.text('Editar dados pessoais'), findsOneWidget);
     expect(find.text('Lisa Silva'), findsOneWidget);
     expect(find.text('lisa@example.com'), findsOneWidget);
     expect(find.text('09/04/1998'), findsOneWidget);
   });
 
-  testWidgets('blocks submit when name and birth date are invalid', (
+  testWidgets('does not show address section or address fields', (
     tester,
   ) async {
     await pumpApp(tester);
 
+    expect(find.text('Endereço'), findsNothing);
+    expect(find.text('CEP'), findsNothing);
+    expect(find.text('País'), findsNothing);
+    expect(find.text('Cidade'), findsNothing);
+    expect(find.text('Rua'), findsNothing);
+  });
+
+  testWidgets('blocks submit when name is empty', (tester) async {
+    await pumpApp(tester);
+
     await tester.enterText(find.byType(TextFormField).first, '');
+    await _scrollToSaveButton(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(_saveButton());
+    await tester.pumpAndSettle();
+
+    verifyNever(() => repository.updateLoggedUser(any()));
+    expect(find.text('Campo obrigatório'), findsOneWidget);
+  });
+
+  testWidgets('blocks submit when birth date is invalid', (tester) async {
+    await pumpApp(tester);
+
     await tester.enterText(find.byType(TextFormField).at(2), '32132030');
     await _scrollToSaveButton(tester);
     await tester.pumpAndSettle();
@@ -136,6 +177,19 @@ void main() {
 
     verifyNever(() => repository.updateLoggedUser(any()));
     expect(find.text('Data inválida'), findsOneWidget);
+  });
+
+  testWidgets('blocks submit when birth date is future', (tester) async {
+    await pumpApp(tester);
+
+    await tester.enterText(find.byType(TextFormField).at(2), '01013000');
+    await _scrollToSaveButton(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(_saveButton());
+    await tester.pumpAndSettle();
+
+    verifyNever(() => repository.updateLoggedUser(any()));
+    expect(find.text('Data não pode ser futura'), findsOneWidget);
   });
 
   testWidgets('blocks submit when gender is missing', (tester) async {
@@ -173,7 +227,35 @@ void main() {
     expect(find.text('Campo obrigatório'), findsOneWidget);
   });
 
-  testWidgets('submits current form data', (tester) async {
+  testWidgets('blocks submit when phone is incomplete', (tester) async {
+    await pumpApp(tester);
+
+    await tester.enterText(find.byType(TextFormField).at(3), '8599');
+    await _scrollToSaveButton(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(_saveButton());
+    await tester.pumpAndSettle();
+
+    verifyNever(() => repository.updateLoggedUser(any()));
+    expect(find.text('Telefone inválido'), findsOneWidget);
+  });
+
+  testWidgets('blocks submit when email is invalid', (tester) async {
+    await pumpApp(tester);
+
+    await tester.enterText(find.byType(TextFormField).at(4), 'email-invalido');
+    await _scrollToSaveButton(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(_saveButton());
+    await tester.pumpAndSettle();
+
+    verifyNever(() => repository.updateLoggedUser(any()));
+    expect(find.text('E-mail inválido'), findsOneWidget);
+  });
+
+  testWidgets('submits current form data and preserves current address', (
+    tester,
+  ) async {
     final completer = Completer<Either<Failure, UserEntity>>();
     when(
       () => repository.updateLoggedUser(any()),
@@ -191,37 +273,13 @@ void main() {
         verify(() => repository.updateLoggedUser(captureAny())).captured.single
             as UpdateLoggedUserRequestModel;
     expect(captured.fullName, 'Lisa Souza');
-  });
-
-  testWidgets('submits changed address fields', (tester) async {
-    final completer = Completer<Either<Failure, UserEntity>>();
-    when(
-      () => repository.updateLoggedUser(any()),
-    ).thenAnswer((_) => completer.future);
-
-    await pumpApp(tester);
-
-    await tester.enterText(find.byType(TextFormField).at(5), '60000-000');
-    await tester.enterText(find.byType(TextFormField).at(6), 'Brasil');
-    await tester.enterText(find.byType(TextFormField).at(7), 'CE');
-    await tester.enterText(find.byType(TextFormField).at(8), 'Fortaleza');
-    await tester.enterText(find.byType(TextFormField).at(10), 'Rua Beta');
-    await tester.enterText(find.byType(TextFormField).at(11), '456');
-    await _scrollToSaveButton(tester);
-    await tester.pumpAndSettle();
-    await tester.tap(_saveButton());
-    await tester.pump();
-
-    final captured =
-        verify(() => repository.updateLoggedUser(captureAny())).captured.single
-            as UpdateLoggedUserRequestModel;
     expect(captured.address, isNotNull);
     expect(captured.address!.zip, '60000-000');
     expect(captured.address!.country, 'Brasil');
     expect(captured.address!.state, 'CE');
     expect(captured.address!.city, 'Fortaleza');
-    expect(captured.address!.street, 'Rua Beta');
-    expect(captured.address!.number, '456');
+    expect(captured.address!.street, 'Rua Alfa');
+    expect(captured.address!.number, '123');
   });
 
   testWidgets('shows loading state while saving', (tester) async {
@@ -258,6 +316,7 @@ void main() {
           'birthDate': '1998-04-09',
           'phone': '(85) 99999-1111',
           'email': 'lisa@example.com',
+          'addressId': 'address-1',
         },
       );
     });
@@ -267,7 +326,7 @@ void main() {
     expect(find.text('Meu perfil'), findsOneWidget);
     expect(find.text('Lisa Silva'), findsWidgets);
 
-    await tester.tap(find.text('Editar dados'));
+    await tester.tap(find.text('Editar dados pessoais'));
     await tester.pumpAndSettle();
     await _scrollToSaveButton(tester);
     await tester.pumpAndSettle();
@@ -285,7 +344,7 @@ void main() {
   ) async {
     await pumpApp(tester);
 
-    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.text('Editar dados pessoais'), findsOneWidget);
 
     await _scrollToSaveButton(tester);
     await tester.pumpAndSettle();

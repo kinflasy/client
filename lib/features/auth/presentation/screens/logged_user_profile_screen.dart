@@ -123,9 +123,16 @@ class _ProfileContent extends StatelessWidget {
         const SizedBox(height: 24),
         _ActionButton(
           icon: Icons.edit_outlined,
-          label: 'Editar dados',
+          label: 'Editar dados pessoais',
           onPressed: () =>
               context.pushNamed(AppRoutes.homeMenuEditProfileInfoName),
+        ),
+        const SizedBox(height: 10),
+        _ActionButton(
+          icon: Icons.location_on_outlined,
+          label: 'Editar endereço',
+          onPressed: () =>
+              context.pushNamed(AppRoutes.homeMenuEditProfileAddressName),
         ),
         const SizedBox(height: 10),
         _ActionButton(

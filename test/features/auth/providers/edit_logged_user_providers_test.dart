@@ -5,12 +5,14 @@ import 'package:client/core/address/address_form_state.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/media/media_providers.dart';
 import 'package:client/core/network/dio_client.dart';
+import 'package:client/features/auth/data/datasources/auth_request_models.dart';
 import 'package:client/features/auth/domain/entities/logged_user_profile_entity.dart';
 import 'package:client/features/auth/domain/entities/user_entity.dart';
 import 'package:client/features/auth/domain/repositories/auth_repository.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -21,6 +23,16 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 class _MockDio extends Mock implements Dio {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(
+      const UpdateLoggedUserRequestModel(
+        fullName: 'Fallback',
+        gender: 'FEMALE',
+        birthDate: '1998-04-09',
+      ),
+    );
+  });
+
   final profile = LoggedUserProfileEntity(
     id: 'user-1',
     fullName: 'Lisa Silva',
@@ -29,8 +41,146 @@ void main() {
     phone: '(85) 99999-1111',
     gender: 'FEMALE',
     birthDate: DateTime(1998, 4, 9),
-    address: const AddressValue(city: 'Fortaleza'),
+    address: const AddressValue(
+      zip: '60000-000',
+      country: 'Brasil',
+      state: 'CE',
+      city: 'Fortaleza',
+      neighborhood: 'Centro',
+      street: 'Rua Alfa',
+      number: '123',
+      complement: 'Apto 4',
+      reference: 'PrÃ³ximo Ã  praÃ§a',
+    ),
   );
+
+  test('initializes personal data form state without address', () {
+    final state = createEditLoggedUserPersonalDataFormStateFromProfile(profile);
+
+    expect(state.isInitialized, isTrue);
+    expect(state.fullName, 'Lisa Silva');
+    expect(state.nickname, 'Lisa');
+    expect(state.email, 'lisa@example.com');
+    expect(state.phone, '(85) 99999-1111');
+  });
+
+  test('initializes address form state from profile address', () {
+    final state = createEditLoggedUserAddressFormStateFromProfile(profile);
+
+    expect(state.isInitialized, isTrue);
+    expect(state.address.zip, '60000-000');
+    expect(state.address.city, 'Fortaleza');
+  });
+
+  test('personal data request preserves current address when it exists', () {
+    final request = buildUpdateLoggedUserPersonalDataRequest(
+      EditLoggedUserPersonalDataFormState(
+        fullName: 'Lisa Silva',
+        nickname: '   ',
+        gender: 'FEMALE',
+        birthDate: DateTime(1998, 4, 9),
+        phone: ' ',
+        email: '',
+        isInitialized: true,
+      ),
+      profile,
+    );
+
+    expect(request.nickname, isNull);
+    expect(request.phone, isNull);
+    expect(request.email, isNull);
+    expect(request.address, isNotNull);
+    expect(request.address!.city, 'Fortaleza');
+    expect(request.birthDate, '1998-04-09');
+  });
+
+  test('personal data request omits address when profile has no address', () {
+    final request = buildUpdateLoggedUserPersonalDataRequest(
+      EditLoggedUserPersonalDataFormState(
+        fullName: 'Lisa Silva',
+        gender: 'FEMALE',
+        birthDate: DateTime(1998, 4, 9),
+        isInitialized: true,
+      ),
+      LoggedUserProfileEntity(
+        id: 'user-1',
+        fullName: 'Lisa Silva',
+        gender: 'FEMALE',
+        birthDate: DateTime(1998, 4, 9),
+      ),
+    );
+
+    expect(request.address, isNull);
+  });
+
+  test('address request preserves current required personal data', () {
+    final request = buildUpdateLoggedUserAddressRequest(
+      const EditLoggedUserAddressFormState(
+        address: AddressFormState(city: 'Fortaleza'),
+        isInitialized: true,
+      ),
+      profile,
+    );
+
+    expect(request.fullName, 'Lisa Silva');
+    expect(request.nickname, 'Lisa');
+    expect(request.gender, 'FEMALE');
+    expect(request.birthDate, '1998-04-09');
+    expect(request.phone, '85999991111');
+    expect(request.email, 'lisa@example.com');
+  });
+
+  test('filled address request sends normalized AddressRequestModel', () {
+    final request = buildUpdateLoggedUserAddressRequest(
+      const EditLoggedUserAddressFormState(
+        address: AddressFormState(
+          zip: ' 60000-000 ',
+          country: ' Brasil ',
+          state: ' CE ',
+          city: ' Fortaleza ',
+          neighborhood: ' Centro ',
+          street: ' Rua Alfa ',
+          number: ' 123 ',
+          complement: ' Apto 4 ',
+          reference: ' PrÃ³ximo Ã  praÃ§a ',
+        ),
+        isInitialized: true,
+      ),
+      profile,
+    );
+
+    expect(request.address, isNotNull);
+    expect(request.address!.zip, '60000-000');
+    expect(request.address!.country, 'Brasil');
+    expect(request.address!.state, 'CE');
+    expect(request.address!.city, 'Fortaleza');
+    expect(request.address!.neighborhood, 'Centro');
+    expect(request.address!.street, 'Rua Alfa');
+    expect(request.address!.number, '123');
+    expect(request.address!.complement, 'Apto 4');
+    expect(request.address!.reference, 'PrÃ³ximo Ã  praÃ§a');
+  });
+
+  test('empty address request sends non-null empty address to clear it', () {
+    final request = buildUpdateLoggedUserAddressRequest(
+      const EditLoggedUserAddressFormState(
+        address: AddressFormState(),
+        isInitialized: true,
+      ),
+      profile,
+    );
+
+    expect(request.address, isNotNull);
+    expect(request.address!.zip, isNull);
+    expect(request.address!.country, isNull);
+    expect(request.address!.state, isNull);
+    expect(request.address!.city, isNull);
+    expect(request.address!.neighborhood, isNull);
+    expect(request.address!.street, isNull);
+    expect(request.address!.number, isNull);
+    expect(request.address!.complement, isNull);
+    expect(request.address!.reference, isNull);
+  });
 
   test('initializes form state from detailed logged user profile', () {
     final state = createEditLoggedUserFormStateFromProfile(profile);
@@ -107,6 +257,126 @@ void main() {
     expect(request.address!.number, '123');
     expect(request.address!.complement, 'Apto 4');
     expect(request.address!.reference, 'Próximo à praça');
+  });
+
+  testWidgets('personal data submit uses personal data submit provider', (
+    tester,
+  ) async {
+    final repository = _MockAuthRepository();
+    final completer = Completer<Either<Failure, UserEntity>>();
+
+    when(
+      () => repository.getCurrentUser(),
+    ).thenAnswer((_) async => const UserEntity(id: 'user-1', username: 'lisa'));
+    when(
+      () => repository.updateLoggedUser(any()),
+    ).thenAnswer((_) => completer.future);
+
+    late WidgetRef widgetRef;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authRepositoryProvider.overrideWithValue(repository)],
+        child: Consumer(
+          builder: (context, ref, _) {
+            widgetRef = ref;
+            ref.watch(authProvider);
+            ref.watch(editLoggedUserPersonalDataSubmitProvider);
+            ref.watch(editLoggedUserAddressSubmitProvider);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    final request = buildUpdateLoggedUserPersonalDataRequest(
+      EditLoggedUserPersonalDataFormState(
+        fullName: 'Lisa Silva',
+        gender: 'FEMALE',
+        birthDate: DateTime(1998, 4, 9),
+      ),
+      profile,
+    );
+    final submitFuture = submitEditLoggedUserPersonalData(
+      widgetRef,
+      request: request,
+    );
+    await tester.pump();
+
+    expect(
+      widgetRef.read(editLoggedUserPersonalDataSubmitProvider).isLoading,
+      isTrue,
+    );
+    expect(
+      widgetRef.read(editLoggedUserAddressSubmitProvider).isLoading,
+      isFalse,
+    );
+
+    completer.complete(const Right(UserEntity(id: 'user-1', username: 'lisa')));
+    final result = await submitFuture;
+
+    expect(result.isRight(), isTrue);
+    expect(
+      widgetRef.read(editLoggedUserPersonalDataSubmitProvider),
+      const AsyncValue<void>.data(null),
+    );
+    verify(() => repository.updateLoggedUser(request)).called(1);
+  });
+
+  testWidgets('address submit uses address submit provider', (tester) async {
+    final repository = _MockAuthRepository();
+    final completer = Completer<Either<Failure, UserEntity>>();
+
+    when(
+      () => repository.getCurrentUser(),
+    ).thenAnswer((_) async => const UserEntity(id: 'user-1', username: 'lisa'));
+    when(
+      () => repository.updateLoggedUser(any()),
+    ).thenAnswer((_) => completer.future);
+
+    late WidgetRef widgetRef;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authRepositoryProvider.overrideWithValue(repository)],
+        child: Consumer(
+          builder: (context, ref, _) {
+            widgetRef = ref;
+            ref.watch(authProvider);
+            ref.watch(editLoggedUserPersonalDataSubmitProvider);
+            ref.watch(editLoggedUserAddressSubmitProvider);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    final request = buildUpdateLoggedUserAddressRequest(
+      const EditLoggedUserAddressFormState(
+        address: AddressFormState(city: 'Fortaleza'),
+        isInitialized: true,
+      ),
+      profile,
+    );
+    final submitFuture = submitEditLoggedUserAddress(
+      widgetRef,
+      request: request,
+    );
+    await tester.pump();
+
+    expect(widgetRef.read(editLoggedUserAddressSubmitProvider).isLoading, true);
+    expect(
+      widgetRef.read(editLoggedUserPersonalDataSubmitProvider).isLoading,
+      isFalse,
+    );
+
+    completer.complete(const Right(UserEntity(id: 'user-1', username: 'lisa')));
+    final result = await submitFuture;
+
+    expect(result.isRight(), isTrue);
+    expect(
+      widgetRef.read(editLoggedUserAddressSubmitProvider),
+      const AsyncValue<void>.data(null),
+    );
+    verify(() => repository.updateLoggedUser(request)).called(1);
   });
 
   test('resolved profile loads complete address from addressId', () async {

@@ -82,6 +82,7 @@ void main() {
   );
 
   testWidgets('shows prefilled personal and address fields', (tester) async {
+    _useLargeViewport(tester);
     final repository = _FakeMemberProfileRepository();
     final container = ProviderContainer(
       overrides: [
@@ -116,6 +117,9 @@ void main() {
 
     expect(find.text('Maria Souza'), findsOneWidget);
     expect(find.text('maria@dev.com'), findsOneWidget);
+    expect(find.text('60000-000'), findsOneWidget);
+    expect(find.text('Fortaleza'), findsOneWidget);
+    expect(find.text('Rua A'), findsOneWidget);
     expect(formState.address.city, 'Fortaleza');
     expect(formState.address.reference, 'Perto da praca');
     expect(find.text('Editar cadastro'), findsOneWidget);

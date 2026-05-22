@@ -5,15 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('renders all expected labels', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: AddressFormSection(
-            value: const AddressFormState(),
-            onChanged: _noop,
-          ),
-        ),
-      ),
+    await _pumpAddressForm(
+      tester,
+      value: const AddressFormState(),
+      onChanged: _noop,
     );
 
     expect(find.text('CEP'), findsOneWidget);
@@ -30,15 +25,10 @@ void main() {
   testWidgets('editing a field emits updated state', (tester) async {
     AddressFormState? latestValue;
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: AddressFormSection(
-            value: const AddressFormState(),
-            onChanged: (next) => latestValue = next,
-          ),
-        ),
-      ),
+    await _pumpAddressForm(
+      tester,
+      value: const AddressFormState(),
+      onChanged: (next) => latestValue = next,
     );
 
     await tester.enterText(find.byType(TextFormField).first, '12345-678');
@@ -47,18 +37,42 @@ void main() {
     expect(latestValue!.zip, '12345-678');
   });
 
-  testWidgets('showTitle controls title visibility', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: AddressFormSection(
-            value: const AddressFormState(),
-            onChanged: _noop,
-            title: 'Endereço da unidade',
-            showTitle: true,
-          ),
-        ),
+  testWidgets('updates visible fields when value changes after first build', (
+    tester,
+  ) async {
+    await _pumpAddressForm(
+      tester,
+      value: const AddressFormState(),
+      onChanged: _noop,
+    );
+
+    expect(find.text('60000-000'), findsNothing);
+    expect(find.text('Fortaleza'), findsNothing);
+    expect(find.text('Rua A'), findsNothing);
+
+    await _pumpAddressForm(
+      tester,
+      value: const AddressFormState(
+        zip: '60000-000',
+        city: 'Fortaleza',
+        street: 'Rua A',
       ),
+      onChanged: _noop,
+    );
+    await tester.pump();
+
+    expect(find.text('60000-000'), findsOneWidget);
+    expect(find.text('Fortaleza'), findsOneWidget);
+    expect(find.text('Rua A'), findsOneWidget);
+  });
+
+  testWidgets('showTitle controls title visibility', (tester) async {
+    await _pumpAddressForm(
+      tester,
+      value: const AddressFormState(),
+      onChanged: _noop,
+      title: 'Endereço da unidade',
+      showTitle: true,
     );
 
     expect(find.text('Endereço da unidade'), findsOneWidget);
@@ -72,9 +86,11 @@ void main() {
         home: StatefulBuilder(
           builder: (context, setState) {
             return Scaffold(
-              body: AddressFormSection(
-                value: value,
-                onChanged: (next) => setState(() => value = next),
+              body: SingleChildScrollView(
+                child: AddressFormSection(
+                  value: value,
+                  onChanged: (next) => setState(() => value = next),
+                ),
               ),
             );
           },
@@ -96,3 +112,26 @@ void main() {
 }
 
 void _noop(AddressFormState _) {}
+
+Future<void> _pumpAddressForm(
+  WidgetTester tester, {
+  required AddressFormState value,
+  required ValueChanged<AddressFormState> onChanged,
+  String? title,
+  bool showTitle = false,
+}) {
+  return tester.pumpWidget(
+    MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: AddressFormSection(
+            value: value,
+            onChanged: onChanged,
+            title: title,
+            showTitle: showTitle,
+          ),
+        ),
+      ),
+    ),
+  );
+}

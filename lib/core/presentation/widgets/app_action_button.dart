@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 class AppActionButton extends StatelessWidget {
   const AppActionButton({
     super.key,
-    required this.icon,
     required this.title,
+    this.icon,
     this.onTap,
     this.backgroundColor,
     this.foregroundColor,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String title;
   final VoidCallback? onTap;
   final Color? backgroundColor;
@@ -41,8 +41,10 @@ class AppActionButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: contentColor),
-                const SizedBox(width: 12),
+                if (icon != null) ...[
+                  Icon(icon, color: contentColor),
+                  const SizedBox(width: 12),
+                ],
                 Flexible(
                   child: Text(
                     title,

@@ -28,6 +28,23 @@ void main() {
     expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
   });
 
+  testWidgets('renderiza título centralizado sem ícone', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        AppActionButton(
+          title: 'Continuar',
+          onTap: () {},
+        ),
+      ),
+    );
+
+    final row = tester.widget<Row>(find.byType(Row));
+
+    expect(find.text('Continuar'), findsOneWidget);
+    expect(find.byType(Icon), findsNothing);
+    expect(row.mainAxisAlignment, MainAxisAlignment.center);
+  });
+
   testWidgets('executa onTap', (tester) async {
     var tapCount = 0;
 

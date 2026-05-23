@@ -44,6 +44,10 @@ class AppRoutes {
   static const departmentEventCreate = '/departamentos/:id/eventos/criar';
   static const departmentParticipantsAdd =
       '/departamentos/:id/participantes/adicionar';
+  static const departmentLineups = '/departamentos/:id/escalas';
+  static const departmentLineupCreate = '/departamentos/:id/escalas/criar';
+  static const departmentLineupEdit =
+      '/departamentos/:departmentId/escalas/:lineupId/editar';
 
   static const splashName = 'splash';
   static const loginName = 'login';
@@ -87,4 +91,7 @@ class AppRoutes {
   static const departmentDetailName = 'department-detail';
   static const departmentEventCreateName = 'department-event-create';
   static const departmentParticipantsAddName = 'department-participants-add';
+  static const departmentLineupsName = 'department-lineups';
+  static const departmentLineupCreateName = 'department-lineup-create';
+  static const departmentLineupEditName = 'department-lineup-edit';
 }

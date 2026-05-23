@@ -29,6 +29,7 @@ class DepartmentScreen extends ConsumerStatefulWidget {
 }
 
 class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedTabIndex = 0;
 
   static const _tabs = ['Eventos', 'Participantes'];
@@ -52,15 +53,36 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
           data: (permissions) => permissions.canManageDept(widget.departmentId),
         ) ??
         false;
+    final canObserveDepartment =
+        permissionsAsync.whenOrNull(
+          data: (permissions) =>
+              permissions.canObserveDept(widget.departmentId),
+        ) ??
+        false;
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: AppColors.background,
+      endDrawer: canObserveDepartment
+          ? _DepartmentSettingsSidebar(
+              departmentId: widget.departmentId,
+              departmentName: _buildTitle(departmentAsync),
+            )
+          : null,
       appBar: AppBar(
         automaticallyImplyLeading: widget.showBackButton,
         title: Text(_buildTitle(departmentAsync)),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        actions: [
+          if (canObserveDepartment)
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'Configurações do departamento',
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+            ),
+        ],
       ),
       body: accessDenied == true
           ? const _InlineStatus(
@@ -119,6 +141,75 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
       loading: () => 'Carregando...',
       error: (_, _) => 'Departamento',
       data: (department) => department.name,
+    );
+  }
+}
+
+class _DepartmentSettingsSidebar extends StatelessWidget {
+  const _DepartmentSettingsSidebar({
+    required this.departmentId,
+    required this.departmentName,
+  });
+
+  final String departmentId;
+  final String departmentName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: AppColors.surface,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Configurações',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    departmentName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(
+                Icons.assignment_outlined,
+                color: AppColors.primary,
+              ),
+              title: const Text(
+                'Escalas',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.pushNamed(
+                  AppRoutes.departmentLineupsName,
+                  pathParameters: {'id': departmentId},
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -171,6 +171,41 @@ void main() {
     expect(find.text('Criar evento'), findsOneWidget);
   });
 
+  testWidgets('opens settings sidebar with lineups option for observer', (
+    tester,
+  ) async {
+    _stubDepartmentDetail(repository);
+    _stubParticipants(repository);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) async => const [],
+          ),
+          sessionPermissionsProvider.overrideWith(
+            (ref) async => _integrantPermissions,
+          ),
+        ],
+        child: const MaterialApp(
+          home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Drawer), findsOneWidget);
+    expect(find.text('Configurações'), findsOneWidget);
+    expect(find.byIcon(Icons.assignment_outlined), findsOneWidget);
+    expect(find.text('Escalas'), findsOneWidget);
+  });
+
   testWidgets('shows department events rendered with EventCard', (
     tester,
   ) async {

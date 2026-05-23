@@ -18,6 +18,7 @@ import 'package:client/features/church/domain/repositories/church_unit_repositor
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_entity.dart';
 import 'package:client/features/department/domain/entities/my_departments_unit_group.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
@@ -127,6 +128,9 @@ void main() {
     when(
       () => departmentRepository.getParticipants('dep-2'),
     ).thenAnswer((_) async => const Right(<DepartmentParticipantEntity>[]));
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => const Right(LineupEntity(id: 'lineup-1', name: 'Culto')),
+    );
     when(
       () => churchUnitRepository.getPendingMembers('unit-1'),
     ).thenAnswer((_) async => const Right([]));
@@ -273,6 +277,51 @@ void main() {
 
     expect(find.byType(BottomNavigationBar), findsNothing);
     expect(find.text('Pesquisar nome ou apelido...'), findsOneWidget);
+  });
+
+  testWidgets(
+    'department lineups route opens with department observer access',
+    (tester) async {
+      final router = container.read(appRouterProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await pumpRouter(tester);
+
+      router.goNamed(
+        AppRoutes.departmentLineupsName,
+        pathParameters: {'id': 'dep-1'},
+      );
+      await tester.pump();
+      await pumpRouter(tester);
+
+      expect(find.byType(BottomNavigationBar), findsNothing);
+      expect(find.text('Escalas'), findsOneWidget);
+    },
+  );
+
+  testWidgets('user without department access is redirected from lineups', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await pumpRouter(tester);
+
+    router.go('/departamentos/dep-2/escalas');
+    await pumpRouter(tester);
+
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.text('Escalas'), findsNothing);
   });
 
   testWidgets('department event create route opens for department leader', (
@@ -439,6 +488,94 @@ void main() {
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
     expect(find.text('Criar evento'), findsNothing);
+  });
+
+  testWidgets('department leader can open lineup create route', (tester) async {
+    final leaderContainer = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(authRepository),
+        sessionPermissionsProvider.overrideWith(
+          (ref) async => leaderPermissions,
+        ),
+        hasMembershipProvider.overrideWith((ref) => true),
+        editLoggedUserInitialDataProvider.overrideWith(
+          (ref) async => _loggedUserProfile(),
+        ),
+        pendingUnitMembershipsProvider.overrideWith(
+          (ref, unitId) async => const [],
+        ),
+        departmentRepositoryProvider.overrideWithValue(departmentRepository),
+        churchUnitRepositoryProvider.overrideWithValue(churchUnitRepository),
+        activeMembershipProvider.overrideWith(
+          (ref) async => const MembershipEntity(
+            id: 'membership-1',
+            unitId: 'unit-1',
+            affiliation: 'MEMBER',
+          ),
+        ),
+        currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+      ],
+    );
+    addTearDown(leaderContainer.dispose);
+
+    final router = leaderContainer.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: leaderContainer,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+
+    router.go('/departamentos/dep-1/escalas/criar');
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.text('Novo lineup'), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsNothing);
+  });
+
+  testWidgets('integrant is redirected away from lineup create route', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+
+    router.go('/departamentos/dep-1/escalas/criar');
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.text('Novo lineup'), findsNothing);
+  });
+
+  testWidgets('integrant is redirected away from lineup edit route', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+
+    router.go('/departamentos/dep-1/escalas/lineup-1/editar');
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.text('Editar lineup'), findsNothing);
   });
 
   testWidgets(

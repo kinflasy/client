@@ -19,6 +19,8 @@ import 'package:client/features/church/presentation/screens/edit_church_unit_ima
 import 'package:client/features/church/presentation/screens/edit_church_unit_links_screen.dart';
 import 'package:client/features/church/presentation/screens/admin_panel_screen.dart';
 import 'package:client/features/department/presentation/screens/department_category_list_screen.dart';
+import 'package:client/features/department/presentation/screens/department_lineups_screen.dart';
+import 'package:client/features/department/presentation/screens/edit_department_lineup_screen.dart';
 import 'package:client/features/department/presentation/screens/my_departments_menu_screen.dart';
 import 'package:client/features/department/presentation/screens/department_participants_selection_screen.dart';
 import 'package:client/features/department/presentation/screens/department_screen.dart';
@@ -81,6 +83,9 @@ final _protectedRoutes = <String>{
   AppRoutes.departmentDetail,
   AppRoutes.departmentEventCreate,
   AppRoutes.departmentParticipantsAdd,
+  AppRoutes.departmentLineups,
+  AppRoutes.departmentLineupCreate,
+  AppRoutes.departmentLineupEdit,
 };
 
 final _membershipRequiredRoutes = <String>{};
@@ -173,7 +178,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final isDepartmentDetailRoute =
               routePath == AppRoutes.homeChurchDepartmentDetail ||
               routePath == AppRoutes.departmentDetail ||
-              routePath == AppRoutes.departmentParticipantsAdd;
+              routePath == AppRoutes.departmentParticipantsAdd ||
+              routePath == AppRoutes.departmentLineups;
           if (isDepartmentDetailRoute) {
             final departmentId = state.pathParameters['id'];
             if (departmentId != null &&
@@ -182,8 +188,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             }
           }
 
-          if (routePath == AppRoutes.departmentEventCreate) {
-            final departmentId = state.pathParameters['id'];
+          final isDepartmentManagementRoute =
+              routePath == AppRoutes.departmentEventCreate ||
+              routePath == AppRoutes.departmentLineupCreate ||
+              routePath == AppRoutes.departmentLineupEdit;
+          if (isDepartmentManagementRoute) {
+            final departmentId =
+                state.pathParameters['id'] ??
+                state.pathParameters['departmentId'];
             if (departmentId != null &&
                 !permissions.canManageDept(departmentId)) {
               return AppRoutes.homeChurch;
@@ -443,6 +455,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final departmentId = state.pathParameters['id']!;
           return DepartmentParticipantsSelectionScreen(
             departmentId: departmentId,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.departmentLineups,
+        name: AppRoutes.departmentLineupsName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final departmentId = state.pathParameters['id']!;
+          return DepartmentLineupsScreen(departmentId: departmentId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.departmentLineupCreate,
+        name: AppRoutes.departmentLineupCreateName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final departmentId = state.pathParameters['id']!;
+          return EditDepartmentLineupScreen(departmentId: departmentId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.departmentLineupEdit,
+        name: AppRoutes.departmentLineupEditName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final departmentId = state.pathParameters['departmentId']!;
+          final lineupId = state.pathParameters['lineupId']!;
+          return EditDepartmentLineupScreen(
+            departmentId: departmentId,
+            lineupId: lineupId,
           );
         },
       ),

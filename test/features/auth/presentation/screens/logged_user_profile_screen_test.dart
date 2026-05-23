@@ -105,10 +105,19 @@ void main() {
     await tester.pump();
 
     expect(find.text('Meu perfil'), findsOneWidget);
+    expect(find.text('Resumo'), findsOneWidget);
     expect(find.text('Lisa Silva'), findsWidgets);
     expect(find.text('Li'), findsWidgets);
     expect(find.text('Feminino'), findsOneWidget);
     expect(find.text('09/04/1998'), findsOneWidget);
+    expect(find.text(_ageLabel(DateTime(1998, 4, 9))), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Contato'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    expect(find.text('Contato'), findsOneWidget);
     expect(find.text('(85) 99999-1111'), findsOneWidget);
     expect(find.text('lisa@example.com'), findsOneWidget);
     await tester.scrollUntilVisible(
@@ -147,15 +156,33 @@ void main() {
     await tester.pumpWidget(buildApp(loadProfile: () async => _fullProfile()));
     await tester.pump();
 
-    expect(find.text('Editar dados pessoais'), findsOneWidget);
-    expect(find.text('Editar endereço'), findsOneWidget);
     expect(find.text('Editar foto'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Editar dados pessoais'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    expect(find.text('Editar dados pessoais'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Editar endereço'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    expect(find.text('Editar endereço'), findsOneWidget);
   });
 
   testWidgets('navega para edição de dados pessoais', (tester) async {
     await tester.pumpWidget(buildApp(loadProfile: () async => _fullProfile()));
     await tester.pump();
 
+    await tester.scrollUntilVisible(
+      find.text('Editar dados pessoais'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
     await tester.tap(find.text('Editar dados pessoais'));
     await tester.pumpAndSettle();
     expect(find.text('Tela de edição de dados pessoais'), findsOneWidget);
@@ -165,6 +192,12 @@ void main() {
     await tester.pumpWidget(buildApp(loadProfile: () async => _fullProfile()));
     await tester.pump();
 
+    await tester.scrollUntilVisible(
+      find.text('Editar endereço'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
     await tester.tap(find.text('Editar endereço'));
     await tester.pumpAndSettle();
 
@@ -260,4 +293,15 @@ LoggedUserProfileEntity _fullProfile({String? profileImageId}) {
 
 LoggedUserProfileEntity _partialProfile() {
   return const LoggedUserProfileEntity(id: 'user-1', fullName: '', gender: '');
+}
+
+String _ageLabel(DateTime birthDate) {
+  final now = DateTime.now();
+  var age = now.year - birthDate.year;
+  if (now.month < birthDate.month ||
+      (now.month == birthDate.month && now.day < birthDate.day)) {
+    age--;
+  }
+
+  return '$age anos';
 }

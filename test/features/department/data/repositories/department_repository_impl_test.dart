@@ -2,6 +2,9 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/features/department/data/datasources/department_api.dart';
 import 'package:client/features/department/data/models/integration_request_model.dart';
+import 'package:client/features/department/data/models/lineup_item_request_model.dart';
+import 'package:client/features/department/data/models/lineup_request_model.dart';
+import 'package:client/features/department/data/models/role_request_model.dart';
 import 'package:client/features/department/data/repositories/department_repository_impl.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -441,5 +444,289 @@ void main() {
         }, (_) => fail('expected failure'));
       },
     );
+  });
+
+  group('DepartmentRepositoryImpl roles', () {
+    test('returns role entities on success', () async {
+      when(() => api.getRoles()).thenAnswer(
+        (_) async => [
+          {'id': 'role-1', 'name': 'Vocal', 'slug': 'vocal'},
+        ],
+      );
+
+      final result = await repository.getRoles();
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (roles) {
+        expect(roles, hasLength(1));
+        expect(roles.single.id, 'role-1');
+        expect(roles.single.name, 'Vocal');
+        expect(roles.single.slug, 'vocal');
+      });
+    });
+
+    test('creates role with request payload', () async {
+      when(() => api.createRole(any())).thenAnswer(
+        (_) async => {'id': 'role-1', 'name': 'Vocal', 'slug': 'vocal'},
+      );
+
+      final result = await repository.createRole(
+        const RoleRequestModel(name: 'Vocal'),
+      );
+
+      expect(result.isRight(), isTrue);
+      expect(verify(() => api.createRole(captureAny())).captured.single, {
+        'name': 'Vocal',
+      });
+    });
+
+    test('maps conflict into ValidationFailure with backend message', () async {
+      when(() => api.createRole(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/v1/core/roles'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/v1/core/roles'),
+            statusCode: 409,
+            data: {'message': 'Papel já existe.'},
+          ),
+        ),
+      );
+
+      final result = await repository.createRole(
+        const RoleRequestModel(name: 'Vocal'),
+      );
+
+      result.match((failure) {
+        expect(failure, isA<ValidationFailure>());
+        expect(failure.message, 'Papel já existe.');
+      }, (_) => fail('expected failure'));
+    });
+  });
+
+  group('DepartmentRepositoryImpl lineups', () {
+    test('returns lineup entities with valid nested items', () async {
+      when(() => api.getDepartmentLineups('dep-1')).thenAnswer(
+        (_) async => [
+          {
+            'id': 'lineup-1',
+            'name': 'Culto',
+            'items': [
+              {
+                'id': 'item-1',
+                'lineupId': 'lineup-1',
+                'description': 'Vocal principal',
+                'role': {'id': 'role-1', 'name': 'Vocal', 'slug': 'vocal'},
+              },
+              {'id': 'item-invalid', 'description': 'Sem papel'},
+            ],
+          },
+        ],
+      );
+
+      final result = await repository.getDepartmentLineups('dep-1');
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (lineups) {
+        expect(lineups, hasLength(1));
+        expect(lineups.single.id, 'lineup-1');
+        expect(lineups.single.name, 'Culto');
+        expect(lineups.single.items, hasLength(1));
+        expect(lineups.single.items!.single.roleId, 'role-1');
+        expect(lineups.single.items!.single.role!.name, 'Vocal');
+      });
+    });
+
+    test('creates department lineup with request payload', () async {
+      when(
+        () => api.createDepartmentLineup('dep-1', any()),
+      ).thenAnswer((_) async => {'id': 'lineup-1', 'name': 'Culto'});
+
+      final result = await repository.createDepartmentLineup(
+        'dep-1',
+        const LineupRequestModel(name: 'Culto'),
+      );
+
+      expect(result.isRight(), isTrue);
+      expect(
+        verify(
+          () => api.createDepartmentLineup('dep-1', captureAny()),
+        ).captured.single,
+        {'name': 'Culto'},
+      );
+    });
+
+    test('updates lineup and fetches detail when response is empty', () async {
+      when(
+        () => api.updateLineup('lineup-1', any()),
+      ).thenAnswer((_) async => <String, dynamic>{});
+      when(
+        () => api.getLineupById('lineup-1'),
+      ).thenAnswer((_) async => {'id': 'lineup-1', 'name': 'Culto atualizado'});
+
+      final result = await repository.updateLineup(
+        'lineup-1',
+        const LineupRequestModel(name: 'Culto atualizado'),
+      );
+
+      expect(result.isRight(), isTrue);
+      result.match(
+        (_) => fail('expected success'),
+        (lineup) => expect(lineup.name, 'Culto atualizado'),
+      );
+      verify(() => api.getLineupById('lineup-1')).called(1);
+    });
+
+    test('maps lineup not found into NotFoundFailure', () async {
+      when(() => api.getLineupById('lineup-1')).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/lineups/lineup-1'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/lineups/lineup-1'),
+            statusCode: 404,
+            data: {'message': 'Formação não encontrada.'},
+          ),
+        ),
+      );
+
+      final result = await repository.getLineupById('lineup-1');
+
+      result.match((failure) {
+        expect(failure, isA<NotFoundFailure>());
+        expect(failure.message, 'Formação não encontrada.');
+      }, (_) => fail('expected failure'));
+    });
+
+    test(
+      'maps forbidden into ValidationFailure with backend message',
+      () async {
+        when(() => api.deleteLineup('lineup-1')).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/lineups/lineup-1'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/lineups/lineup-1'),
+              statusCode: 403,
+              data: {'message': 'Sem permissão para remover formação.'},
+            ),
+          ),
+        );
+
+        final result = await repository.deleteLineup('lineup-1');
+
+        result.match((failure) {
+          expect(failure, isA<ValidationFailure>());
+          expect(failure.message, 'Sem permissão para remover formação.');
+        }, (_) => fail('expected failure'));
+      },
+    );
+  });
+
+  group('DepartmentRepositoryImpl lineup items', () {
+    test(
+      'returns items with roleId or nested role and discards invalid items',
+      () async {
+        when(() => api.getLineupItems('lineup-1')).thenAnswer(
+          (_) async => [
+            {
+              'id': 'item-1',
+              'lineupId': 'lineup-1',
+              'roleId': 'role-1',
+              'description': 'Vocal principal',
+            },
+            {
+              'id': 'item-2',
+              'lineupId': 'lineup-1',
+              'description': 'Violão',
+              'role': {
+                'id': 'role-2',
+                'name': 'Instrumentista',
+                'slug': 'inst',
+              },
+            },
+            {'id': 'item-invalid', 'lineupId': 'lineup-1'},
+          ],
+        );
+
+        final result = await repository.getLineupItems('lineup-1');
+
+        expect(result.isRight(), isTrue);
+        result.match((_) => fail('expected success'), (items) {
+          expect(items, hasLength(2));
+          expect(items.first.roleId, 'role-1');
+          expect(items.first.role, isNull);
+          expect(items.last.roleId, 'role-2');
+          expect(items.last.role!.name, 'Instrumentista');
+        });
+      },
+    );
+
+    test('creates item with request payload', () async {
+      when(() => api.createLineupItem('lineup-1', any())).thenAnswer(
+        (_) async => {
+          'id': 'item-1',
+          'lineupId': 'lineup-1',
+          'roleId': 'role-1',
+          'description': 'Vocal principal',
+        },
+      );
+
+      final result = await repository.createLineupItem(
+        'lineup-1',
+        const LineupItemRequestModel(
+          roleId: 'role-1',
+          description: 'Vocal principal',
+        ),
+      );
+
+      expect(result.isRight(), isTrue);
+      expect(
+        verify(
+          () => api.createLineupItem('lineup-1', captureAny()),
+        ).captured.single,
+        {'roleId': 'role-1', 'description': 'Vocal principal'},
+      );
+    });
+
+    test('updates item with description payload', () async {
+      when(() => api.updateLineupItem('item-1', any())).thenAnswer(
+        (_) async => {
+          'id': 'item-1',
+          'lineupId': 'lineup-1',
+          'roleId': 'role-1',
+          'description': 'Vocal de apoio',
+        },
+      );
+
+      final result = await repository.updateLineupItem(
+        'item-1',
+        const LineupItemUpdateRequestModel(description: 'Vocal de apoio'),
+      );
+
+      expect(result.isRight(), isTrue);
+      expect(
+        verify(
+          () => api.updateLineupItem('item-1', captureAny()),
+        ).captured.single,
+        {'description': 'Vocal de apoio'},
+      );
+    });
+
+    test('maps item not found into NotFoundFailure', () async {
+      when(() => api.deleteLineupItem('item-1')).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/lineups/items/item-1'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/lineups/items/item-1'),
+            statusCode: 404,
+          ),
+        ),
+      );
+
+      final result = await repository.deleteLineupItem('item-1');
+
+      result.match((failure) {
+        expect(failure, isA<NotFoundFailure>());
+        expect(failure.message, 'Item da formação não encontrado.');
+      }, (_) => fail('expected failure'));
+    });
   });
 }

@@ -4,9 +4,15 @@ import 'package:client/features/church/data/models/church_read_models.dart';
 import 'package:client/features/department/data/datasources/department_api.dart';
 import 'package:client/features/department/data/models/department_request_model.dart';
 import 'package:client/features/department/data/models/integration_request_model.dart';
+import 'package:client/features/department/data/models/lineup_item_request_model.dart';
+import 'package:client/features/department/data/models/lineup_request_model.dart';
+import 'package:client/features/department/data/models/role_request_model.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_item_entity.dart';
+import 'package:client/features/department/domain/entities/role_entity.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
@@ -192,12 +198,285 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, List<RoleEntity>>> getRoles() async {
+    try {
+      final jsonList = await _api.getRoles();
+      final roles = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(_mapRoleJsonToEntity)
+          .where((role) => role.id.isNotEmpty)
+          .toList();
+      return Right(roles);
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao carregar papéis.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, RoleEntity>> createRole(
+    RoleRequestModel request,
+  ) async {
+    try {
+      final json = await _api.createRole(request.toJson());
+      return Right(_mapRoleJsonToEntity(json));
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao criar papel.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<LineupEntity>>> getDepartmentLineups(
+    String departmentId,
+  ) async {
+    try {
+      final jsonList = await _api.getDepartmentLineups(departmentId);
+      final lineups = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(_mapLineupJsonToEntity)
+          .where((lineup) => lineup.id.isNotEmpty)
+          .toList();
+      return Right(lineups);
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao carregar formações.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, LineupEntity>> createDepartmentLineup(
+    String departmentId,
+    LineupRequestModel request,
+  ) async {
+    try {
+      final json = await _api.createDepartmentLineup(
+        departmentId,
+        request.toJson(),
+      );
+      return Right(_mapLineupJsonToEntity(json));
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao criar formação.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, LineupEntity>> getLineupById(String lineupId) async {
+    try {
+      final json = await _api.getLineupById(lineupId);
+      return Right(_mapLineupJsonToEntity(json));
+    } on DioException catch (e) {
+      return Left(
+        _mapDioFailure(
+          e,
+          'Erro ao carregar formação.',
+          notFoundMessage: 'Formação não encontrada.',
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, LineupEntity>> getLineupWithItems(
+    String lineupId,
+  ) async {
+    try {
+      final json = await _api.getLineupWithItems(lineupId);
+      return Right(_mapLineupJsonToEntity(json));
+    } on DioException catch (e) {
+      return Left(
+        _mapDioFailure(
+          e,
+          'Erro ao carregar formação.',
+          notFoundMessage: 'Formação não encontrada.',
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, LineupEntity>> updateLineup(
+    String lineupId,
+    LineupRequestModel request,
+  ) async {
+    try {
+      final json = await _api.updateLineup(lineupId, request.toJson());
+      final lineupJson = json.isEmpty
+          ? await _api.getLineupById(lineupId)
+          : json;
+      return Right(_mapLineupJsonToEntity(lineupJson));
+    } on DioException catch (e) {
+      return Left(
+        _mapDioFailure(
+          e,
+          'Erro ao atualizar formação.',
+          notFoundMessage: 'Formação não encontrada.',
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> deleteLineup(String lineupId) async {
+    try {
+      await _api.deleteLineup(lineupId);
+      return const Right(unit);
+    } on DioException catch (e) {
+      return Left(
+        _mapDioFailure(
+          e,
+          'Erro ao remover formação.',
+          notFoundMessage: 'Formação não encontrada.',
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<LineupItemEntity>>> getLineupItems(
+    String lineupId,
+  ) async {
+    try {
+      final jsonList = await _api.getLineupItems(lineupId);
+      final items = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(_mapLineupItemJsonToEntity)
+          .where(_isValidLineupItem)
+          .toList();
+      return Right(items);
+    } on DioException catch (e) {
+      return Left(
+        _mapDioFailure(
+          e,
+          'Erro ao carregar itens da formação.',
+          notFoundMessage: 'Formação não encontrada.',
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, LineupItemEntity>> createLineupItem(
+    String lineupId,
+    LineupItemRequestModel request,
+  ) async {
+    try {
+      final json = await _api.createLineupItem(lineupId, request.toJson());
+      return Right(_mapLineupItemJsonToEntity(json));
+    } on DioException catch (e) {
+      return Left(
+        _mapDioFailure(
+          e,
+          'Erro ao criar item da formação.',
+          notFoundMessage: 'Formação não encontrada.',
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, LineupItemEntity>> updateLineupItem(
+    String itemId,
+    LineupItemUpdateRequestModel request,
+  ) async {
+    try {
+      final json = await _api.updateLineupItem(itemId, request.toJson());
+      return Right(_mapLineupItemJsonToEntity(json));
+    } on DioException catch (e) {
+      return Left(
+        _mapDioFailure(
+          e,
+          'Erro ao atualizar item da formação.',
+          notFoundMessage: 'Item da formação não encontrado.',
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> deleteLineupItem(String itemId) async {
+    try {
+      await _api.deleteLineupItem(itemId);
+      return const Right(unit);
+    } on DioException catch (e) {
+      return Left(
+        _mapDioFailure(
+          e,
+          'Erro ao remover item da formação.',
+          notFoundMessage: 'Item da formação não encontrado.',
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
   DepartmentEntity _mapModelToEntity(DepartmentReadModel model) {
     return DepartmentEntity(
       id: model.id,
       name: model.name,
       slug: model.slug,
       type: model.type,
+    );
+  }
+
+  RoleEntity _mapRoleJsonToEntity(Map<String, dynamic> json) {
+    return RoleEntity(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      slug: json['slug'] as String? ?? '',
+    );
+  }
+
+  LineupEntity _mapLineupJsonToEntity(Map<String, dynamic> json) {
+    final items = _readList(json['items'])
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .map(_mapLineupItemJsonToEntity)
+        .where(_isValidLineupItem)
+        .toList();
+
+    return LineupEntity(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      items: json.containsKey('items') ? items : null,
+    );
+  }
+
+  LineupItemEntity _mapLineupItemJsonToEntity(Map<String, dynamic> json) {
+    final roleMap = _readMap(json['role']);
+    final role = roleMap.isEmpty ? null : _mapRoleJsonToEntity(roleMap);
+    final roleId = json['roleId'] as String? ?? role?.id ?? '';
+
+    return LineupItemEntity(
+      id: json['id'] as String? ?? '',
+      lineupId: json['lineupId'] as String? ?? '',
+      roleId: roleId,
+      description: json['description'] as String? ?? '',
+      role: role,
     );
   }
 
@@ -245,7 +524,55 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
     return const <String, dynamic>{};
   }
 
+  List<dynamic> _readList(Object? value) {
+    if (value is List) return value;
+    return const <dynamic>[];
+  }
+
   String? _readMessage(Object? value) => _readMap(value)['message'] as String?;
+
+  bool _isValidLineupItem(LineupItemEntity item) {
+    return item.id.isNotEmpty && item.roleId.isNotEmpty;
+  }
+
+  Failure _mapDioFailure(
+    DioException error,
+    String fallbackMessage, {
+    String? notFoundMessage,
+  }) {
+    final statusCode = error.response?.statusCode;
+    final message = _extractErrorMessage(error, fallbackMessage);
+
+    if (statusCode == 400 || statusCode == 403 || statusCode == 409) {
+      return ValidationFailure(message);
+    }
+
+    if (statusCode == 404 && notFoundMessage != null) {
+      return NotFoundFailure(_extractErrorMessage(error, notFoundMessage));
+    }
+
+    return NetworkFailure(message);
+  }
+
+  String _extractErrorMessage(DioException error, String fallbackMessage) {
+    final data = error.response?.data;
+
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final message = map['message']?.toString().trim();
+      if (message != null && message.isNotEmpty) return message;
+
+      final errorText = map['error']?.toString().trim();
+      if (errorText != null && errorText.isNotEmpty) return errorText;
+    }
+
+    if (data is String) {
+      final text = data.trim();
+      if (text.isNotEmpty) return text;
+    }
+
+    return error.message ?? fallbackMessage;
+  }
 
   int? _parseInt(Object? value) {
     if (value is int) return value;

@@ -6,6 +6,7 @@
         "event",
         "user",
         "member",
-        "department"
+        "department",
+        "lineup"
     ]
 }

@@ -26,7 +26,7 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
 
   final _step1Key = GlobalKey<FormState>();
   final _step2Key = GlobalKey<FormState>();
-  final List<String> _stepTitles = ['Dados Pessoais', 'VÃ­nculo com a Igreja'];
+  final List<String> _stepTitles = ['Dados Pessoais', 'Vínculo com a Igreja'];
 
   bool _validateCurrentStep() {
     switch (_currentStep) {
@@ -110,7 +110,7 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
     toastification.show(
       context: context,
       type: ToastificationType.error,
-      title: const Text('NÃ£o foi possÃ­vel cadastrar o membro.'),
+      title: const Text('Não foi possível cadastrar o membro.'),
       autoCloseDuration: const Duration(seconds: 4),
     );
   }
@@ -260,7 +260,7 @@ class _NavigationButtons extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                  : Text(isLastStep ? 'Confirmar' : 'PrÃ³ximo'),
+                  : Text(isLastStep ? 'Confirmar' : 'Próximo'),
             ),
           ),
         ],

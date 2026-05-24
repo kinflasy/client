@@ -82,20 +82,16 @@ class DepartmentLineupsScreen extends ConsumerWidget {
 
                 return DepartmentLineupCard(
                   lineup: lineup,
-                  onTap: canManageDepartment
-                      ? () async {
-                          await context.pushNamed(
-                            AppRoutes.departmentLineupEditName,
-                            pathParameters: {
-                              'departmentId': departmentId,
-                              'lineupId': lineup.id,
-                            },
-                          );
-                          ref.invalidate(
-                            departmentLineupsProvider(departmentId),
-                          );
-                        }
-                      : null,
+                  onTap: () async {
+                    await context.pushNamed(
+                      AppRoutes.departmentLineupDetailName,
+                      pathParameters: {
+                        'departmentId': departmentId,
+                        'lineupId': lineup.id,
+                      },
+                    );
+                    ref.invalidate(departmentLineupsProvider(departmentId));
+                  },
                 );
               },
             );

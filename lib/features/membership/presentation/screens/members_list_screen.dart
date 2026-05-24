@@ -427,7 +427,7 @@ class _MemberFilterSheetState extends ConsumerState<_MemberFilterSheet> {
                         controller: _minAgeController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          labelText: 'Idade mÃ­nima',
+                          labelText: 'Idade mínima',
                         ),
                         onChanged: _updateMinAge,
                       ),
@@ -438,7 +438,7 @@ class _MemberFilterSheetState extends ConsumerState<_MemberFilterSheet> {
                         controller: _maxAgeController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          labelText: 'Idade mÃ¡xima',
+                          labelText: 'Idade máxima',
                         ),
                         onChanged: _updateMaxAge,
                       ),

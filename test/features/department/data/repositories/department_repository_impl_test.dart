@@ -555,6 +555,28 @@ void main() {
       );
     });
 
+    test(
+      'creates department lineup from wrapped department lineup payload',
+      () async {
+        when(() => api.createDepartmentLineup('dep-1', any())).thenAnswer(
+          (_) async => {
+            'departmentLineup': {'id': 'lineup-1', 'name': 'Culto'},
+          },
+        );
+
+        final result = await repository.createDepartmentLineup(
+          'dep-1',
+          const LineupRequestModel(name: 'Culto'),
+        );
+
+        expect(result.isRight(), isTrue);
+        result.match((_) => fail('expected success'), (lineup) {
+          expect(lineup.id, 'lineup-1');
+          expect(lineup.name, 'Culto');
+        });
+      },
+    );
+
     test('updates lineup and fetches detail when response is empty', () async {
       when(
         () => api.updateLineup('lineup-1', any()),

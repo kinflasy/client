@@ -2,7 +2,7 @@ import 'package:client/features/department/data/models/lineup_item_request_model
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('serializes lineup item role id and description', () {
+  test('serializes lineup item role id and description without lineup id', () {
     const model = LineupItemRequestModel(
       roleId: 'role-1',
       description: 'Ministra o louvor congregacional.',
@@ -12,6 +12,7 @@ void main() {
       'roleId': 'role-1',
       'description': 'Ministra o louvor congregacional.',
     });
+    expect(model.toJson(), isNot(contains('lineupId')));
   });
 
   test('serializes lineup item update description only', () {

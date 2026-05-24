@@ -193,9 +193,13 @@ class DepartmentApi {
   Map<String, dynamic> _readMap(Object? data) {
     if (data is Map) {
       final map = Map<String, dynamic>.from(data);
+      if (map.containsKey('id')) return map;
+
       for (final key in const [
         'role',
         'lineup',
+        'departmentLineup',
+        'unitLineup',
         'item',
         'lineupItem',
         'data',
@@ -205,7 +209,7 @@ class DepartmentApi {
         'lineups',
       ]) {
         final value = map[key];
-        if (value is Map) return Map<String, dynamic>.from(value);
+        if (value is Map) return _readMap(value);
         if (value is List) return _readMap(value);
       }
       return map;

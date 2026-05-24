@@ -51,7 +51,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
           icon: Icons.error_outline,
           title: error is Failure
               ? error.message
-              : 'NÃ£o foi possÃ­vel carregar a unidade ativa.',
+              : 'Não foi possível carregar a unidade ativa.',
         ),
         data: (membership) {
           final unitId = membership?.unitId;
@@ -60,13 +60,11 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
               icon: Icons.account_tree_outlined,
               title: 'Nenhuma unidade ativa encontrada.',
               subtitle:
-                  'NÃ£o foi possÃ­vel identificar os departamentos para listar.',
+                  'Não foi possível identificar os departamentos para listar.',
             );
           }
 
-          final rawDepartmentsAsync = ref.watch(
-            departmentsProvider(unitId),
-          );
+          final rawDepartmentsAsync = ref.watch(departmentsProvider(unitId));
           final filteredDepartmentsAsync = ref.watch(
             filteredDepartmentsProvider(unitId),
           );
@@ -123,7 +121,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                     icon: Icons.groups_2_outlined,
                     title: error is Failure
                         ? error.message
-                        : 'NÃ£o foi possÃ­vel carregar os departamentos.',
+                        : 'Não foi possível carregar os departamentos.',
                     subtitle: 'Tente novamente em instantes.',
                   ),
                   data: (departments) => rawDepartmentsAsync.when(
@@ -133,7 +131,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                       icon: Icons.groups_2_outlined,
                       title: error is Failure
                           ? error.message
-                          : 'NÃ£o foi possÃ­vel carregar os departamentos.',
+                          : 'Não foi possível carregar os departamentos.',
                       subtitle: 'Tente novamente em instantes.',
                     ),
                     data: (rawDepartments) {
@@ -142,7 +140,7 @@ class _DepartmentsListScreenState extends ConsumerState<DepartmentsListScreen> {
                           return const _InlineStatus(
                             icon: Icons.groups_outlined,
                             title: 'Nenhum departamento cadastrado.',
-                            subtitle: 'Adicione um departamento para comeÃ§ar.',
+                            subtitle: 'Adicione um departamento para começar.',
                           );
                         }
 

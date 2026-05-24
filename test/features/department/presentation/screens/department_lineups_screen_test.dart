@@ -157,7 +157,7 @@ void main() {
     expect(find.text('Destino de criação'), findsOneWidget);
   });
 
-  testWidgets('manageable lineup card navigates to edit route', (tester) async {
+  testWidgets('lineup card navigates to detail route', (tester) async {
     final router = _buildRouter(lineups: const [_lineupWithRoles]);
 
     await tester.pumpWidget(
@@ -178,7 +178,7 @@ void main() {
     await tester.tap(find.text('Louvor - Culto dominical'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Destino de edição'), findsOneWidget);
+    expect(find.text('Destino de detalhe'), findsOneWidget);
   });
 }
 
@@ -255,10 +255,10 @@ GoRouter _buildRouter({required List<LineupEntity> lineups}) {
             const Scaffold(body: Text('Destino de criação')),
       ),
       GoRoute(
-        path: AppRoutes.departmentLineupEdit,
-        name: AppRoutes.departmentLineupEditName,
+        path: AppRoutes.departmentLineupDetail,
+        name: AppRoutes.departmentLineupDetailName,
         builder: (context, state) =>
-            const Scaffold(body: Text('Destino de edição')),
+            const Scaffold(body: Text('Destino de detalhe')),
       ),
     ],
   );

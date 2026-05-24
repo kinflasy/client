@@ -271,7 +271,7 @@ class _DepartmentEventsTab extends ConsumerWidget {
                   icon: Icons.event_note_outlined,
                   title: 'Nenhum evento encontrado.',
                   subtitle:
-                      'Quando houver eventos deste departamento, eles aparecerÃ£o aqui.',
+                      'Quando houver eventos deste departamento, eles aparecerão aqui.',
                 ),
               ),
             ],

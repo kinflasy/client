@@ -48,7 +48,7 @@ class _MemberAffiliationStepState extends ConsumerState<MemberAffiliationStep> {
               padding: const EdgeInsets.only(bottom: 16),
               child: DropdownButtonFormField<String>(
                 initialValue: formState.affiliation,
-                decoration: _inputDecoration('FiliaÃ§Ã£o *'),
+                decoration: _inputDecoration('Filiação *'),
                 items: const [
                   DropdownMenuItem(value: 'VISITOR', child: Text('Visitante')),
                   DropdownMenuItem(
@@ -60,7 +60,7 @@ class _MemberAffiliationStepState extends ConsumerState<MemberAffiliationStep> {
                 onChanged: (value) =>
                     notifier.updateAffiliationData(affiliation: value),
                 validator: (value) =>
-                    value == null ? 'Campo obrigatÃ³rio' : null,
+                    value == null ? 'Campo obrigatório' : null,
               ),
             ),
             Padding(

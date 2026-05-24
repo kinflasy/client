@@ -233,6 +233,29 @@ void main() {
     ).called(1);
   });
 
+  test('createDepartmentLineup unwraps department lineup response', () async {
+    when(
+      () => dio.post<dynamic>(
+        '/v1/core/church/unit/departments/dep-1/lineups',
+        data: {'name': 'Culto'},
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/church/unit/departments/dep-1/lineups',
+        ),
+        data: {
+          'departmentLineup': {'id': 'lineup-1', 'name': 'Culto'},
+        },
+      ),
+    );
+
+    final result = await api.createDepartmentLineup('dep-1', {'name': 'Culto'});
+
+    expect(result['id'], 'lineup-1');
+    expect(result['name'], 'Culto');
+  });
+
   test('getLineupById sends GET route', () async {
     when(
       () => dio.get<dynamic>('/v1/core/church/unit/lineups/lineup-1'),
@@ -357,36 +380,39 @@ void main() {
     expect((result.single as Map)['id'], 'item-1');
   });
 
-  test('createLineupItem sends POST payload', () async {
-    when(
-      () => dio.post<dynamic>(
-        '/v1/core/church/unit/lineups/lineup-1/items',
-        data: {'roleId': 'role-1', 'description': 'Vocal principal'},
-      ),
-    ).thenAnswer(
-      (_) async => Response<dynamic>(
-        requestOptions: RequestOptions(
-          path: '/v1/core/church/unit/lineups/lineup-1/items',
+  test(
+    'createLineupItem sends lineup id in route and item data in payload',
+    () async {
+      when(
+        () => dio.post<dynamic>(
+          '/v1/core/church/unit/lineups/lineup-1/items',
+          data: {'roleId': 'role-1', 'description': 'Vocal principal'},
         ),
-        data: {
-          'item': {'id': 'item-1'},
-        },
-      ),
-    );
+      ).thenAnswer(
+        (_) async => Response<dynamic>(
+          requestOptions: RequestOptions(
+            path: '/v1/core/church/unit/lineups/lineup-1/items',
+          ),
+          data: {
+            'item': {'id': 'item-1'},
+          },
+        ),
+      );
 
-    final result = await api.createLineupItem('lineup-1', {
-      'roleId': 'role-1',
-      'description': 'Vocal principal',
-    });
+      final result = await api.createLineupItem('lineup-1', {
+        'roleId': 'role-1',
+        'description': 'Vocal principal',
+      });
 
-    expect(result['id'], 'item-1');
-    verify(
-      () => dio.post<dynamic>(
-        '/v1/core/church/unit/lineups/lineup-1/items',
-        data: {'roleId': 'role-1', 'description': 'Vocal principal'},
-      ),
-    ).called(1);
-  });
+      expect(result['id'], 'item-1');
+      verify(
+        () => dio.post<dynamic>(
+          '/v1/core/church/unit/lineups/lineup-1/items',
+          data: {'roleId': 'role-1', 'description': 'Vocal principal'},
+        ),
+      ).called(1);
+    },
+  );
 
   test('updateLineupItem sends PUT payload', () async {
     when(

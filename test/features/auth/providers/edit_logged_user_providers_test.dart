@@ -50,7 +50,7 @@ void main() {
       street: 'Rua Alfa',
       number: '123',
       complement: 'Apto 4',
-      reference: 'PrÃ³ximo Ã  praÃ§a',
+      reference: 'Próximo à praça',
     ),
   );
 
@@ -142,7 +142,7 @@ void main() {
           street: ' Rua Alfa ',
           number: ' 123 ',
           complement: ' Apto 4 ',
-          reference: ' PrÃ³ximo Ã  praÃ§a ',
+          reference: ' Próximo à praça ',
         ),
         isInitialized: true,
       ),
@@ -158,7 +158,7 @@ void main() {
     expect(request.address!.street, 'Rua Alfa');
     expect(request.address!.number, '123');
     expect(request.address!.complement, 'Apto 4');
-    expect(request.address!.reference, 'PrÃ³ximo Ã  praÃ§a');
+    expect(request.address!.reference, 'Próximo à praça');
   });
 
   test('empty address request sends non-null empty address to clear it', () {

@@ -324,6 +324,27 @@ void main() {
     expect(find.text('Escalas'), findsNothing);
   });
 
+  testWidgets(
+    'user without department access is redirected from lineup detail',
+    (tester) async {
+      final router = container.read(appRouterProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await pumpRouter(tester);
+
+      router.go('/departamentos/dep-2/escalas/lineup-1');
+      await pumpRouter(tester);
+
+      expect(find.byType(BottomNavigationBar), findsOneWidget);
+      expect(find.text('Culto'), findsNothing);
+    },
+  );
+
   testWidgets('department event create route opens for department leader', (
     tester,
   ) async {
@@ -557,7 +578,7 @@ void main() {
     expect(find.text('Novo lineup'), findsNothing);
   });
 
-  testWidgets('integrant is redirected away from lineup edit route', (
+  testWidgets('integrant can open lineup detail route without edit chrome', (
     tester,
   ) async {
     final router = container.read(appRouterProvider);
@@ -570,12 +591,13 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 3));
 
-    router.go('/departamentos/dep-1/escalas/lineup-1/editar');
+    router.go('/departamentos/dep-1/escalas/lineup-1');
     await tester.pump();
     await tester.pump(const Duration(seconds: 3));
 
-    expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Editar lineup'), findsNothing);
+    expect(find.byType(BottomNavigationBar), findsNothing);
+    expect(find.text('Culto'), findsWidgets);
+    expect(find.text('Editar nome'), findsNothing);
   });
 
   testWidgets(

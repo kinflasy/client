@@ -46,8 +46,9 @@ class AppRoutes {
       '/departamentos/:id/participantes/adicionar';
   static const departmentLineups = '/departamentos/:id/escalas';
   static const departmentLineupCreate = '/departamentos/:id/escalas/criar';
-  static const departmentLineupEdit =
-      '/departamentos/:departmentId/escalas/:lineupId/editar';
+  static const departmentLineupDetail =
+      '/departamentos/:departmentId/escalas/:lineupId';
+  static const departmentLineupEdit = departmentLineupDetail;
 
   static const splashName = 'splash';
   static const loginName = 'login';
@@ -93,5 +94,6 @@ class AppRoutes {
   static const departmentParticipantsAddName = 'department-participants-add';
   static const departmentLineupsName = 'department-lineups';
   static const departmentLineupCreateName = 'department-lineup-create';
-  static const departmentLineupEditName = 'department-lineup-edit';
+  static const departmentLineupDetailName = 'department-lineup-detail';
+  static const departmentLineupEditName = departmentLineupDetailName;
 }

@@ -452,7 +452,8 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
   }
 
   LineupEntity _mapLineupJsonToEntity(Map<String, dynamic> json) {
-    final items = _readList(json['items'])
+    final lineupJson = _unwrapLineupJson(json);
+    final items = _readList(lineupJson['items'])
         .whereType<Map>()
         .map((item) => Map<String, dynamic>.from(item))
         .map(_mapLineupItemJsonToEntity)
@@ -460,9 +461,9 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
         .toList();
 
     return LineupEntity(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? '',
-      items: json.containsKey('items') ? items : null,
+      id: _readString(lineupJson, const ['id', 'lineupId', 'uuid']),
+      name: lineupJson['name'] as String? ?? '',
+      items: lineupJson.containsKey('items') ? items : null,
     );
   }
 
@@ -522,6 +523,34 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
       return Map<String, dynamic>.from(value);
     }
     return const <String, dynamic>{};
+  }
+
+  Map<String, dynamic> _unwrapLineupJson(Map<String, dynamic> json) {
+    if (_readString(json, const ['id', 'lineupId', 'uuid']).isNotEmpty) {
+      return json;
+    }
+
+    for (final key in const [
+      'lineup',
+      'departmentLineup',
+      'unitLineup',
+      'data',
+      'content',
+    ]) {
+      final nested = _readMap(json[key]);
+      if (nested.isNotEmpty) return _unwrapLineupJson(nested);
+    }
+
+    return json;
+  }
+
+  String _readString(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      final text = value?.toString().trim();
+      if (text != null && text.isNotEmpty) return text;
+    }
+    return '';
   }
 
   List<dynamic> _readList(Object? value) {

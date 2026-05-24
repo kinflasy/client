@@ -85,7 +85,7 @@ final _protectedRoutes = <String>{
   AppRoutes.departmentParticipantsAdd,
   AppRoutes.departmentLineups,
   AppRoutes.departmentLineupCreate,
-  AppRoutes.departmentLineupEdit,
+  AppRoutes.departmentLineupDetail,
 };
 
 final _membershipRequiredRoutes = <String>{};
@@ -179,9 +179,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               routePath == AppRoutes.homeChurchDepartmentDetail ||
               routePath == AppRoutes.departmentDetail ||
               routePath == AppRoutes.departmentParticipantsAdd ||
-              routePath == AppRoutes.departmentLineups;
+              routePath == AppRoutes.departmentLineups ||
+              routePath == AppRoutes.departmentLineupDetail;
           if (isDepartmentDetailRoute) {
-            final departmentId = state.pathParameters['id'];
+            final departmentId =
+                state.pathParameters['id'] ??
+                state.pathParameters['departmentId'];
             if (departmentId != null &&
                 !permissions.canObserveDept(departmentId)) {
               return AppRoutes.homeChurch;
@@ -190,8 +193,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
           final isDepartmentManagementRoute =
               routePath == AppRoutes.departmentEventCreate ||
-              routePath == AppRoutes.departmentLineupCreate ||
-              routePath == AppRoutes.departmentLineupEdit;
+              routePath == AppRoutes.departmentLineupCreate;
           if (isDepartmentManagementRoute) {
             final departmentId =
                 state.pathParameters['id'] ??
@@ -477,8 +479,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: AppRoutes.departmentLineupEdit,
-        name: AppRoutes.departmentLineupEditName,
+        path: AppRoutes.departmentLineupDetail,
+        name: AppRoutes.departmentLineupDetailName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final departmentId = state.pathParameters['departmentId']!;

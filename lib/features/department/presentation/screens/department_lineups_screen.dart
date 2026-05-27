@@ -1,4 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/presentation/widgets/app_action_button.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/department/presentation/widgets/department_lineup_card.dart';
 import 'package:client/features/department/providers/department_lineup_providers.dart';
@@ -35,7 +36,7 @@ class DepartmentLineupsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Escalas'),
+        title: const Text('Formação de escala'),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -109,10 +110,15 @@ class _CreateLineupButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: const Icon(Icons.add),
-      label: const Text('Criar nova formação de escala'),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AppActionButton(
+      icon: Icons.add,
+      title: 'Criar nova formação de escala',
+      onTap: onPressed,
+      backgroundColor: colorScheme.primary,
+      foregroundColor: Colors.white,
+      backgroundOpacity: 1,
     );
   }
 }

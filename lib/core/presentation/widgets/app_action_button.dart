@@ -8,6 +8,7 @@ class AppActionButton extends StatelessWidget {
     this.onTap,
     this.backgroundColor,
     this.foregroundColor,
+    this.backgroundOpacity = 0.72,
   });
 
   final IconData? icon;
@@ -15,14 +16,14 @@ class AppActionButton extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final double backgroundOpacity;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final contentColor = foregroundColor ?? colorScheme.onPrimaryContainer;
-    final containerColor =
-        backgroundColor ?? colorScheme.primaryContainer;
+    final containerColor = backgroundColor ?? colorScheme.primaryContainer;
 
     return Material(
       color: Colors.transparent,
@@ -34,7 +35,7 @@ class AppActionButton extends StatelessWidget {
           child: Ink(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             decoration: BoxDecoration(
-              color: containerColor.withValues(alpha: 0.72),
+              color: containerColor.withValues(alpha: backgroundOpacity),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Row(

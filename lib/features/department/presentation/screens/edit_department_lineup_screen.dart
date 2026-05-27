@@ -147,7 +147,7 @@ class _EditDepartmentLineupScreenState
                 itemBuilder: (context) => const [
                   PopupMenuItem(
                     value: _LineupMenuAction.delete,
-                    child: Text('Remover escala'),
+                    child: Text('Deletar escala'),
                   ),
                 ],
               ),
@@ -410,9 +410,9 @@ class _EditDepartmentLineupScreenState
   Future<void> _confirmAndDeleteLineup() async {
     final shouldDelete = await showActionConfirmationDialog(
       context,
-      title: 'Remover escala?',
+      title: 'Deletar escala?',
       message: 'Esta ação não pode ser desfeita.',
-      confirmLabel: 'Remover',
+      confirmLabel: 'Deletar',
       isDestructive: true,
     );
     if (!mounted || !shouldDelete) return;
@@ -430,7 +430,7 @@ class _EditDepartmentLineupScreenState
     result.fold(
       (failure) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Não foi possível remover a escala.')),
+          const SnackBar(content: Text('Não foi possível deletar a escala.')),
         );
       },
       (_) {

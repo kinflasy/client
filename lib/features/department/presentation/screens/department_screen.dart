@@ -32,7 +32,7 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedTabIndex = 0;
 
-  static const _tabs = ['Eventos', 'Participantes'];
+  static const _tabs = ['Eventos', 'Escalas', 'Participantes'];
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +61,7 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
         false;
     final showCreateEventButton = _selectedTabIndex == 0 && canManageEvents;
     final showAddParticipantsButton =
-        _selectedTabIndex == 1 && canManageParticipants;
+        _selectedTabIndex == 2 && canManageParticipants;
     final headerBottomHeight =
         showCreateEventButton || showAddParticipantsButton ? 140.0 : 76.0;
 
@@ -152,6 +152,7 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
                         departmentName: department.name,
                         canManageEvents: canManageEvents,
                       ),
+                      const SizedBox.shrink(),
                       _DepartmentParticipantsTab(
                         departmentId: widget.departmentId,
                       ),
@@ -220,7 +221,7 @@ class _DepartmentSettingsSidebar extends StatelessWidget {
                 color: AppColors.primary,
               ),
               title: const Text(
-                'Escalas',
+                'Formação de escala',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,

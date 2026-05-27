@@ -59,6 +59,11 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
               permissions.canObserveDept(widget.departmentId),
         ) ??
         false;
+    final showCreateEventButton = _selectedTabIndex == 0 && canManageEvents;
+    final showAddParticipantsButton =
+        _selectedTabIndex == 1 && canManageParticipants;
+    final headerBottomHeight =
+        showCreateEventButton || showAddParticipantsButton ? 140.0 : 76.0;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -69,70 +74,92 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
               departmentName: _buildTitle(departmentAsync),
             )
           : null,
-      appBar: AppBar(
-        automaticallyImplyLeading: widget.showBackButton,
-        title: Text(_buildTitle(departmentAsync)),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        actions: [
-          if (canObserveDepartment)
-            IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              tooltip: 'Configurações do departamento',
-              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-            ),
-        ],
-      ),
-      body: accessDenied == true
-          ? const _InlineStatus(
-              icon: Icons.lock_outline,
-              title: 'Você não tem permissão para abrir este departamento.',
-              subtitle:
-                  'Se precisar de acesso, fale com a liderança da unidade.',
-            )
-          : departmentAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => const _InlineStatus(
-                icon: Icons.groups_2_outlined,
-                title: 'Não foi possível carregar o departamento.',
-                subtitle: 'Tente novamente em instantes.',
-              ),
-              data: (department) => Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppTabBar(
-                      tabs: _tabs,
-                      selectedIndex: _selectedTabIndex,
-                      onTabChanged: (index) {
-                        setState(() {
-                          _selectedTabIndex = index;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: IndexedStack(
-                        index: _selectedTabIndex,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverAppBar(
+            automaticallyImplyLeading: widget.showBackButton,
+            title: Text(_buildTitle(departmentAsync)),
+            backgroundColor: AppColors.background,
+            foregroundColor: AppColors.textPrimary,
+            elevation: 0,
+            floating: true,
+            snap: true,
+            actions: [
+              if (canObserveDepartment)
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  tooltip: 'Configurações do departamento',
+                  onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                ),
+            ],
+            bottom: accessDenied == true
+                ? null
+                : PreferredSize(
+                    preferredSize: Size.fromHeight(headerBottomHeight),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _DepartmentEventsTab(
-                            departmentId: widget.departmentId,
-                            departmentName: department.name,
-                            canManageEvents: canManageEvents,
+                          AppTabBar(
+                            tabs: _tabs,
+                            selectedIndex: _selectedTabIndex,
+                            onTabChanged: (index) {
+                              setState(() {
+                                _selectedTabIndex = index;
+                              });
+                            },
                           ),
-                          _DepartmentParticipantsTab(
-                            departmentId: widget.departmentId,
-                            canManageParticipants: canManageParticipants,
-                          ),
+                          if (showCreateEventButton) ...[
+                            const SizedBox(height: 16),
+                            _CreateDepartmentEventButton(
+                              departmentId: widget.departmentId,
+                            ),
+                          ],
+                          if (showAddParticipantsButton) ...[
+                            const SizedBox(height: 16),
+                            _AddParticipantsButton(
+                              departmentId: widget.departmentId,
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                  ],
+                  ),
+          ),
+        ],
+        body: accessDenied == true
+            ? const _InlineStatus(
+                icon: Icons.lock_outline,
+                title: 'Você não tem permissão para abrir este departamento.',
+                subtitle:
+                    'Se precisar de acesso, fale com a liderança da unidade.',
+              )
+            : departmentAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stackTrace) => const _InlineStatus(
+                  icon: Icons.groups_2_outlined,
+                  title: 'Não foi possível carregar o departamento.',
+                  subtitle: 'Tente novamente em instantes.',
+                ),
+                data: (department) => Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  child: IndexedStack(
+                    index: _selectedTabIndex,
+                    children: [
+                      _DepartmentEventsTab(
+                        departmentId: widget.departmentId,
+                        departmentName: department.name,
+                        canManageEvents: canManageEvents,
+                      ),
+                      _DepartmentParticipantsTab(
+                        departmentId: widget.departmentId,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 
@@ -256,16 +283,10 @@ class _DepartmentEventsTab extends ConsumerWidget {
         subtitle: 'Tente novamente em instantes.',
       ),
       data: (events) {
-        final createButton = _CreateDepartmentEventButton(
-          departmentId: departmentId,
-        );
-
         if (events.isEmpty && canManageEvents) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              createButton,
-              const SizedBox(height: 16),
               const Expanded(
                 child: _InlineStatus(
                   icon: Icons.event_note_outlined,
@@ -291,8 +312,6 @@ class _DepartmentEventsTab extends ConsumerWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              createButton,
-              const SizedBox(height: 16),
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.only(bottom: 24),
@@ -385,13 +404,9 @@ class _CreateDepartmentEventButton extends StatelessWidget {
 }
 
 class _DepartmentParticipantsTab extends ConsumerWidget {
-  const _DepartmentParticipantsTab({
-    required this.departmentId,
-    required this.canManageParticipants,
-  });
+  const _DepartmentParticipantsTab({required this.departmentId});
 
   final String departmentId;
-  final bool canManageParticipants;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -407,16 +422,10 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
         subtitle: 'Tente novamente em instantes.',
       ),
       data: (participants) {
-        final addButton = _AddParticipantsButton(departmentId: departmentId);
-
         if (participants.isEmpty) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (canManageParticipants) ...[
-                addButton,
-                const SizedBox(height: 16),
-              ],
               const Expanded(
                 child: _InlineStatus(
                   icon: Icons.groups_outlined,
@@ -432,10 +441,6 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (canManageParticipants) ...[
-              addButton,
-              const SizedBox(height: 16),
-            ],
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.only(bottom: 24),

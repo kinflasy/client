@@ -4,10 +4,12 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/presentation/widgets/event_date_formatters.dart';
 import 'package:client/features/calendar/presentation/widgets/event_image.dart';
 import 'package:client/features/calendar/providers/calendar_event_actions_provider.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -175,6 +177,7 @@ class _EventDetailContent extends ConsumerWidget {
           ),
         ],
         if (canEdit) ...[
+          _EventCollaboratorsSection(eventId: event.id),
           const SizedBox(height: 24),
           _AdminActions(event: event, isSubmitting: isSubmitting),
         ],
@@ -292,6 +295,97 @@ void _showEventSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
+}
+
+class _EventCollaboratorsSection extends ConsumerWidget {
+  const _EventCollaboratorsSection({required this.eventId});
+
+  final String eventId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final collaboratorsAsync = ref.watch(
+      calendarEventCollaboratorsProvider(eventId),
+    );
+
+    return collaboratorsAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.only(top: 24),
+        child: LinearProgressIndicator(),
+      ),
+      error: (_, _) => const Padding(
+        padding: EdgeInsets.only(top: 24),
+        child: Text(
+          'Não foi possível carregar os colaboradores.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      ),
+      data: (collaborators) {
+        if (collaborators.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Departamentos colaboradores',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: collaborators
+                    .map(
+                      (collaboration) =>
+                          _CollaboratorChip(collaboration: collaboration),
+                    )
+                    .toList(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CollaboratorChip extends ConsumerWidget {
+  const _CollaboratorChip({required this.collaboration});
+
+  final EventCollaborationEntity collaboration;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final directName = collaboration.department?.name.trim();
+    if (directName != null && directName.isNotEmpty) {
+      return Chip(label: Text(directName));
+    }
+
+    final departmentId = collaboration.departmentId.trim();
+    if (departmentId.isEmpty) {
+      return const Chip(label: Text('Colaborador sem nome'));
+    }
+
+    final departmentAsync = ref.watch(departmentDetailProvider(departmentId));
+    return departmentAsync.when(
+      loading: () => const Chip(
+        label: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      error: (_, _) =>
+          const Chip(label: Text('Não foi possível carregar o departamento')),
+      data: (department) => Chip(label: Text(department.name)),
+    );
+  }
 }
 
 class _EventDetailLoading extends StatelessWidget {

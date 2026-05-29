@@ -5,6 +5,7 @@ import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
@@ -249,6 +250,27 @@ void main() {
     );
 
     expect(result, event);
+  });
+
+  test('collaborators provider reads event collaborators by id', () async {
+    const collaborators = [
+      EventCollaborationEntity(
+        id: 'collab-1',
+        calendarEventId: 'event-1',
+        departmentId: 'dep-1',
+      ),
+    ];
+    when(
+      () => repository.getCollaborators('event-1'),
+    ).thenAnswer((_) async => const Right(collaborators));
+
+    final result = await _readFutureProvider(
+      container,
+      calendarEventCollaboratorsProvider('event-1'),
+    );
+
+    expect(result, collaborators);
+    verify(() => repository.getCollaborators('event-1')).called(1);
   });
 }
 

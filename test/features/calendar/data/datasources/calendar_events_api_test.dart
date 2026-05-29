@@ -122,4 +122,70 @@ void main() {
     expect(data.files.single.key, 'file');
     expect(data.files.single.value.filename, 'card.png');
   });
+
+  test('gets collaborators using event route', () async {
+    when(
+      () => dio.get<dynamic>('/v1/core/calendar-events/event-1/collaborators'),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/event-1/collaborators',
+        ),
+        data: {
+          'data': [
+            {'id': 'collab-1'},
+          ],
+        },
+      ),
+    );
+
+    final list = await api.getCollaborators('event-1');
+
+    expect(list, [
+      {'id': 'collab-1'},
+    ]);
+  });
+
+  test('adds collaborator using department route parameter', () async {
+    when(
+      () => dio.post<dynamic>(
+        '/v1/core/calendar-events/event-1/collaborators/dep-1',
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/event-1/collaborators/dep-1',
+        ),
+        data: {
+          'data': {'id': 'collab-1'},
+        },
+      ),
+    );
+
+    final json = await api.addCollaborator('event-1', 'dep-1');
+
+    expect(json, {'id': 'collab-1'});
+  });
+
+  test('removes collaborator using department route parameter', () async {
+    when(
+      () => dio.delete<void>(
+        '/v1/core/calendar-events/event-1/collaborators/dep-1',
+      ),
+    ).thenAnswer(
+      (_) async => Response<void>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/event-1/collaborators/dep-1',
+        ),
+      ),
+    );
+
+    await api.removeCollaborator('event-1', 'dep-1');
+
+    verify(
+      () => dio.delete<void>(
+        '/v1/core/calendar-events/event-1/collaborators/dep-1',
+      ),
+    ).called(1);
+  });
 }

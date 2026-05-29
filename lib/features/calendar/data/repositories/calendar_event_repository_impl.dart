@@ -2,7 +2,9 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/datasources/calendar_events_api.dart';
 import 'package:client/features/calendar/data/models/calendar_event_read_model.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
+import 'package:client/features/calendar/data/models/event_collaboration_read_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
@@ -75,6 +77,52 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
       final json = await _api.updateEvent(eventId, request.toJson());
       return json.isEmpty ? _api.getEventById(eventId) : json;
     }, fallbackMessage: 'Erro ao atualizar evento.');
+  }
+
+  @override
+  Future<Either<Failure, List<EventCollaborationEntity>>> getCollaborators(
+    String eventId,
+  ) async {
+    try {
+      final jsonList = await _api.getCollaborators(eventId);
+      final collaborators = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(EventCollaborationReadModel.fromJson)
+          .map((model) => model.toEntity())
+          .toList();
+      return Right(collaborators);
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao carregar colaboradores.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, EventCollaborationEntity>> addCollaborator(
+    String eventId,
+    String departmentId,
+  ) async {
+    try {
+      final json = await _api.addCollaborator(eventId, departmentId);
+      return Right(EventCollaborationReadModel.fromJson(json).toEntity());
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao adicionar colaborador.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> removeCollaborator(
+    String eventId,
+    String departmentId,
+  ) {
+    return _delete(
+      () => _api.removeCollaborator(eventId, departmentId),
+      fallbackMessage: 'Erro ao remover colaborador.',
+    );
   }
 
   @override

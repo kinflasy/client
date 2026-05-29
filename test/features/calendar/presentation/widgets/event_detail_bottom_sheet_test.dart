@@ -5,10 +5,14 @@ import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/media/media_providers.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/presentation/widgets/event_detail_bottom_sheet.dart';
 import 'package:client/features/calendar/presentation/widgets/event_image.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/department/domain/entities/department_detail_entity.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
@@ -190,10 +194,187 @@ void main() {
     expect(find.text('Duplicar'), findsNothing);
     expect(find.text('Excluir'), findsNothing);
   });
+
+  testWidgets('admin da unidade vê colaboradores abaixo da descrição', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _build(
+        loadDetail: (_) async => _event(),
+        canAdmin: true,
+        loadCollaborators: (_) async => const [
+          EventCollaborationEntity(
+            id: 'collab-1',
+            calendarEventId: 'event-1',
+            departmentId: 'dep-1',
+            department: DepartmentEntity(id: 'dep-1', name: 'Louvor'),
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Abrir detalhe'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Departamentos colaboradores'), findsOneWidget);
+    expect(find.text('Louvor'), findsOneWidget);
+    expect(find.text('Editar'), findsOneWidget);
+  });
+
+  testWidgets('líder do departamento dono vê colaboradores', (tester) async {
+    await tester.pumpWidget(
+      _build(
+        loadDetail: (_) async =>
+            _event(type: CalendarEventType.department, departmentId: 'dep-1'),
+        departmentRole: IntegrationType.leader,
+        roleDepartmentId: 'dep-1',
+        loadCollaborators: (_) async => const [
+          EventCollaborationEntity(
+            id: 'collab-2',
+            calendarEventId: 'event-1',
+            departmentId: 'dep-2',
+            department: DepartmentEntity(id: 'dep-2', name: 'Recepção'),
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Abrir detalhe'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Departamentos colaboradores'), findsOneWidget);
+    expect(find.text('Recepção'), findsOneWidget);
+  });
+
+  testWidgets('usuário sem permissão não carrega nem vê colaboradores', (
+    tester,
+  ) async {
+    var loadCount = 0;
+    await tester.pumpWidget(
+      _build(
+        loadDetail: (_) async => _event(),
+        loadCollaborators: (_) async {
+          loadCount++;
+          return const [
+            EventCollaborationEntity(
+              id: 'collab-1',
+              calendarEventId: 'event-1',
+              departmentId: 'dep-1',
+              department: DepartmentEntity(id: 'dep-1', name: 'Louvor'),
+            ),
+          ];
+        },
+      ),
+    );
+
+    await tester.tap(find.text('Abrir detalhe'));
+    await tester.pumpAndSettle();
+
+    expect(loadCount, 0);
+    expect(find.text('Departamentos colaboradores'), findsNothing);
+    expect(find.text('Louvor'), findsNothing);
+  });
+
+  testWidgets('sem colaboradores não mostra a seção', (tester) async {
+    await tester.pumpWidget(
+      _build(
+        loadDetail: (_) async => _event(),
+        canAdmin: true,
+        loadCollaborators: (_) async => const [],
+      ),
+    );
+
+    await tester.tap(find.text('Abrir detalhe'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Departamentos colaboradores'), findsNothing);
+    expect(find.text('Editar'), findsOneWidget);
+  });
+
+  testWidgets('falha de colaboradores mostra erro discreto e mantém ações', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _build(
+        loadDetail: (_) async => _event(),
+        canAdmin: true,
+        loadCollaborators: (_) => Future.error(Exception('falha')),
+      ),
+    );
+
+    await tester.tap(find.text('Abrir detalhe'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Não foi possível carregar os colaboradores.'),
+      findsOneWidget,
+    );
+    expect(find.text('Editar'), findsOneWidget);
+    expect(find.text('Duplicar'), findsOneWidget);
+    expect(find.text('Excluir'), findsOneWidget);
+  });
+
+  testWidgets('colaborador sem departamento detalhado usa nome do detalhe', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _build(
+        loadDetail: (_) async => _event(),
+        canAdmin: true,
+        loadCollaborators: (_) async => const [
+          EventCollaborationEntity(
+            id: 'collab-1',
+            calendarEventId: 'event-1',
+            departmentId: 'dep-1',
+          ),
+        ],
+        loadDepartmentDetail: (_) async =>
+            const DepartmentDetailEntity(id: 'dep-1', name: 'Comunicação'),
+      ),
+    );
+
+    await tester.tap(find.text('Abrir detalhe'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Comunicação'), findsOneWidget);
+    expect(find.text('Departamento'), findsNothing);
+  });
+
+  testWidgets('erro ao buscar departamento mostra mensagem por colaborador', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _build(
+        loadDetail: (_) async => _event(),
+        canAdmin: true,
+        loadCollaborators: (_) async => const [
+          EventCollaborationEntity(
+            id: 'collab-1',
+            calendarEventId: 'event-1',
+            departmentId: 'dep-1',
+          ),
+        ],
+        loadDepartmentDetail: (_) => Future.error(Exception('falha')),
+      ),
+    );
+
+    await tester.tap(find.text('Abrir detalhe'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Não foi possível carregar o departamento'),
+      findsOneWidget,
+    );
+    expect(find.text('Departamento'), findsNothing);
+  });
 }
 
 Widget _build({
   required Future<CalendarEventEntity> Function(String eventId) loadDetail,
+  Future<List<EventCollaborationEntity>> Function(String eventId)?
+  loadCollaborators,
+  Future<DepartmentDetailEntity> Function(String departmentId)?
+  loadDepartmentDetail,
   Future<String> Function(String imageId)? resolveImageUrl,
   bool canAdmin = false,
   IntegrationType? departmentRole,
@@ -204,6 +385,16 @@ Widget _build({
     overrides: [
       calendarEventDetailProvider.overrideWith(
         (ref, eventId) => loadDetail(eventId),
+      ),
+      calendarEventCollaboratorsProvider.overrideWith(
+        (ref, eventId) => loadCollaborators?.call(eventId) ?? Future.value([]),
+      ),
+      departmentDetailProvider.overrideWith(
+        (ref, departmentId) =>
+            loadDepartmentDetail?.call(departmentId) ??
+            Future.value(
+              DepartmentDetailEntity(id: departmentId, name: 'Departamento'),
+            ),
       ),
       mediaImageUrlProvider.overrideWith(
         (ref, imageId) async =>

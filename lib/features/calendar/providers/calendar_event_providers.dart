@@ -5,6 +5,7 @@ import 'package:client/core/network/dio_client.dart';
 import 'package:client/features/calendar/data/datasources/calendar_events_api.dart';
 import 'package:client/features/calendar/data/repositories/calendar_event_repository_impl.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
@@ -120,6 +121,21 @@ final calendarEventDetailProvider =
           .getEventById(eventId);
 
       return result.fold((failure) => throw failure, (event) => event);
+    });
+
+final calendarEventCollaboratorsProvider =
+    FutureProvider.family<List<EventCollaborationEntity>, String>((
+      ref,
+      eventId,
+    ) async {
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .getCollaborators(eventId);
+
+      return result.fold(
+        (failure) => throw failure,
+        (collaborators) => collaborators,
+      );
     });
 
 Future<List<CalendarEventEntity>> _loadVisibleDepartmentEvents(

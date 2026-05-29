@@ -9,6 +9,7 @@ import 'package:client/core/presentation/widgets/app_date_text_form_field.dart';
 import 'package:client/core/presentation/widgets/app_time_text_form_field.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/presentation/widgets/event_image.dart';
 import 'package:client/features/calendar/providers/calendar_event_actions_provider.dart';
@@ -17,11 +18,12 @@ import 'package:client/features/calendar/sub_features/create_event/presentation/
 import 'package:client/features/calendar/sub_features/create_event/providers/create_event_providers.dart';
 import 'package:client/features/calendar/sub_features/create_event/providers/event_image_picker_provider.dart';
 import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:go_router/go_router.dart';
 
 enum _EventOwnerScope { unit, department }
 
@@ -54,9 +56,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   String? _selectedDepartmentId;
   List<VisibilityRuleEntity> _visibilityRules = const [];
   PickedEventImage? _pickedImage;
+  Set<String> _selectedCollaboratorIds = {};
+  Set<String> _originalCollaboratorIds = {};
+  Map<String, DepartmentEntity> _collaboratorDepartments = {};
   String? _dateTimeError;
   bool _endDateWasAutoFilled = false;
   String? _initializedEventId;
+  String? _initializedCollaboratorsKey;
 
   bool get _isEditing => widget.eventId != null;
   bool get _isDuplicating => widget.duplicateFromEventId != null;
@@ -67,6 +73,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     if (_isEditing) return 'Editar evento';
     if (_isDuplicating) return 'Duplicar evento';
     return 'Criar evento';
+  }
+
+  String? get _currentOwnerDepartmentId {
+    if (_ownerScope != _EventOwnerScope.department) return null;
+    return widget.lockedDepartmentId ?? _selectedDepartmentId;
   }
 
   @override
@@ -171,14 +182,46 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
     if (!mounted) return;
 
-    result.fold((failure) => _showSnack(failure.message), (_) {
+    await result.fold((failure) async => _showSnack(failure.message), (
+      event,
+    ) async {
+      final collaboratorsResult = await _syncSelectedCollaborators(event.id);
+      if (!mounted) return;
+
+      final collaboratorsFailure = collaboratorsResult.getLeft().toNullable();
+      if (collaboratorsFailure != null) {
+        _showSnack(
+          _isEditing
+              ? 'Evento salvo, mas os colaboradores não foram totalmente atualizados: ${collaboratorsFailure.message}'
+              : 'Evento criado, mas os colaboradores não foram totalmente salvos: ${collaboratorsFailure.message}',
+        );
+        _closeScreen();
+        return;
+      }
+
       _showSnack(
         _isEditing
             ? 'Evento atualizado com sucesso.'
             : 'Evento criado com sucesso.',
       );
-      context.pop();
+      _closeScreen();
     });
+  }
+
+  Future<void> _closeScreen() {
+    return Navigator.of(context).maybePop();
+  }
+
+  Future<Either<Failure, void>> _syncSelectedCollaborators(String eventId) {
+    return ref
+        .read(calendarEventActionsProvider.notifier)
+        .syncCollaborators(
+          eventId,
+          originalDepartmentIds: _isEditing
+              ? _originalCollaboratorIds
+              : const <String>{},
+          selectedDepartmentIds: _selectedCollaboratorIds,
+        );
   }
 
   Future<Either<Failure, CalendarEventEntity>> _createEvent(
@@ -228,11 +271,30 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   ),
                   data: (event) {
                     _initializeForEdit(event);
-                    return _buildFormWithProfile(
-                      profileAsync,
-                      isLoading,
-                      event: event,
-                    );
+                    return ref
+                        .watch(calendarEventCollaboratorsProvider(event.id))
+                        .when(
+                          loading: () =>
+                              const Center(child: CircularProgressIndicator()),
+                          error: (error, _) => _InlineStatus(
+                            icon: Icons.error_outline,
+                            title: error is Failure
+                                ? error.message
+                                : 'Não foi possível carregar os colaboradores.',
+                            subtitle: 'Tente novamente em instantes.',
+                          ),
+                          data: (collaborators) {
+                            _initializeCollaborators(
+                              'edit:${event.id}',
+                              collaborators,
+                            );
+                            return _buildFormWithProfile(
+                              profileAsync,
+                              isLoading,
+                              event: event,
+                            );
+                          },
+                        );
                   },
                 )
           : _isDuplicating
@@ -252,7 +314,30 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   ),
                   data: (event) {
                     _initializeForDuplicate(event);
-                    return _buildFormWithProfile(profileAsync, isLoading);
+                    return ref
+                        .watch(calendarEventCollaboratorsProvider(event.id))
+                        .when(
+                          loading: () =>
+                              const Center(child: CircularProgressIndicator()),
+                          error: (error, _) => _InlineStatus(
+                            icon: Icons.error_outline,
+                            title: error is Failure
+                                ? error.message
+                                : 'Não foi possível carregar os colaboradores.',
+                            subtitle: 'Tente novamente em instantes.',
+                          ),
+                          data: (collaborators) {
+                            _initializeCollaborators(
+                              'duplicate:${event.id}',
+                              collaborators,
+                              copyAsNew: true,
+                            );
+                            return _buildFormWithProfile(
+                              profileAsync,
+                              isLoading,
+                            );
+                          },
+                        );
                   },
                 )
           : _buildFormWithProfile(profileAsync, isLoading),
@@ -368,7 +453,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                           ? null
                           : (value) {
                               if (value == null) return;
-                              setState(() => _ownerScope = value);
+                              setState(() {
+                                _ownerScope = value;
+                                _removeInvalidCollaborators();
+                              });
                             },
                     ),
                   if (!_isDepartmentLocked &&
@@ -393,8 +481,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                       ],
                       onChanged: isLoading || ownerSelectionLocked
                           ? null
-                          : (value) =>
-                                setState(() => _selectedDepartmentId = value),
+                          : (value) => setState(() {
+                              _selectedDepartmentId = value;
+                              _removeInvalidCollaborators();
+                            }),
                       validator: (value) =>
                           _ownerScope == _EventOwnerScope.department &&
                               (value == null || value.isEmpty)
@@ -412,6 +502,16 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         : (rules) => setState(() {
                             _visibilityRules = rules;
                           }),
+                  ),
+                  const SizedBox(height: 20),
+                  _EventCollaboratorsSection(
+                    departments: departments,
+                    selectedDepartmentIds: _selectedCollaboratorIds,
+                    knownDepartments: _collaboratorDepartments,
+                    ownerDepartmentId: _currentOwnerDepartmentId,
+                    isLoading: isLoading,
+                    onAdd: _addCollaborator,
+                    onRemove: _removeCollaborator,
                   ),
                   if (_isEditing && event != null) ...[
                     const SizedBox(height: 20),
@@ -501,6 +601,59 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     _endDateWasAutoFilled = false;
     _pickedImage = null;
     _dateTimeError = null;
+  }
+
+  void _initializeCollaborators(
+    String key,
+    List<EventCollaborationEntity> collaborators, {
+    bool copyAsNew = false,
+  }) {
+    if (_initializedCollaboratorsKey == key) return;
+
+    final ids = collaborators
+        .map((collaboration) => collaboration.departmentId.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    final knownDepartments = <String, DepartmentEntity>{
+      for (final collaboration in collaborators)
+        if (collaboration.department != null)
+          collaboration.departmentId: collaboration.department!,
+    };
+
+    _initializedCollaboratorsKey = key;
+    _selectedCollaboratorIds = ids;
+    _originalCollaboratorIds = copyAsNew ? const <String>{} : ids;
+    _collaboratorDepartments = knownDepartments;
+    _removeInvalidCollaborators();
+  }
+
+  void _addCollaborator(DepartmentEntity department) {
+    setState(() {
+      _selectedCollaboratorIds = {..._selectedCollaboratorIds, department.id};
+      _collaboratorDepartments = {
+        ..._collaboratorDepartments,
+        department.id: department,
+      };
+    });
+  }
+
+  void _removeCollaborator(String departmentId) {
+    setState(() {
+      _selectedCollaboratorIds = {
+        for (final id in _selectedCollaboratorIds)
+          if (id != departmentId) id,
+      };
+    });
+  }
+
+  void _removeInvalidCollaborators() {
+    final ownerDepartmentId = _currentOwnerDepartmentId;
+    if (ownerDepartmentId == null) return;
+
+    _selectedCollaboratorIds = {
+      for (final id in _selectedCollaboratorIds)
+        if (id != ownerDepartmentId) id,
+    };
   }
 
   InputDecoration _inputDecoration(String label) {
@@ -719,6 +872,266 @@ class _DateTimeFields extends StatelessWidget {
   String? _requiredTime(String? value) {
     if (value == null || value.trim().isEmpty) return 'Campo obrigatório';
     return parseBrazilianTime(value) == null ? 'Hora inválida' : null;
+  }
+}
+
+class _EventCollaboratorsSection extends StatelessWidget {
+  const _EventCollaboratorsSection({
+    required this.departments,
+    required this.selectedDepartmentIds,
+    required this.knownDepartments,
+    required this.ownerDepartmentId,
+    required this.isLoading,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final List<DepartmentEntity> departments;
+  final Set<String> selectedDepartmentIds;
+  final Map<String, DepartmentEntity> knownDepartments;
+  final String? ownerDepartmentId;
+  final bool isLoading;
+  final ValueChanged<DepartmentEntity> onAdd;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedDepartments = _selectedDepartments();
+    final availableDepartments =
+        departments
+            .where((department) => !_isUnavailable(department.id))
+            .toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
+
+    return Container(
+      key: const Key('event-collaborators-section'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Departamentos colaboradores',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Opcional. Colaboradores poderão participar das escalas deste evento.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          if (selectedDepartments.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: selectedDepartments
+                  .map(
+                    (department) => _CollaboratorInputChip(
+                      department: department,
+                      deleteIcon: Icon(
+                        Icons.close,
+                        key: Key('remove-collaborator-${department.id}'),
+                      ),
+                      onDeleted: isLoading
+                          ? null
+                          : () => onRemove(department.id),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              key: const Key('add-event-collaborator-button'),
+              onPressed: isLoading || availableDepartments.isEmpty
+                  ? null
+                  : () => _showAddCollaboratorSheet(
+                      context,
+                      availableDepartments,
+                    ),
+              icon: const Icon(Icons.add),
+              label: const Text('Adicionar colaborador'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isUnavailable(String departmentId) {
+    return selectedDepartmentIds.contains(departmentId) ||
+        ownerDepartmentId == departmentId;
+  }
+
+  List<DepartmentEntity> _selectedDepartments() {
+    final selected = selectedDepartmentIds
+        .map((id) => knownDepartments[id] ?? _departmentById(id))
+        .toList();
+
+    selected.sort((a, b) => a.name.compareTo(b.name));
+    return selected;
+  }
+
+  DepartmentEntity _departmentById(String id) {
+    for (final department in departments) {
+      if (department.id == id) return department;
+    }
+    return DepartmentEntity(id: id, name: '');
+  }
+
+  Future<void> _showAddCollaboratorSheet(
+    BuildContext context,
+    List<DepartmentEntity> availableDepartments,
+  ) {
+    var selectedDepartment = availableDepartments.first;
+
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  16,
+                  20,
+                  16 + MediaQuery.viewInsetsOf(context).bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Adicionar colaborador',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          key: const Key('close-add-collaborator-sheet'),
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      key: const Key('event-collaborator-dropdown'),
+                      initialValue: selectedDepartment.id,
+                      decoration: const InputDecoration(
+                        labelText: 'Departamento',
+                        border: OutlineInputBorder(),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                      items: availableDepartments
+                          .map(
+                            (department) => DropdownMenuItem(
+                              value: department.id,
+                              child: Text(department.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (departmentId) {
+                        final department = availableDepartments.firstWhere(
+                          (item) => item.id == departmentId,
+                          orElse: () => selectedDepartment,
+                        );
+                        setSheetState(() => selectedDepartment = department);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      key: const Key('confirm-add-collaborator-button'),
+                      onPressed: () {
+                        onAdd(selectedDepartment);
+                        Navigator.of(context).pop();
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Adicionar'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _CollaboratorInputChip extends ConsumerWidget {
+  const _CollaboratorInputChip({
+    required this.department,
+    required this.deleteIcon,
+    required this.onDeleted,
+  });
+
+  final DepartmentEntity department;
+  final Widget deleteIcon;
+  final VoidCallback? onDeleted;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final directName = department.name.trim();
+    if (directName.isNotEmpty) {
+      return InputChip(
+        label: Text(directName),
+        deleteIcon: deleteIcon,
+        onDeleted: onDeleted,
+      );
+    }
+
+    final departmentId = department.id.trim();
+    if (departmentId.isEmpty) {
+      return InputChip(
+        label: const Text('Colaborador sem nome'),
+        deleteIcon: deleteIcon,
+        onDeleted: onDeleted,
+      );
+    }
+
+    final departmentAsync = ref.watch(departmentDetailProvider(departmentId));
+    return departmentAsync.when(
+      loading: () => InputChip(
+        label: const SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        deleteIcon: deleteIcon,
+        onDeleted: onDeleted,
+      ),
+      error: (_, _) => InputChip(
+        label: const Text('Não foi possível carregar o departamento'),
+        deleteIcon: deleteIcon,
+        onDeleted: onDeleted,
+      ),
+      data: (department) => InputChip(
+        label: Text(department.name),
+        deleteIcon: deleteIcon,
+        onDeleted: onDeleted,
+      ),
+    );
   }
 }
 

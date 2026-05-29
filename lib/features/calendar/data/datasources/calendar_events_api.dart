@@ -69,6 +69,29 @@ class CalendarEventsApi {
     return _readMap(response.data);
   }
 
+  Future<List<dynamic>> getCollaborators(String eventId) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/$eventId/collaborators',
+    );
+    return _readList(response.data);
+  }
+
+  Future<Map<String, dynamic>> addCollaborator(
+    String eventId,
+    String departmentId,
+  ) async {
+    final response = await _dio.post<dynamic>(
+      '/v1/core/calendar-events/$eventId/collaborators/$departmentId',
+    );
+    return _readMap(response.data);
+  }
+
+  Future<void> removeCollaborator(String eventId, String departmentId) async {
+    await _dio.delete<void>(
+      '/v1/core/calendar-events/$eventId/collaborators/$departmentId',
+    );
+  }
+
   Future<Map<String, dynamic>> updateCardImage(
     String eventId,
     MultipartFile file,

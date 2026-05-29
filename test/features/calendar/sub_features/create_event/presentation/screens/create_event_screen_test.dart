@@ -2,6 +2,7 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/core/media/media_providers.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
@@ -11,7 +12,9 @@ import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
 import 'package:client/features/church/domain/entities/current_church_profile_entity.dart';
 import 'package:client/features/church/providers/church_providers.dart';
+import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
+import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:flutter/material.dart';
@@ -32,12 +35,29 @@ void main() {
       overrides: [
         currentChurchProfileProvider.overrideWith((ref) async => _profile()),
         departmentsProvider('unit-1').overrideWith(
-          (ref) async => const [DepartmentEntity(id: 'dep-1', name: 'Louvor')],
+          (ref) async => const [
+            DepartmentEntity(id: 'dep-1', name: 'Louvor'),
+            DepartmentEntity(id: 'dep-2', name: 'Recepcao'),
+          ],
         ),
         if (event != null)
           calendarEventDetailProvider(
             event.id,
           ).overrideWith((ref) async => event),
+        calendarEventCollaboratorsProvider.overrideWith(
+          (ref, eventId) async => repository?.collaborators ?? const [],
+        ),
+        departmentDetailProvider.overrideWith(
+          (ref, departmentId) async => DepartmentDetailEntity(
+            id: departmentId,
+            name: switch (departmentId) {
+              'dep-1' => 'Louvor',
+              'dep-2' => 'Recepcao',
+              'dep-3' => 'Comunicação',
+              _ => 'Nome resolvido',
+            },
+          ),
+        ),
         if (repository != null)
           calendarEventRepositoryProvider.overrideWithValue(repository),
         if (picker != null) eventImagePickerProvider.overrideWithValue(picker),
@@ -435,6 +455,167 @@ void main() {
     expect(repository.createdDepartmentEventRequest, isNotNull);
     expect(repository.createdUnitEventRequest, isNull);
   });
+
+  testWidgets('cria evento e adiciona colaboradores selecionados', (
+    tester,
+  ) async {
+    final repository = _CapturingCalendarEventRepository()
+      ..createdEventResult = _event();
+    await _pumpApp(tester, buildApp(repository: repository));
+
+    await tester.tap(find.byKey(const Key('add-event-collaborator-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm-add-collaborator-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'Ensaio geral');
+    await tester.enterText(_field('start-date-field'), '10/05/2026');
+    await tester.enterText(_field('start-time-field'), '18:00');
+    await tester.enterText(_field('end-date-field'), '10/05/2026');
+    await tester.enterText(_field('end-time-field'), '20:00');
+
+    await tester.tap(find.byKey(const Key('save-event-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository.createdUnitEventRequest, isNotNull);
+    expect(repository.collaboratorDepartmentIds, ['dep-1']);
+  });
+
+  testWidgets('modo edição remove colaborador desmarcado ao salvar', (
+    tester,
+  ) async {
+    final repository = _CapturingCalendarEventRepository()
+      ..updatedEventResult = _event()
+      ..collaborators = const [
+        EventCollaborationEntity(
+          id: 'collab-1',
+          calendarEventId: 'event-1',
+          departmentId: 'dep-1',
+          department: DepartmentEntity(id: 'dep-1', name: 'Louvor'),
+        ),
+      ];
+    await _pumpApp(
+      tester,
+      buildApp(repository: repository, eventId: 'event-1', event: _event()),
+    );
+
+    await tester.tap(find.byKey(const Key('remove-collaborator-dep-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('save-event-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository.updatedEventId, 'event-1');
+    expect(repository.removedCollaboratorDepartmentIds, ['dep-1']);
+  });
+
+  testWidgets('modo duplicação copia colaboradores para o novo evento', (
+    tester,
+  ) async {
+    final repository = _CapturingCalendarEventRepository()
+      ..createdEventResult = _event(title: 'Culto copiado')
+      ..collaborators = const [
+        EventCollaborationEntity(
+          id: 'collab-2',
+          calendarEventId: 'event-1',
+          departmentId: 'dep-2',
+          department: DepartmentEntity(id: 'dep-2', name: 'Recepcao'),
+        ),
+      ];
+    await _pumpApp(
+      tester,
+      buildApp(
+        repository: repository,
+        duplicateFromEventId: 'event-1',
+        event: _event(),
+      ),
+    );
+
+    expect(find.text('Recepcao'), findsOneWidget);
+
+    await tester.enterText(_field('start-date-field'), '12/05/2026');
+    await tester.enterText(_field('end-date-field'), '12/05/2026');
+    await tester.tap(find.byKey(const Key('save-event-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository.createdUnitEventRequest, isNotNull);
+    expect(repository.collaboratorDepartmentIds, ['dep-2']);
+  });
+
+  testWidgets('evento departamental não permite colaborar com dono', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      buildApp(
+        eventId: 'event-1',
+        event: _event(
+          type: CalendarEventType.department,
+          departmentId: 'dep-1',
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('add-event-collaborator-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Recepcao'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('confirm-add-collaborator-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('remove-collaborator-dep-2')), findsOneWidget);
+    expect(find.byKey(const Key('remove-collaborator-dep-1')), findsNothing);
+  });
+
+  testWidgets('colaborador carregado sem detalhe usa lista de departamentos', (
+    tester,
+  ) async {
+    final repository = _CapturingCalendarEventRepository()
+      ..collaborators = const [
+        EventCollaborationEntity(
+          id: 'collab-2',
+          calendarEventId: 'event-1',
+          departmentId: 'dep-2',
+        ),
+      ];
+    await _pumpApp(
+      tester,
+      buildApp(repository: repository, eventId: 'event-1', event: _event()),
+    );
+
+    expect(find.text('Recepcao'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('event-collaborators-section')),
+        matching: find.text('Departamento'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('colaborador fora da lista resolve nome pelo detalhe', (
+    tester,
+  ) async {
+    final repository = _CapturingCalendarEventRepository()
+      ..collaborators = const [
+        EventCollaborationEntity(
+          id: 'collab-3',
+          calendarEventId: 'event-1',
+          departmentId: 'dep-3',
+        ),
+      ];
+    await _pumpApp(
+      tester,
+      buildApp(repository: repository, eventId: 'event-1', event: _event()),
+    );
+
+    expect(find.text('Comunicação'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('event-collaborators-section')),
+        matching: find.text('Departamento'),
+      ),
+      findsNothing,
+    );
+  });
 }
 
 Future<void> _pumpApp(WidgetTester tester, Widget app) async {
@@ -483,11 +664,16 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   CalendarEventRequestModel? createdUnitEventRequest;
   String? createdDepartmentId;
   CalendarEventRequestModel? createdDepartmentEventRequest;
+  CalendarEventEntity? createdEventResult;
   String? updatedEventId;
   CalendarEventRequestModel? updatedEventRequest;
+  CalendarEventEntity? updatedEventResult;
   String? updatedCardImageEventId;
   String? updatedCardImagePath;
   String? deletedCardImageEventId;
+  final collaboratorDepartmentIds = <String>[];
+  final removedCollaboratorDepartmentIds = <String>[];
+  List<EventCollaborationEntity> collaborators = const [];
 
   @override
   Future<Either<Failure, CalendarEventEntity>> createUnitEvent(
@@ -495,6 +681,7 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
     CalendarEventRequestModel request,
   ) async {
     createdUnitEventRequest = request;
+    if (createdEventResult != null) return Right(createdEventResult!);
     return const Left(ServerFailure('Falha simulada.'));
   }
 
@@ -505,7 +692,23 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   ) async {
     createdDepartmentId = departmentId;
     createdDepartmentEventRequest = request;
+    if (createdEventResult != null) return Right(createdEventResult!);
     return const Left(ServerFailure('Falha simulada.'));
+  }
+
+  @override
+  Future<Either<Failure, EventCollaborationEntity>> addCollaborator(
+    String eventId,
+    String departmentId,
+  ) async {
+    collaboratorDepartmentIds.add(departmentId);
+    return Right(
+      EventCollaborationEntity(
+        id: 'collaboration-$departmentId',
+        calendarEventId: eventId,
+        departmentId: departmentId,
+      ),
+    );
   }
 
   @override
@@ -527,6 +730,13 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, List<EventCollaborationEntity>>> getCollaborators(
+    String eventId,
+  ) async {
+    return Right(collaborators);
+  }
+
+  @override
   Future<Either<Failure, List<CalendarEventEntity>>> getDepartmentEvents(
     String departmentId,
     DateTime start,
@@ -542,6 +752,15 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
     DateTime end,
   ) async {
     return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
+  Future<Either<Failure, void>> removeCollaborator(
+    String eventId,
+    String departmentId,
+  ) async {
+    removedCollaboratorDepartmentIds.add(departmentId);
+    return const Right(null);
   }
 
   @override
@@ -561,6 +780,7 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   ) async {
     updatedEventId = eventId;
     updatedEventRequest = request;
+    if (updatedEventResult != null) return Right(updatedEventResult!);
     return const Left(ServerFailure('Não implementado no teste.'));
   }
 }

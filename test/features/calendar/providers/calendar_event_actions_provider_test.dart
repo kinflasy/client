@@ -4,6 +4,7 @@ import 'package:client/core/domain/enums/affiliation.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_actions_provider.dart';
@@ -161,6 +162,33 @@ void main() {
     expect(result, const Right<Failure, void>(null));
     expect(container.read(calendarEventActionsProvider).hasValue, isTrue);
     verify(() => repository.deleteEvent('event-1')).called(1);
+  });
+
+  test('sincroniza colaboradores adicionando e removendo diferenças', () async {
+    when(
+      () => repository.removeCollaborator('event-1', 'dep-old'),
+    ).thenAnswer((_) async => const Right(null));
+    when(() => repository.addCollaborator('event-1', 'dep-new')).thenAnswer(
+      (_) async => const Right(
+        EventCollaborationEntity(
+          id: 'collab-new',
+          calendarEventId: 'event-1',
+          departmentId: 'dep-new',
+        ),
+      ),
+    );
+
+    final result = await container
+        .read(calendarEventActionsProvider.notifier)
+        .syncCollaborators(
+          'event-1',
+          originalDepartmentIds: {'dep-old', 'dep-kept'},
+          selectedDepartmentIds: {'dep-kept', 'dep-new'},
+        );
+
+    expect(result, const Right<Failure, void>(null));
+    verify(() => repository.removeCollaborator('event-1', 'dep-old')).called(1);
+    verify(() => repository.addCollaborator('event-1', 'dep-new')).called(1);
   });
 
   test('invalida detalhe e listagens depois de atualizar imagem', () async {

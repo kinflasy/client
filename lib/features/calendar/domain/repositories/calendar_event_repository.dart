@@ -1,6 +1,7 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:fpdart/fpdart.dart';
 
 abstract class CalendarEventRepository {
@@ -31,6 +32,20 @@ abstract class CalendarEventRepository {
   Future<Either<Failure, CalendarEventEntity>> updateEvent(
     String eventId,
     CalendarEventRequestModel request,
+  );
+
+  Future<Either<Failure, List<EventCollaborationEntity>>> getCollaborators(
+    String eventId,
+  );
+
+  Future<Either<Failure, EventCollaborationEntity>> addCollaborator(
+    String eventId,
+    String departmentId,
+  );
+
+  Future<Either<Failure, void>> removeCollaborator(
+    String eventId,
+    String departmentId,
   );
 
   Future<Either<Failure, CalendarEventEntity>> updateCardImage(

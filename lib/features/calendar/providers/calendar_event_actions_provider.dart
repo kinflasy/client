@@ -37,6 +37,45 @@ class CalendarEventActionsNotifier extends Notifier<AsyncValue<void>> {
     );
   }
 
+  Future<Either<Failure, void>> syncCollaborators(
+    String eventId, {
+    required Set<String> originalDepartmentIds,
+    required Set<String> selectedDepartmentIds,
+  }) async {
+    state = const AsyncLoading();
+
+    final toAdd = selectedDepartmentIds.difference(originalDepartmentIds);
+    final toRemove = originalDepartmentIds.difference(selectedDepartmentIds);
+
+    for (final departmentId in toRemove) {
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .removeCollaborator(eventId, departmentId);
+      if (result.isLeft()) {
+        final failure = result.getLeft().toNullable()!;
+        state = AsyncError(failure, StackTrace.current);
+        _invalidateEventViews(eventId);
+        return Left(failure);
+      }
+    }
+
+    for (final departmentId in toAdd) {
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .addCollaborator(eventId, departmentId);
+      if (result.isLeft()) {
+        final failure = result.getLeft().toNullable()!;
+        state = AsyncError(failure, StackTrace.current);
+        _invalidateEventViews(eventId);
+        return Left(failure);
+      }
+    }
+
+    state = const AsyncData(null);
+    _invalidateEventViews(eventId);
+    return const Right(null);
+  }
+
   Future<Either<Failure, CalendarEventEntity>> updateCardImage(
     String eventId,
     String filePath,
@@ -102,6 +141,7 @@ class CalendarEventActionsNotifier extends Notifier<AsyncValue<void>> {
 
   void _invalidateEventViews(String eventId) {
     ref.invalidate(calendarEventDetailProvider(eventId));
+    ref.invalidate(calendarEventCollaboratorsProvider(eventId));
     ref.invalidate(unitCalendarEventsProvider);
     ref.invalidate(departmentCalendarEventsProvider);
     ref.invalidate(visibleUnitCalendarEventsProvider);

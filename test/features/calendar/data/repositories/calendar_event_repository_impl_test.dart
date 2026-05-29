@@ -168,6 +168,93 @@ void main() {
       });
       verify(() => api.getEventById('event-1')).called(1);
     });
+
+    test('returns collaborators on success', () async {
+      when(() => api.getCollaborators('event-1')).thenAnswer(
+        (_) async => [
+          {
+            'id': 'collab-1',
+            'calendarEventId': 'event-1',
+            'department': {'id': 'dep-1', 'name': 'Louvor'},
+          },
+        ],
+      );
+
+      final result = await repository.getCollaborators('event-1');
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (collaborators) {
+        expect(collaborators.single.departmentId, 'dep-1');
+        expect(collaborators.single.department?.name, 'Louvor');
+      });
+    });
+
+    test('maps direct department collaborator response', () async {
+      when(() => api.getCollaborators('event-1')).thenAnswer(
+        (_) async => [
+          {
+            'id': 'dep-1',
+            'unitId': 'unit-1',
+            'name': 'Louvor',
+            'slug': 'louvor',
+            'type': 'ADMINISTRATIVE',
+            'profileImageId': 'profile-1',
+            'coverImageId': 'cover-1',
+          },
+        ],
+      );
+
+      final result = await repository.getCollaborators('event-1');
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (collaborators) {
+        expect(collaborators.single.departmentId, 'dep-1');
+        expect(collaborators.single.department?.name, 'Louvor');
+        expect(collaborators.single.department?.type, 'ADMINISTRATIVE');
+      });
+    });
+
+    test('adds collaborator and maps response', () async {
+      when(() => api.addCollaborator('event-1', 'dep-1')).thenAnswer(
+        (_) async => {
+          'id': 'collab-1',
+          'calendarEventId': 'event-1',
+          'departmentId': 'dep-1',
+        },
+      );
+
+      final result = await repository.addCollaborator('event-1', 'dep-1');
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (collaboration) {
+        expect(collaboration.departmentId, 'dep-1');
+      });
+    });
+
+    test('maps collaborator conflict into ValidationFailure', () async {
+      when(
+        () => api.addCollaborator('event-1', 'dep-1'),
+      ).thenThrow(_dioError(409, 'Departamento ja colabora neste evento.'));
+
+      final result = await repository.addCollaborator('event-1', 'dep-1');
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<ValidationFailure>());
+        expect(failure.message, 'Departamento ja colabora neste evento.');
+      }, (_) => fail('expected failure'));
+    });
+
+    test('removes collaborator', () async {
+      when(
+        () => api.removeCollaborator('event-1', 'dep-1'),
+      ).thenAnswer((_) async {});
+
+      final result = await repository.removeCollaborator('event-1', 'dep-1');
+
+      expect(result.isRight(), isTrue);
+      verify(() => api.removeCollaborator('event-1', 'dep-1')).called(1);
+    });
   });
 }
 

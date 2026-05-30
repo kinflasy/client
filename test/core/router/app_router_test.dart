@@ -360,7 +360,7 @@ void main() {
       await pumpRouter(tester);
 
       expect(find.byType(BottomNavigationBar), findsNothing);
-      expect(find.text('FormaÃ§Ãµes de escala'), findsOneWidget);
+      expect(find.text('Formações de escala'), findsOneWidget);
     },
   );
 
@@ -381,7 +381,7 @@ void main() {
     await pumpRouter(tester);
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('FormaÃ§Ãµes de escala'), findsNothing);
+    expect(find.text('Formações de escala'), findsNothing);
   });
 
   testWidgets(
@@ -709,7 +709,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 3));
 
-    expect(find.text('Nova formaÃ§Ã£o'), findsOneWidget);
+    expect(find.text('Nova formação'), findsOneWidget);
     expect(find.byType(BottomNavigationBar), findsNothing);
   });
 
@@ -731,7 +731,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Nova formaÃ§Ã£o'), findsNothing);
+    expect(find.text('Nova formação'), findsNothing);
   });
 
   testWidgets('integrant can open formation detail route without edit chrome', (
@@ -857,7 +857,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Editar endereÃ§o'), findsOneWidget);
+    expect(find.text('Editar endereço'), findsOneWidget);
   });
 
   testWidgets(
@@ -1017,7 +1017,7 @@ void main() {
     router.go('/admin/informacoes-gerais');
     await pumpRouter(tester);
 
-    expect(find.text('InformaÃ§Ãµes gerais'), findsOneWidget);
+    expect(find.text('Informações gerais'), findsOneWidget);
   });
 
   testWidgets('unit admin user can access any department detail', (
@@ -1102,7 +1102,7 @@ CalendarEventEntity _routerEvent() {
   return CalendarEventEntity(
     id: 'event-1',
     title: 'Culto especial',
-    description: 'CelebraÃ§Ã£o com toda a unidade.',
+    description: 'Celebração com toda a unidade.',
     startDateTime: DateTime(2026, 5, 10, 18),
     endDateTime: DateTime(2026, 5, 10, 20),
     type: CalendarEventType.department,

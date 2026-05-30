@@ -55,7 +55,7 @@ void main() {
             name: switch (departmentId) {
               'dep-1' => 'Louvor',
               'dep-2' => 'Recepcao',
-              'dep-3' => 'ComunicaÃ§Ã£o',
+              'dep-3' => 'Comunicação',
               _ => 'Nome resolvido',
             },
           ),
@@ -77,7 +77,7 @@ void main() {
     );
   }
 
-  testWidgets('valida campos obrigatÃ³rios', (tester) async {
+  testWidgets('valida campos obrigatórios', (tester) async {
     await _pumpApp(tester, buildApp());
 
     expect(find.text('Organizado por *'), findsOneWidget);
@@ -86,14 +86,14 @@ void main() {
     await tester.tap(find.byKey(const Key('save-event-button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Campo obrigatÃ³rio'), findsNWidgets(5));
+    expect(find.text('Campo obrigatório'), findsNWidgets(5));
     expect(
       find.text('Adicione pelo menos uma regra de visibilidade.'),
       findsNothing,
     );
   });
 
-  testWidgets('valida fim anterior ao inÃ­cio', (tester) async {
+  testWidgets('valida fim anterior ao início', (tester) async {
     await _pumpApp(tester, buildApp());
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Ensaio geral');
@@ -105,10 +105,10 @@ void main() {
     await tester.tap(find.byKey(const Key('save-event-button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('O fim deve ser posterior ao inÃ­cio.'), findsOneWidget);
+    expect(find.text('O fim deve ser posterior ao início.'), findsOneWidget);
   });
 
-  testWidgets('autopreenche data e hora de fim a partir do inÃ­cio', (
+  testWidgets('autopreenche data e hora de fim a partir do início', (
     tester,
   ) async {
     await _pumpApp(tester, buildApp());
@@ -134,7 +134,7 @@ void main() {
     expect(_fieldText(tester, 'end-time-field'), '01:30');
   });
 
-  testWidgets('autopreenchimento nÃ£o sobrescreve fim manual', (tester) async {
+  testWidgets('autopreenchimento não sobrescreve fim manual', (tester) async {
     await _pumpApp(tester, buildApp());
 
     await tester.enterText(_field('end-date-field'), '12/05/2026');
@@ -147,7 +147,7 @@ void main() {
     expect(_fieldText(tester, 'end-time-field'), '21:00');
   });
 
-  testWidgets('salvar sem regra especÃ­fica envia USER *', (tester) async {
+  testWidgets('salvar sem regra específica envia USER *', (tester) async {
     final repository = _CapturingCalendarEventRepository();
     await _pumpApp(tester, buildApp(repository: repository));
 
@@ -192,10 +192,10 @@ void main() {
       repository.createdUnitEventRequest!.endDateTime,
       DateTime(2027, 8, 15, 18),
     );
-    expect(find.text('Data invÃ¡lida'), findsNothing);
+    expect(find.text('Data inválida'), findsNothing);
   });
 
-  testWidgets('modo ediÃ§Ã£o preenche formulÃ¡rio com dados existentes', (
+  testWidgets('modo edição preenche formulário com dados existentes', (
     tester,
   ) async {
     await _pumpApp(
@@ -208,27 +208,27 @@ void main() {
 
     expect(find.text('Editar evento'), findsOneWidget);
     expect(_fieldTextAt(tester, 0), 'Culto especial');
-    expect(_fieldTextAt(tester, 1), 'CelebraÃ§Ã£o com toda a unidade.');
+    expect(_fieldTextAt(tester, 1), 'Celebração com toda a unidade.');
     expect(_fieldText(tester, 'start-date-field'), '10/05/2026');
     expect(_fieldText(tester, 'start-time-field'), '18:00');
     expect(_fieldText(tester, 'end-date-field'), '10/05/2026');
     expect(_fieldText(tester, 'end-time-field'), '20:00');
-    expect(find.text('Salvar alteraÃ§Ãµes'), findsOneWidget);
+    expect(find.text('Salvar alterações'), findsOneWidget);
     expect(find.text('Imagem do evento'), findsOneWidget);
     expect(find.text('Trocar imagem'), findsOneWidget);
   });
 
-  testWidgets('modo ediÃ§Ã£o valida fim posterior ao inÃ­cio', (tester) async {
+  testWidgets('modo edição valida fim posterior ao início', (tester) async {
     await _pumpApp(tester, buildApp(eventId: 'event-1', event: _event()));
 
     await tester.enterText(_field('end-time-field'), '17:00');
     await tester.tap(find.byKey(const Key('save-event-button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('O fim deve ser posterior ao inÃ­cio.'), findsOneWidget);
+    expect(find.text('O fim deve ser posterior ao início.'), findsOneWidget);
   });
 
-  testWidgets('modo ediÃ§Ã£o envia update com dados alterados', (tester) async {
+  testWidgets('modo edição envia update com dados alterados', (tester) async {
     final repository = _CapturingCalendarEventRepository();
     await _pumpApp(
       tester,
@@ -246,7 +246,7 @@ void main() {
     expect(repository.updatedEventRequest?.title, 'Culto atualizado');
   });
 
-  testWidgets('modo ediÃ§Ã£o permite salvar nova data futura', (tester) async {
+  testWidgets('modo edição permite salvar nova data futura', (tester) async {
     final repository = _CapturingCalendarEventRepository();
     await _pumpApp(
       tester,
@@ -270,10 +270,10 @@ void main() {
       repository.updatedEventRequest?.endDateTime,
       DateTime(2027, 9, 20, 12),
     );
-    expect(find.text('Data invÃ¡lida'), findsNothing);
+    expect(find.text('Data inválida'), findsNothing);
   });
 
-  testWidgets('modo ediÃ§Ã£o atualiza imagem do evento', (tester) async {
+  testWidgets('modo edição atualiza imagem do evento', (tester) async {
     final repository = _CapturingCalendarEventRepository();
     await _pumpApp(
       tester,
@@ -299,7 +299,7 @@ void main() {
     expect(find.text('Imagem do evento atualizada.'), findsOneWidget);
   });
 
-  testWidgets('modo ediÃ§Ã£o remove imagem do evento apÃ³s confirmaÃ§Ã£o', (
+  testWidgets('modo edição remove imagem do evento após confirmação', (
     tester,
   ) async {
     final repository = _CapturingCalendarEventRepository();
@@ -329,7 +329,7 @@ void main() {
   });
 
   testWidgets(
-    'modo duplicaÃ§Ã£o preenche dados copiÃ¡veis do evento original',
+    'modo duplicação preenche dados copiáveis do evento original',
     (tester) async {
       await _pumpApp(
         tester,
@@ -338,7 +338,7 @@ void main() {
 
       expect(find.text('Duplicar evento'), findsOneWidget);
       expect(_fieldTextAt(tester, 0), 'Culto especial');
-      expect(_fieldTextAt(tester, 1), 'CelebraÃ§Ã£o com toda a unidade.');
+      expect(_fieldTextAt(tester, 1), 'Celebração com toda a unidade.');
       expect(_fieldText(tester, 'start-date-field'), isEmpty);
       expect(_fieldText(tester, 'end-date-field'), isEmpty);
       expect(_fieldText(tester, 'start-time-field'), '18:00');
@@ -347,7 +347,7 @@ void main() {
     },
   );
 
-  testWidgets('modo duplicaÃ§Ã£o nÃ£o exibe imagem original como selecionada', (
+  testWidgets('modo duplicação não exibe imagem original como selecionada', (
     tester,
   ) async {
     await _pumpApp(
@@ -363,7 +363,7 @@ void main() {
     expect(find.byKey(const Key('event-image-network')), findsNothing);
   });
 
-  testWidgets('modo duplicaÃ§Ã£o exige datas mesmo com horÃ¡rios copiados', (
+  testWidgets('modo duplicação exige datas mesmo com horários copiados', (
     tester,
   ) async {
     await _pumpApp(
@@ -374,10 +374,10 @@ void main() {
     await tester.tap(find.byKey(const Key('save-event-button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Campo obrigatÃ³rio'), findsNWidgets(2));
+    expect(find.text('Campo obrigatório'), findsNWidgets(2));
   });
 
-  testWidgets('modo duplicaÃ§Ã£o cria novo evento de unidade', (tester) async {
+  testWidgets('modo duplicação cria novo evento de unidade', (tester) async {
     final repository = _CapturingCalendarEventRepository();
     await _pumpApp(
       tester,
@@ -406,7 +406,7 @@ void main() {
     );
   });
 
-  testWidgets('modo duplicaÃ§Ã£o cria evento no departamento original', (
+  testWidgets('modo duplicação cria evento no departamento original', (
     tester,
   ) async {
     final repository = _CapturingCalendarEventRepository();
@@ -483,7 +483,7 @@ void main() {
     expect(repository.collaboratorDepartmentIds, ['dep-1']);
   });
 
-  testWidgets('modo ediÃ§Ã£o remove colaborador desmarcado ao salvar', (
+  testWidgets('modo edição remove colaborador desmarcado ao salvar', (
     tester,
   ) async {
     final repository = _CapturingCalendarEventRepository()
@@ -510,7 +510,7 @@ void main() {
     expect(repository.removedCollaboratorDepartmentIds, ['dep-1']);
   });
 
-  testWidgets('modo duplicaÃ§Ã£o copia colaboradores para o novo evento', (
+  testWidgets('modo duplicação copia colaboradores para o novo evento', (
     tester,
   ) async {
     final repository = _CapturingCalendarEventRepository()
@@ -543,7 +543,7 @@ void main() {
     expect(repository.collaboratorDepartmentIds, ['dep-2']);
   });
 
-  testWidgets('evento departamental nÃ£o permite colaborar com dono', (
+  testWidgets('evento departamental não permite colaborar com dono', (
     tester,
   ) async {
     await _pumpApp(
@@ -610,7 +610,7 @@ void main() {
       buildApp(repository: repository, eventId: 'event-1', event: _event()),
     );
 
-    expect(find.text('ComunicaÃ§Ã£o'), findsOneWidget);
+    expect(find.text('Comunicação'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byKey(const Key('event-collaborators-section')),
@@ -722,14 +722,14 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
 
   @override
   Future<Either<Failure, void>> deleteEvent(String eventId) async {
-    return const Left(ServerFailure('NÃ£o implementado no teste.'));
+    return const Left(ServerFailure('Não implementado no teste.'));
   }
 
   @override
   Future<Either<Failure, CalendarEventEntity>> getEventById(
     String eventId,
   ) async {
-    return const Left(ServerFailure('NÃ£o implementado no teste.'));
+    return const Left(ServerFailure('Não implementado no teste.'));
   }
 
   @override
@@ -743,7 +743,7 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   Future<Either<Failure, List<CalendarEventScaleEntity>>> getEventScales(
     String eventId,
   ) async {
-    return const Left(ServerFailure('NÃ£o implementado no teste.'));
+    return const Left(ServerFailure('Não implementado no teste.'));
   }
 
   @override
@@ -752,7 +752,7 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
     DateTime start,
     DateTime end,
   ) async {
-    return const Left(ServerFailure('NÃ£o implementado no teste.'));
+    return const Left(ServerFailure('Não implementado no teste.'));
   }
 
   @override
@@ -761,7 +761,7 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
     DateTime start,
     DateTime end,
   ) async {
-    return const Left(ServerFailure('NÃ£o implementado no teste.'));
+    return const Left(ServerFailure('Não implementado no teste.'));
   }
 
   @override
@@ -778,7 +778,7 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
     String eventId,
     CalendarEventScaleRequestModel request,
   ) async {
-    return const Left(ServerFailure('NÃ£o implementado no teste.'));
+    return const Left(ServerFailure('Não implementado no teste.'));
   }
 
   @override
@@ -799,7 +799,7 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
     updatedEventId = eventId;
     updatedEventRequest = request;
     if (updatedEventResult != null) return Right(updatedEventResult!);
-    return const Left(ServerFailure('NÃ£o implementado no teste.'));
+    return const Left(ServerFailure('Não implementado no teste.'));
   }
 }
 
@@ -821,7 +821,7 @@ CalendarEventEntity _event({
   return CalendarEventEntity(
     id: 'event-1',
     title: title,
-    description: 'CelebraÃ§Ã£o com toda a unidade.',
+    description: 'Celebração com toda a unidade.',
     startDateTime: DateTime(2026, 5, 10, 18),
     endDateTime: DateTime(2026, 5, 10, 20),
     type: type,

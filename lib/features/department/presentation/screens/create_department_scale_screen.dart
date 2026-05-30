@@ -76,7 +76,7 @@ class _CreateDepartmentScaleScreenState
     if (eventsError != null) {
       return _InlineStatus(
         icon: Icons.event_busy_outlined,
-        title: 'NÃ£o foi possÃ­vel carregar os eventos.',
+        title: 'Não foi possível carregar os eventos.',
         subtitle: _errorMessage(eventsError),
       );
     }
@@ -85,7 +85,7 @@ class _CreateDepartmentScaleScreenState
     if (lineupsError != null) {
       return _InlineStatus(
         icon: Icons.assignment_late_outlined,
-        title: 'NÃ£o foi possÃ­vel carregar as formaÃ§Ãµes.',
+        title: 'Não foi possível carregar as formações.',
         subtitle: _errorMessage(lineupsError),
       );
     }
@@ -96,9 +96,9 @@ class _CreateDepartmentScaleScreenState
     if (events.isEmpty) {
       return const _InlineStatus(
         icon: Icons.event_note_outlined,
-        title: 'Nenhum evento disponÃ­vel.',
+        title: 'Nenhum evento disponível.',
         subtitle:
-            'Crie um evento futuro ou verifique se os eventos existentes jÃ¡ possuem escala.',
+            'Crie um evento futuro ou verifique se os eventos existentes já possuem escala.',
       );
     }
 
@@ -116,14 +116,14 @@ class _CreateDepartmentScaleScreenState
                       pathParameters: {'id': widget.departmentId},
                     ),
               icon: const Icon(Icons.add),
-              label: const Text('Criar formaÃ§Ã£o'),
+              label: const Text('Criar formação'),
             ),
             const Expanded(
               child: _InlineStatus(
                 icon: Icons.assignment_outlined,
-                title: 'Nenhuma formaÃ§Ã£o cadastrada.',
+                title: 'Nenhuma formação cadastrada.',
                 subtitle:
-                    'Crie uma formaÃ§Ã£o de escala antes de montar a escala do evento.',
+                    'Crie uma formação de escala antes de montar a escala do evento.',
               ),
             ),
           ],
@@ -154,7 +154,7 @@ class _CreateDepartmentScaleScreenState
                 (event) => DropdownMenuItem(
                   value: event.id,
                   child: Text(
-                    '${event.title} Â· ${_formatEventDate(event.startDateTime)}',
+                    '${event.title} · ${_formatEventDate(event.startDateTime)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -169,7 +169,7 @@ class _CreateDepartmentScaleScreenState
         DropdownButtonFormField<String>(
           initialValue: selectedLineupId,
           decoration: const InputDecoration(
-            labelText: 'FormaÃ§Ã£o *',
+            labelText: 'Formação *',
             border: OutlineInputBorder(),
             filled: true,
             fillColor: Colors.white,
@@ -211,7 +211,7 @@ class _CreateDepartmentScaleScreenState
 
     if (eventId == null || lineupId == null) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Selecione um evento e uma formaÃ§Ã£o.')),
+        const SnackBar(content: Text('Selecione um evento e uma formação.')),
       );
       return;
     }
@@ -286,7 +286,7 @@ String _errorMessage(Object error) {
 }
 
 String _formatEventDate(DateTime dateTime) {
-  const weekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b', 'Dom'];
+  const weekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
   const months = [
     'jan',
     'fev',

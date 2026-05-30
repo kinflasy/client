@@ -284,7 +284,7 @@ void main() {
     );
     final sameStartB = _event(
       id: 'event-b',
-      title: 'VigÃ­lia',
+      title: 'Vigília',
       startDateTime: DateTime(2026, 6),
     );
     final sameStartA = _event(

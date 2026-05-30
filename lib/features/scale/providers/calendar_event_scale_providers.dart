@@ -1,7 +1,7 @@
 import 'package:client/core/errors/failure.dart';
-import 'package:client/features/calendar/data/models/calendar_event_scale_request_model.dart';
+import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
-import 'package:client/features/calendar/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

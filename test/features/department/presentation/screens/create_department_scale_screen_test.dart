@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/calendar/data/models/calendar_event_scale_request_model.dart';
+import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
-import 'package:client/features/calendar/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
-import 'package:client/features/calendar/providers/calendar_event_scale_providers.dart';
+import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:client/features/department/domain/entities/lineup_entity.dart';
 import 'package:client/features/department/presentation/screens/create_department_scale_screen.dart';
 import 'package:client/features/department/providers/department_lineup_providers.dart';
@@ -56,7 +56,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Não foi possível carregar os eventos.'), findsOneWidget);
+    expect(
+      find.text('NÃ£o foi possÃ­vel carregar os eventos.'),
+      findsOneWidget,
+    );
     expect(find.text('Falha nos eventos'), findsOneWidget);
   });
 
@@ -66,10 +69,10 @@ void main() {
     await _pumpScreen(tester, events: const [], lineups: const [_lineup]);
     await tester.pumpAndSettle();
 
-    expect(find.text('Nenhum evento disponível.'), findsOneWidget);
+    expect(find.text('Nenhum evento disponÃ­vel.'), findsOneWidget);
     expect(
       find.text(
-        'Crie um evento futuro ou verifique se os eventos existentes já possuem escala.',
+        'Crie um evento futuro ou verifique se os eventos existentes jÃ¡ possuem escala.',
       ),
       findsOneWidget,
     );
@@ -91,13 +94,13 @@ void main() {
     router.push('/departamentos/dep-1/escalas/nova');
     await tester.pumpAndSettle();
 
-    expect(find.text('Nenhuma formação cadastrada.'), findsOneWidget);
-    expect(find.text('Criar formação'), findsOneWidget);
+    expect(find.text('Nenhuma formaÃ§Ã£o cadastrada.'), findsOneWidget);
+    expect(find.text('Criar formaÃ§Ã£o'), findsOneWidget);
 
-    await tester.tap(find.text('Criar formação'));
+    await tester.tap(find.text('Criar formaÃ§Ã£o'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Destino de formação'), findsOneWidget);
+    expect(find.text('Destino de formaÃ§Ã£o'), findsOneWidget);
   });
 
   testWidgets('creates scale with selected event and lineup', (tester) async {
@@ -115,7 +118,7 @@ void main() {
 
     await tester.tap(find.byType(DropdownButtonFormField<String>).first);
     await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('Culto da manhã').last);
+    await tester.tap(find.textContaining('Culto da manhÃ£').last);
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(DropdownButtonFormField<String>).last);
@@ -144,7 +147,7 @@ void main() {
 
   testWidgets('shows creation failure message', (tester) async {
     when(() => repository.createEventScale('event-1', any())).thenAnswer(
-      (_) async => const Left(ValidationFailure('Evento já possui escala.')),
+      (_) async => const Left(ValidationFailure('Evento jÃ¡ possui escala.')),
     );
 
     await _pumpScreen(
@@ -157,7 +160,7 @@ void main() {
 
     await tester.tap(find.byType(DropdownButtonFormField<String>).first);
     await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('Culto da manhã').last);
+    await tester.tap(find.textContaining('Culto da manhÃ£').last);
     await tester.pumpAndSettle();
     await tester.tap(find.byType(DropdownButtonFormField<String>).last);
     await tester.pumpAndSettle();
@@ -168,7 +171,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('Evento já possui escala.'), findsOneWidget);
+    expect(find.text('Evento jÃ¡ possui escala.'), findsOneWidget);
   });
 }
 
@@ -239,7 +242,7 @@ GoRouter _router({
         path: AppRoutes.departmentScaleFormationCreate,
         name: AppRoutes.departmentScaleFormationCreateName,
         builder: (context, state) =>
-            const Scaffold(body: Text('Destino de formação')),
+            const Scaffold(body: Text('Destino de formaÃ§Ã£o')),
       ),
     ],
   );
@@ -247,7 +250,7 @@ GoRouter _router({
 
 final _event = CalendarEventEntity(
   id: 'event-1',
-  title: 'Culto da manhã',
+  title: 'Culto da manhÃ£',
   startDateTime: DateTime(2026, 7, 20, 9),
   endDateTime: DateTime(2026, 7, 20, 11),
   type: CalendarEventType.department,

@@ -10,7 +10,7 @@ import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
-import 'package:client/features/calendar/providers/calendar_event_scale_providers.dart';
+import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:client/features/calendar/sub_features/create_event/presentation/screens/create_event_screen.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
@@ -360,7 +360,7 @@ void main() {
       await pumpRouter(tester);
 
       expect(find.byType(BottomNavigationBar), findsNothing);
-      expect(find.text('Formações de escala'), findsOneWidget);
+      expect(find.text('FormaÃ§Ãµes de escala'), findsOneWidget);
     },
   );
 
@@ -381,7 +381,7 @@ void main() {
     await pumpRouter(tester);
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Formações de escala'), findsNothing);
+    expect(find.text('FormaÃ§Ãµes de escala'), findsNothing);
   });
 
   testWidgets(
@@ -709,7 +709,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 3));
 
-    expect(find.text('Nova formação'), findsOneWidget);
+    expect(find.text('Nova formaÃ§Ã£o'), findsOneWidget);
     expect(find.byType(BottomNavigationBar), findsNothing);
   });
 
@@ -731,7 +731,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Nova formação'), findsNothing);
+    expect(find.text('Nova formaÃ§Ã£o'), findsNothing);
   });
 
   testWidgets('integrant can open formation detail route without edit chrome', (
@@ -857,7 +857,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Editar endereço'), findsOneWidget);
+    expect(find.text('Editar endereÃ§o'), findsOneWidget);
   });
 
   testWidgets(
@@ -1017,7 +1017,7 @@ void main() {
     router.go('/admin/informacoes-gerais');
     await pumpRouter(tester);
 
-    expect(find.text('Informações gerais'), findsOneWidget);
+    expect(find.text('InformaÃ§Ãµes gerais'), findsOneWidget);
   });
 
   testWidgets('unit admin user can access any department detail', (
@@ -1102,7 +1102,7 @@ CalendarEventEntity _routerEvent() {
   return CalendarEventEntity(
     id: 'event-1',
     title: 'Culto especial',
-    description: 'Celebração com toda a unidade.',
+    description: 'CelebraÃ§Ã£o com toda a unidade.',
     startDateTime: DateTime(2026, 5, 10, 18),
     endDateTime: DateTime(2026, 5, 10, 20),
     type: CalendarEventType.department,

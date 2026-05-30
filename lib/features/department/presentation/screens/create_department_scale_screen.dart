@@ -1,9 +1,9 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/router/app_routes.dart';
-import 'package:client/features/calendar/data/models/calendar_event_scale_request_model.dart';
+import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
-import 'package:client/features/calendar/providers/calendar_event_scale_providers.dart';
+import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:client/features/department/domain/entities/lineup_entity.dart';
 import 'package:client/features/department/providers/department_lineup_providers.dart';
 import 'package:flutter/material.dart';
@@ -76,7 +76,7 @@ class _CreateDepartmentScaleScreenState
     if (eventsError != null) {
       return _InlineStatus(
         icon: Icons.event_busy_outlined,
-        title: 'Não foi possível carregar os eventos.',
+        title: 'NÃ£o foi possÃ­vel carregar os eventos.',
         subtitle: _errorMessage(eventsError),
       );
     }
@@ -85,7 +85,7 @@ class _CreateDepartmentScaleScreenState
     if (lineupsError != null) {
       return _InlineStatus(
         icon: Icons.assignment_late_outlined,
-        title: 'Não foi possível carregar as formações.',
+        title: 'NÃ£o foi possÃ­vel carregar as formaÃ§Ãµes.',
         subtitle: _errorMessage(lineupsError),
       );
     }
@@ -96,9 +96,9 @@ class _CreateDepartmentScaleScreenState
     if (events.isEmpty) {
       return const _InlineStatus(
         icon: Icons.event_note_outlined,
-        title: 'Nenhum evento disponível.',
+        title: 'Nenhum evento disponÃ­vel.',
         subtitle:
-            'Crie um evento futuro ou verifique se os eventos existentes já possuem escala.',
+            'Crie um evento futuro ou verifique se os eventos existentes jÃ¡ possuem escala.',
       );
     }
 
@@ -116,14 +116,14 @@ class _CreateDepartmentScaleScreenState
                       pathParameters: {'id': widget.departmentId},
                     ),
               icon: const Icon(Icons.add),
-              label: const Text('Criar formação'),
+              label: const Text('Criar formaÃ§Ã£o'),
             ),
             const Expanded(
               child: _InlineStatus(
                 icon: Icons.assignment_outlined,
-                title: 'Nenhuma formação cadastrada.',
+                title: 'Nenhuma formaÃ§Ã£o cadastrada.',
                 subtitle:
-                    'Crie uma formação de escala antes de montar a escala do evento.',
+                    'Crie uma formaÃ§Ã£o de escala antes de montar a escala do evento.',
               ),
             ),
           ],
@@ -154,7 +154,7 @@ class _CreateDepartmentScaleScreenState
                 (event) => DropdownMenuItem(
                   value: event.id,
                   child: Text(
-                    '${event.title} · ${_formatEventDate(event.startDateTime)}',
+                    '${event.title} Â· ${_formatEventDate(event.startDateTime)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -169,7 +169,7 @@ class _CreateDepartmentScaleScreenState
         DropdownButtonFormField<String>(
           initialValue: selectedLineupId,
           decoration: const InputDecoration(
-            labelText: 'Formação *',
+            labelText: 'FormaÃ§Ã£o *',
             border: OutlineInputBorder(),
             filled: true,
             fillColor: Colors.white,
@@ -211,7 +211,7 @@ class _CreateDepartmentScaleScreenState
 
     if (eventId == null || lineupId == null) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Selecione um evento e uma formação.')),
+        const SnackBar(content: Text('Selecione um evento e uma formaÃ§Ã£o.')),
       );
       return;
     }
@@ -286,7 +286,7 @@ String _errorMessage(Object error) {
 }
 
 String _formatEventDate(DateTime dateTime) {
-  const weekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  const weekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b', 'Dom'];
   const months = [
     'jan',
     'fev',

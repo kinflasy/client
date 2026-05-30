@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:client/core/errors/failure.dart';
-import 'package:client/features/calendar/data/models/calendar_event_scale_request_model.dart';
+import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
-import 'package:client/features/calendar/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
-import 'package:client/features/calendar/providers/calendar_event_scale_providers.dart';
+import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -284,7 +284,7 @@ void main() {
     );
     final sameStartB = _event(
       id: 'event-b',
-      title: 'Vigília',
+      title: 'VigÃ­lia',
       startDateTime: DateTime(2026, 6),
     );
     final sameStartA = _event(

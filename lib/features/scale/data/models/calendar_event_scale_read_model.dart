@@ -1,4 +1,4 @@
-import 'package:client/features/calendar/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 
 class CalendarEventScaleReadModel {
   const CalendarEventScaleReadModel({

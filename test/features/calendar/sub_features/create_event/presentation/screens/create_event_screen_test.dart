@@ -1,7 +1,9 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/media/media_providers.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
+import 'package:client/features/calendar/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
@@ -737,6 +739,13 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, List<CalendarEventScaleEntity>>> getEventScales(
+    String eventId,
+  ) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
   Future<Either<Failure, List<CalendarEventEntity>>> getDepartmentEvents(
     String departmentId,
     DateTime start,
@@ -761,6 +770,14 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   ) async {
     removedCollaboratorDepartmentIds.add(departmentId);
     return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, CalendarEventScaleEntity>> createEventScale(
+    String eventId,
+    CalendarEventScaleRequestModel request,
+  ) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
   }
 
   @override

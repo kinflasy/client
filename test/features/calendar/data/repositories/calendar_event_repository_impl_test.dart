@@ -4,8 +4,10 @@ import 'package:client/core/domain/enums/affiliation.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/datasources/calendar_events_api.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
+import 'package:client/features/calendar/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/calendar/data/repositories/calendar_event_repository_impl.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -254,6 +256,93 @@ void main() {
 
       expect(result.isRight(), isTrue);
       verify(() => api.removeCollaborator('event-1', 'dep-1')).called(1);
+    });
+
+    test('gets owner event scales and maps calendarEventId', () async {
+      when(() => api.getEventScales('event-1')).thenAnswer(
+        (_) async => const [
+          {
+            'id': 'scale-1',
+            'lineupId': 'lineup-1',
+            'type': 'OWNER',
+            'calendarEventId': 'event-1',
+          },
+        ],
+      );
+
+      final result = await repository.getEventScales('event-1');
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (scales) {
+        expect(scales.single.id, 'scale-1');
+        expect(scales.single.type, CalendarEventScaleType.owner);
+        expect(scales.single.calendarEventId, 'event-1');
+      });
+    });
+
+    test('gets collaborator event scales without breaking UI scope', () async {
+      when(() => api.getEventScales('event-1')).thenAnswer(
+        (_) async => const [
+          {
+            'id': 'scale-2',
+            'lineupId': 'lineup-2',
+            'type': 'COLLABORATOR',
+            'collaborationId': 'collab-1',
+          },
+        ],
+      );
+
+      final result = await repository.getEventScales('event-1');
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (scales) {
+        expect(scales.single.type, CalendarEventScaleType.collaborator);
+        expect(scales.single.collaborationId, 'collab-1');
+      });
+    });
+
+    test('creates event scale and maps response', () async {
+      when(
+        () => api.createEventScale('event-1', any(that: isA<Map>())),
+      ).thenAnswer(
+        (_) async => const {
+          'id': 'scale-1',
+          'lineupId': 'lineup-1',
+          'type': 'OWNER',
+          'calendarEventId': 'event-1',
+        },
+      );
+
+      final result = await repository.createEventScale(
+        'event-1',
+        const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
+      );
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (scale) {
+        expect(scale.lineupId, 'lineup-1');
+        expect(scale.calendarEventId, 'event-1');
+      });
+      verify(
+        () => api.createEventScale('event-1', {'lineupId': 'lineup-1'}),
+      ).called(1);
+    });
+
+    test('maps scale creation conflict into ValidationFailure', () async {
+      when(
+        () => api.createEventScale('event-1', any(that: isA<Map>())),
+      ).thenThrow(_dioError(409, 'Evento ja possui escala.'));
+
+      final result = await repository.createEventScale(
+        'event-1',
+        const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
+      );
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<ValidationFailure>());
+        expect(failure.message, 'Evento ja possui escala.');
+      }, (_) => fail('expected failure'));
     });
   });
 }

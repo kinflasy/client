@@ -2,8 +2,11 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/datasources/calendar_events_api.dart';
 import 'package:client/features/calendar/data/models/calendar_event_read_model.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
+import 'package:client/features/calendar/data/models/calendar_event_scale_read_model.dart';
+import 'package:client/features/calendar/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/calendar/data/models/event_collaboration_read_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:dio/dio.dart';
@@ -123,6 +126,41 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
       () => _api.removeCollaborator(eventId, departmentId),
       fallbackMessage: 'Erro ao remover colaborador.',
     );
+  }
+
+  @override
+  Future<Either<Failure, List<CalendarEventScaleEntity>>> getEventScales(
+    String eventId,
+  ) async {
+    try {
+      final jsonList = await _api.getEventScales(eventId);
+      final scales = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(CalendarEventScaleReadModel.fromJson)
+          .map((model) => model.toEntity())
+          .toList();
+      return Right(scales);
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao carregar escalas do evento.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, CalendarEventScaleEntity>> createEventScale(
+    String eventId,
+    CalendarEventScaleRequestModel request,
+  ) async {
+    try {
+      final json = await _api.createEventScale(eventId, request.toJson());
+      return Right(CalendarEventScaleReadModel.fromJson(json).toEntity());
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao criar escala do evento.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
   }
 
   @override

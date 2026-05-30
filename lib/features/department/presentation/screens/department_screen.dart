@@ -152,7 +152,10 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
                         departmentName: department.name,
                         canManageEvents: canManageEvents,
                       ),
-                      const SizedBox.shrink(),
+                      _DepartmentScalesTab(
+                        departmentId: widget.departmentId,
+                        canManageScales: canManageEvents,
+                      ),
                       _DepartmentParticipantsTab(
                         departmentId: widget.departmentId,
                       ),
@@ -221,7 +224,7 @@ class _DepartmentSettingsSidebar extends StatelessWidget {
                 color: AppColors.primary,
               ),
               title: const Text(
-                'Formação de escala',
+                'Formações de escala',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
@@ -230,7 +233,7 @@ class _DepartmentSettingsSidebar extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).pop();
                 context.pushNamed(
-                  AppRoutes.departmentLineupsName,
+                  AppRoutes.departmentScaleFormationsName,
                   pathParameters: {'id': departmentId},
                 );
               },
@@ -400,6 +403,43 @@ class _CreateDepartmentEventButton extends StatelessWidget {
       ),
       icon: const Icon(Icons.add),
       label: const Text('Criar evento'),
+    );
+  }
+}
+
+class _DepartmentScalesTab extends StatelessWidget {
+  const _DepartmentScalesTab({
+    required this.departmentId,
+    required this.canManageScales,
+  });
+
+  final String departmentId;
+  final bool canManageScales;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (canManageScales) ...[
+          ElevatedButton.icon(
+            onPressed: () => context.pushNamed(
+              AppRoutes.departmentScaleCreateName,
+              pathParameters: {'id': departmentId},
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('+ Nova escala'),
+          ),
+          const SizedBox(height: 16),
+        ],
+        const Expanded(
+          child: _InlineStatus(
+            icon: Icons.assignment_outlined,
+            title: 'Nenhuma escala cadastrada ainda.',
+            subtitle: 'Crie uma escala vinculando um evento a uma formação.',
+          ),
+        ),
+      ],
     );
   }
 }

@@ -92,6 +92,24 @@ class CalendarEventsApi {
     );
   }
 
+  Future<List<dynamic>> getEventScales(String eventId) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/$eventId/scales',
+    );
+    return _readList(response.data);
+  }
+
+  Future<Map<String, dynamic>> createEventScale(
+    String eventId,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await _dio.post<dynamic>(
+      '/v1/core/calendar-events/$eventId/scales',
+      data: payload,
+    );
+    return _readMap(response.data);
+  }
+
   Future<Map<String, dynamic>> updateCardImage(
     String eventId,
     MultipartFile file,
@@ -119,7 +137,13 @@ class CalendarEventsApi {
     if (data is List) return data;
     if (data is Map) {
       final map = Map<String, dynamic>.from(data);
-      for (final key in const ['content', 'items', 'data', 'events']) {
+      for (final key in const [
+        'content',
+        'items',
+        'data',
+        'events',
+        'scales',
+      ]) {
         final value = map[key];
         if (value is List) return value;
       }
@@ -138,6 +162,8 @@ class CalendarEventsApi {
         'content',
         'items',
         'events',
+        'scale',
+        'scales',
       ]) {
         final value = map[key];
         if (value is Map) return Map<String, dynamic>.from(value);

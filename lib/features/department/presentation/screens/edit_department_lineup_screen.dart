@@ -85,7 +85,7 @@ class _EditDepartmentLineupScreenState
           canManage: canManage,
           body: const _InlineStatus(
             icon: Icons.assignment_late_outlined,
-            title: 'Não foi possível carregar o lineup.',
+            title: 'Não foi possível carregar a formação.',
             subtitle: 'Tente novamente em instantes.',
           ),
         ),
@@ -147,7 +147,7 @@ class _EditDepartmentLineupScreenState
                 itemBuilder: (context) => const [
                   PopupMenuItem(
                     value: _LineupMenuAction.delete,
-                    child: Text('Deletar escala'),
+                    child: Text('Remover formação'),
                   ),
                 ],
               ),
@@ -159,9 +159,9 @@ class _EditDepartmentLineupScreenState
   }
 
   String get _appBarTitle {
-    if (_isCreateRoute) return 'Novo lineup';
+    if (_isCreateRoute) return 'Nova formação';
     if (_persistedName.isNotEmpty) return _persistedName;
-    return 'Lineup';
+    return 'Formação';
   }
 
   Widget _buildForm({required bool isSaving, required bool canManage}) {
@@ -198,7 +198,7 @@ class _EditDepartmentLineupScreenState
           enabled: canManage && _isNameEditing && !isSaving,
           textCapitalization: TextCapitalization.sentences,
           decoration: const InputDecoration(
-            labelText: 'Nome do lineup',
+            labelText: 'Nome da formação',
             hintText: 'Ex: Louvor - Culto dominical',
             border: OutlineInputBorder(),
             filled: true,
@@ -207,7 +207,7 @@ class _EditDepartmentLineupScreenState
           validator: (value) {
             if (!_isNameEditing && !_isCreatingLineup) return null;
             if (value == null || value.trim().isEmpty) {
-              return 'Informe o nome do lineup.';
+              return 'Informe o nome da formação.';
             }
             return null;
           },
@@ -355,14 +355,14 @@ class _EditDepartmentLineupScreenState
     result.fold(
       (failure) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Não foi possível criar o lineup.')),
+          const SnackBar(content: Text('Não foi possível criar a formação.')),
         );
       },
       (lineup) {
         if (lineup.id.isEmpty) {
           messenger.showSnackBar(
             const SnackBar(
-              content: Text('Não foi possível identificar o lineup criado.'),
+              content: Text('Não foi possível identificar a formação criada.'),
             ),
           );
           return;
@@ -410,9 +410,9 @@ class _EditDepartmentLineupScreenState
   Future<void> _confirmAndDeleteLineup() async {
     final shouldDelete = await showActionConfirmationDialog(
       context,
-      title: 'Deletar escala?',
+      title: 'Remover formação?',
       message: 'Esta ação não pode ser desfeita.',
-      confirmLabel: 'Deletar',
+      confirmLabel: 'Remover',
       isDestructive: true,
     );
     if (!mounted || !shouldDelete) return;
@@ -430,12 +430,12 @@ class _EditDepartmentLineupScreenState
     result.fold(
       (failure) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Não foi possível deletar a escala.')),
+          const SnackBar(content: Text('Não foi possível remover a formação.')),
         );
       },
       (_) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Escala removida.')),
+          const SnackBar(content: Text('Formação removida.')),
         );
         context.pop();
       },
@@ -506,7 +506,7 @@ class _EditDepartmentLineupScreenState
     final shouldRemove = await showActionConfirmationDialog(
       context,
       title: 'Remover papel?',
-      message: 'Deseja remover este papel do lineup?',
+      message: 'Deseja remover este papel da formação?',
       confirmLabel: 'Remover',
       isDestructive: true,
     );
@@ -541,7 +541,7 @@ class _EditDepartmentLineupScreenState
     if (lineupId == null || lineupId.isEmpty) {
       messenger.showSnackBar(
         const SnackBar(
-          content: Text('Não foi possível identificar o lineup criado.'),
+          content: Text('Não foi possível identificar a formação criada.'),
         ),
       );
       return;

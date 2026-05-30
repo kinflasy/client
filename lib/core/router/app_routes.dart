@@ -44,11 +44,18 @@ class AppRoutes {
   static const departmentEventCreate = '/departamentos/:id/eventos/criar';
   static const departmentParticipantsAdd =
       '/departamentos/:id/participantes/adicionar';
-  static const departmentLineups = '/departamentos/:id/escalas';
-  static const departmentLineupCreate = '/departamentos/:id/escalas/criar';
-  static const departmentLineupDetail =
-      '/departamentos/:departmentId/escalas/:lineupId';
-  static const departmentLineupEdit = departmentLineupDetail;
+  static const departmentScaleCreate = '/departamentos/:id/escalas/nova';
+  static const departmentScaleFormations =
+      '/departamentos/:id/formacoes-de-escala';
+  static const departmentScaleFormationCreate =
+      '/departamentos/:id/formacoes-de-escala/criar';
+  static const departmentScaleFormationDetail =
+      '/departamentos/:departmentId/formacoes-de-escala/:lineupId';
+  static const departmentScaleFormationEdit = departmentScaleFormationDetail;
+  static const departmentLineups = departmentScaleFormations;
+  static const departmentLineupCreate = departmentScaleFormationCreate;
+  static const departmentLineupDetail = departmentScaleFormationDetail;
+  static const departmentLineupEdit = departmentScaleFormationEdit;
 
   static const splashName = 'splash';
   static const loginName = 'login';
@@ -92,8 +99,16 @@ class AppRoutes {
   static const departmentDetailName = 'department-detail';
   static const departmentEventCreateName = 'department-event-create';
   static const departmentParticipantsAddName = 'department-participants-add';
-  static const departmentLineupsName = 'department-lineups';
-  static const departmentLineupCreateName = 'department-lineup-create';
-  static const departmentLineupDetailName = 'department-lineup-detail';
-  static const departmentLineupEditName = departmentLineupDetailName;
+  static const departmentScaleCreateName = 'department-scale-create';
+  static const departmentScaleFormationsName = 'department-scale-formations';
+  static const departmentScaleFormationCreateName =
+      'department-scale-formation-create';
+  static const departmentScaleFormationDetailName =
+      'department-scale-formation-detail';
+  static const departmentScaleFormationEditName =
+      departmentScaleFormationDetailName;
+  static const departmentLineupsName = departmentScaleFormationsName;
+  static const departmentLineupCreateName = departmentScaleFormationCreateName;
+  static const departmentLineupDetailName = departmentScaleFormationDetailName;
+  static const departmentLineupEditName = departmentScaleFormationEditName;
 }

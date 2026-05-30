@@ -10,6 +10,7 @@ import 'package:client/features/auth/providers/auth_providers.dart';
 import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/calendar/providers/calendar_event_scale_providers.dart';
 import 'package:client/features/calendar/sub_features/create_event/presentation/screens/create_event_screen.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
@@ -22,6 +23,7 @@ import 'package:client/features/department/domain/entities/lineup_entity.dart';
 import 'package:client/features/department/domain/entities/my_departments_unit_group.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
+import 'package:client/features/department/providers/department_lineup_providers.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
@@ -91,6 +93,23 @@ void main() {
         departmentId: 'dep-1',
         departmentType: 'MINISTRY',
         integrationType: IntegrationType.leader,
+      ),
+    ],
+    isUnitAdmin: false,
+  );
+
+  const assistantPermissions = SessionPermissions(
+    isAuthenticated: true,
+    affiliation: Affiliation.member,
+    activeUnitId: 'unit-1',
+    hasMembership: true,
+    integrations: [
+      IntegrationEntity(
+        id: 'integration-3',
+        membershipId: 'membership-1',
+        departmentId: 'dep-1',
+        departmentType: 'MINISTRY',
+        integrationType: IntegrationType.assistant,
       ),
     ],
     isUnitAdmin: false,
@@ -183,6 +202,9 @@ void main() {
         departmentCalendarEventsProvider.overrideWith(
           (ref, request) async => const [],
         ),
+        calendarEventCollaboratorsProvider.overrideWith(
+          (ref, eventId) async => const [],
+        ),
         calendarEventDetailProvider(
           'event-1',
         ).overrideWith((ref) async => _routerEvent()),
@@ -215,6 +237,44 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
+  }
+
+  ProviderContainer managedDepartmentRouteContainer(
+    SessionPermissions routePermissions,
+  ) {
+    final routeContainer = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(authRepository),
+        sessionPermissionsProvider.overrideWith(
+          (ref) async => routePermissions,
+        ),
+        hasMembershipProvider.overrideWith((ref) => true),
+        editLoggedUserInitialDataProvider.overrideWith(
+          (ref) async => _loggedUserProfile(),
+        ),
+        pendingUnitMembershipsProvider.overrideWith(
+          (ref, unitId) async => const [],
+        ),
+        departmentRepositoryProvider.overrideWithValue(departmentRepository),
+        churchUnitRepositoryProvider.overrideWithValue(churchUnitRepository),
+        activeMembershipProvider.overrideWith(
+          (ref) async => const MembershipEntity(
+            id: 'membership-1',
+            unitId: 'unit-1',
+            affiliation: 'MEMBER',
+          ),
+        ),
+        currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+        eligibleDepartmentScaleEventsProvider.overrideWith(
+          (ref, request) async => const [],
+        ),
+        departmentLineupsProvider(
+          'dep-1',
+        ).overrideWith((ref) async => const []),
+      ],
+    );
+    addTearDown(routeContainer.dispose);
+    return routeContainer;
   }
 
   testWidgets('shell department detail keeps bottom navigation visible', (
@@ -280,7 +340,7 @@ void main() {
   });
 
   testWidgets(
-    'department lineups route opens with department observer access',
+    'department scale formations route opens with department observer access',
     (tester) async {
       final router = container.read(appRouterProvider);
 
@@ -293,18 +353,18 @@ void main() {
       await pumpRouter(tester);
 
       router.goNamed(
-        AppRoutes.departmentLineupsName,
+        AppRoutes.departmentScaleFormationsName,
         pathParameters: {'id': 'dep-1'},
       );
       await tester.pump();
       await pumpRouter(tester);
 
       expect(find.byType(BottomNavigationBar), findsNothing);
-      expect(find.text('Escalas'), findsOneWidget);
+      expect(find.text('Formações de escala'), findsOneWidget);
     },
   );
 
-  testWidgets('user without department access is redirected from lineups', (
+  testWidgets('user without department access is redirected from formations', (
     tester,
   ) async {
     final router = container.read(appRouterProvider);
@@ -317,15 +377,15 @@ void main() {
     );
     await pumpRouter(tester);
 
-    router.go('/departamentos/dep-2/escalas');
+    router.go('/departamentos/dep-2/formacoes-de-escala');
     await pumpRouter(tester);
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Escalas'), findsNothing);
+    expect(find.text('Formações de escala'), findsNothing);
   });
 
   testWidgets(
-    'user without department access is redirected from lineup detail',
+    'user without department access is redirected from formation detail',
     (tester) async {
       final router = container.read(appRouterProvider);
 
@@ -337,7 +397,7 @@ void main() {
       );
       await pumpRouter(tester);
 
-      router.go('/departamentos/dep-2/escalas/lineup-1');
+      router.go('/departamentos/dep-2/formacoes-de-escala/lineup-1');
       await pumpRouter(tester);
 
       expect(find.byType(BottomNavigationBar), findsOneWidget);
@@ -371,6 +431,9 @@ void main() {
           ),
         ),
         currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+        calendarEventCollaboratorsProvider.overrideWith(
+          (ref, eventId) async => const [],
+        ),
         calendarEventDetailProvider(
           'event-1',
         ).overrideWith((ref) async => _routerEvent()),
@@ -461,6 +524,9 @@ void main() {
             ),
           ),
           currentChurchProfileProvider.overrideWith((ref) async => _profile()),
+          calendarEventCollaboratorsProvider.overrideWith(
+            (ref, eventId) async => const [],
+          ),
           calendarEventDetailProvider(
             'event-1',
           ).overrideWith((ref) async => _routerEvent()),
@@ -511,7 +577,97 @@ void main() {
     expect(find.text('Criar evento'), findsNothing);
   });
 
-  testWidgets('department leader can open lineup create route', (tester) async {
+  testWidgets('department leader can open scale create route', (tester) async {
+    final leaderContainer = managedDepartmentRouteContainer(leaderPermissions);
+    final router = leaderContainer.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: leaderContainer,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+
+    router.go('/departamentos/dep-1/escalas/nova');
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.text('Nova escala'), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsNothing);
+  });
+
+  testWidgets('department assistant can open scale create route', (
+    tester,
+  ) async {
+    final assistantContainer = managedDepartmentRouteContainer(
+      assistantPermissions,
+    );
+    final router = assistantContainer.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: assistantContainer,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+
+    router.goNamed(
+      AppRoutes.departmentScaleCreateName,
+      pathParameters: {'id': 'dep-1'},
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.text('Nova escala'), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsNothing);
+  });
+
+  testWidgets('unit admin can open scale create route', (tester) async {
+    final adminContainer = managedDepartmentRouteContainer(adminPermissions);
+    final router = adminContainer.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: adminContainer,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+
+    router.go('/departamentos/dep-1/escalas/nova');
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.text('Nova escala'), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsNothing);
+  });
+
+  testWidgets('integrant is redirected away from scale create route', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+
+    router.go('/departamentos/dep-1/escalas/nova');
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.text('Nova escala'), findsNothing);
+  });
+
+  testWidgets('department leader can open formation create route', (
+    tester,
+  ) async {
     final leaderContainer = ProviderContainer(
       overrides: [
         authRepositoryProvider.overrideWithValue(authRepository),
@@ -549,15 +705,15 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 3));
 
-    router.go('/departamentos/dep-1/escalas/criar');
+    router.go('/departamentos/dep-1/formacoes-de-escala/criar');
     await tester.pump();
     await tester.pump(const Duration(seconds: 3));
 
-    expect(find.text('Novo lineup'), findsOneWidget);
+    expect(find.text('Nova formação'), findsOneWidget);
     expect(find.byType(BottomNavigationBar), findsNothing);
   });
 
-  testWidgets('integrant is redirected away from lineup create route', (
+  testWidgets('integrant is redirected away from formation create route', (
     tester,
   ) async {
     final router = container.read(appRouterProvider);
@@ -570,15 +726,15 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 3));
 
-    router.go('/departamentos/dep-1/escalas/criar');
+    router.go('/departamentos/dep-1/formacoes-de-escala/criar');
     await tester.pump();
     await tester.pump(const Duration(seconds: 3));
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Novo lineup'), findsNothing);
+    expect(find.text('Nova formação'), findsNothing);
   });
 
-  testWidgets('integrant can open lineup detail route without edit chrome', (
+  testWidgets('integrant can open formation detail route without edit chrome', (
     tester,
   ) async {
     final router = container.read(appRouterProvider);
@@ -591,7 +747,7 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 3));
 
-    router.go('/departamentos/dep-1/escalas/lineup-1');
+    router.go('/departamentos/dep-1/formacoes-de-escala/lineup-1');
     await tester.pump();
     await tester.pump(const Duration(seconds: 3));
 

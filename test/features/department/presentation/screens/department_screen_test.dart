@@ -171,11 +171,38 @@ void main() {
     expect(find.text('Criar evento'), findsOneWidget);
   });
 
-  testWidgets('opens settings sidebar with lineups option for observer', (
+  testWidgets('scales tab shows create button only for manager', (
     tester,
   ) async {
     _stubDepartmentDetail(repository);
     _stubParticipants(repository);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          departmentRepositoryProvider.overrideWithValue(repository),
+          departmentCalendarEventsProvider.overrideWith(
+            (ref, request) async => const [],
+          ),
+          sessionPermissionsProvider.overrideWith(
+            (ref) async => _leaderPermissions,
+          ),
+        ],
+        child: const MaterialApp(
+          home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Escalas'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('+ Nova escala'), findsOneWidget);
+    expect(find.text('Nenhuma escala cadastrada ainda.'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
 
     await tester.pumpWidget(
       ProviderScope(
@@ -195,16 +222,48 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.tap(find.text('Escalas'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(Drawer), findsOneWidget);
-    expect(find.text('Configurações'), findsOneWidget);
-    expect(find.byIcon(Icons.assignment_outlined), findsOneWidget);
-    expect(find.text('Escalas'), findsOneWidget);
+    expect(find.text('+ Nova escala'), findsNothing);
+    expect(find.text('Nenhuma escala cadastrada ainda.'), findsOneWidget);
   });
+
+  testWidgets(
+    'opens settings sidebar with scale formations option for observer',
+    (tester) async {
+      _stubDepartmentDetail(repository);
+      _stubParticipants(repository);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            departmentRepositoryProvider.overrideWithValue(repository),
+            departmentCalendarEventsProvider.overrideWith(
+              (ref, request) async => const [],
+            ),
+            sessionPermissionsProvider.overrideWith(
+              (ref) async => _integrantPermissions,
+            ),
+          ],
+          child: const MaterialApp(
+            home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Drawer), findsOneWidget);
+      expect(find.text('Configurações'), findsOneWidget);
+      expect(find.byIcon(Icons.assignment_outlined), findsOneWidget);
+      expect(find.text('Formações de escala'), findsOneWidget);
+    },
+  );
 
   testWidgets('shows department events rendered with EventCard', (
     tester,
@@ -221,6 +280,9 @@ void main() {
           ),
           calendarEventDetailProvider.overrideWith(
             (ref, eventId) async => _departmentEvent,
+          ),
+          calendarEventCollaboratorsProvider.overrideWith(
+            (ref, eventId) async => const [],
           ),
           sessionPermissionsProvider.overrideWith(
             (ref) async => _leaderPermissions,
@@ -255,6 +317,9 @@ void main() {
           calendarEventDetailProvider.overrideWith(
             (ref, eventId) async => _departmentEvent,
           ),
+          calendarEventCollaboratorsProvider.overrideWith(
+            (ref, eventId) async => const [],
+          ),
           sessionPermissionsProvider.overrideWith(
             (ref) async => _leaderPermissions,
           ),
@@ -267,7 +332,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Ensaio do Louvor'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Descrição'), findsOneWidget);
     expect(find.text('Ensaio do Louvor'), findsNWidgets(2));
@@ -329,7 +395,7 @@ void main() {
       find.text('Não foi possível carregar o departamento.'),
       findsOneWidget,
     );
-    expect(find.text('Participantes'), findsNothing);
+    expect(find.text('Participantes'), findsOneWidget);
   });
 
   testWidgets('hides add participants button for user without management', (

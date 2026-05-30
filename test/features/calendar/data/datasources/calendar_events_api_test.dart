@@ -188,4 +188,57 @@ void main() {
       ),
     ).called(1);
   });
+
+  test('gets event scales using event route', () async {
+    when(
+      () => dio.get<dynamic>('/v1/core/calendar-events/event-1/scales'),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/event-1/scales',
+        ),
+        data: {
+          'scales': [
+            {'id': 'scale-1'},
+          ],
+        },
+      ),
+    );
+
+    final list = await api.getEventScales('event-1');
+
+    expect(list, [
+      {'id': 'scale-1'},
+    ]);
+  });
+
+  test('creates event scale with lineup payload', () async {
+    when(
+      () => dio.post<dynamic>(
+        '/v1/core/calendar-events/event-1/scales',
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/event-1/scales',
+        ),
+        data: {
+          'scale': {'id': 'scale-1', 'lineupId': 'lineup-1'},
+        },
+      ),
+    );
+
+    final json = await api.createEventScale('event-1', {
+      'lineupId': 'lineup-1',
+    });
+
+    expect(json, {'id': 'scale-1', 'lineupId': 'lineup-1'});
+    verify(
+      () => dio.post<dynamic>(
+        '/v1/core/calendar-events/event-1/scales',
+        data: {'lineupId': 'lineup-1'},
+      ),
+    ).called(1);
+  });
 }

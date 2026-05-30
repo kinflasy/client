@@ -254,7 +254,7 @@ class _RoleSelectionSheetState extends ConsumerState<_RoleSelectionSheet> {
   String _counterLabel(int count) {
     if (count <= 0) return '-';
     final suffix = widget.mode == RoleSelectionMode.lineup
-        ? 'no lineup'
+        ? 'na formação'
         : 'selecionado';
     return '$count $suffix';
   }

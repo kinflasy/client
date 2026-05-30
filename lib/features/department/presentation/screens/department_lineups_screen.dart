@@ -26,7 +26,7 @@ class DepartmentLineupsScreen extends ConsumerWidget {
     final createButton = _CreateLineupButton(
       onPressed: () async {
         await context.pushNamed(
-          AppRoutes.departmentLineupCreateName,
+          AppRoutes.departmentScaleFormationCreateName,
           pathParameters: {'id': departmentId},
         );
         ref.invalidate(departmentLineupsProvider(departmentId));
@@ -36,7 +36,7 @@ class DepartmentLineupsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Formação de escala'),
+        title: const Text('Formações de escala'),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -46,7 +46,7 @@ class DepartmentLineupsScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => const _LineupsStatus(
             icon: Icons.assignment_late_outlined,
-            title: 'Não foi possível carregar as escalas.',
+            title: 'Não foi possível carregar as formações de escala.',
             subtitle: 'Tente novamente em instantes.',
           ),
           data: (lineups) {
@@ -63,7 +63,7 @@ class DepartmentLineupsScreen extends ConsumerWidget {
                     const Expanded(
                       child: _LineupsStatus(
                         icon: Icons.assignment_outlined,
-                        title: 'Nenhuma escala criada ainda.',
+                        title: 'Nenhuma formação de escala criada ainda.',
                       ),
                     ),
                   ],
@@ -85,7 +85,7 @@ class DepartmentLineupsScreen extends ConsumerWidget {
                   lineup: lineup,
                   onTap: () async {
                     await context.pushNamed(
-                      AppRoutes.departmentLineupDetailName,
+                      AppRoutes.departmentScaleFormationDetailName,
                       pathParameters: {
                         'departmentId': departmentId,
                         'lineupId': lineup.id,

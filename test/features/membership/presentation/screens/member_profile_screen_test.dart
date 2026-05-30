@@ -78,14 +78,15 @@ void main() {
 
     expect(find.text('Ana Maria'), findsOneWidget);
     expect(find.text('Usuario do app'), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
     expect(find.text('ana@dev.com'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Rua A, 10, Fortaleza, CE'), 200);
     expect(find.text('Rua A, 10, Fortaleza, CE'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('10/04/2020'), 200);
     expect(find.text('10/04/2020'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('Louvor'), 200);
     expect(find.textContaining('Louvor'), findsOneWidget);
     expect(find.text('Editar cadastro'), findsNothing);
-    expect(find.byType(Image), findsOneWidget);
   });
 
   testWidgets('renders inactive profile with edit button only', (tester) async {

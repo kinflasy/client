@@ -19,6 +19,7 @@ import 'package:client/features/church/presentation/screens/edit_church_unit_ima
 import 'package:client/features/church/presentation/screens/edit_church_unit_links_screen.dart';
 import 'package:client/features/church/presentation/screens/admin_panel_screen.dart';
 import 'package:client/features/department/presentation/screens/department_category_list_screen.dart';
+import 'package:client/features/department/presentation/screens/create_department_scale_screen.dart';
 import 'package:client/features/department/presentation/screens/department_lineups_screen.dart';
 import 'package:client/features/department/presentation/screens/edit_department_lineup_screen.dart';
 import 'package:client/features/department/presentation/screens/my_departments_menu_screen.dart';
@@ -83,9 +84,10 @@ final _protectedRoutes = <String>{
   AppRoutes.departmentDetail,
   AppRoutes.departmentEventCreate,
   AppRoutes.departmentParticipantsAdd,
-  AppRoutes.departmentLineups,
-  AppRoutes.departmentLineupCreate,
-  AppRoutes.departmentLineupDetail,
+  AppRoutes.departmentScaleCreate,
+  AppRoutes.departmentScaleFormations,
+  AppRoutes.departmentScaleFormationCreate,
+  AppRoutes.departmentScaleFormationDetail,
 };
 
 final _membershipRequiredRoutes = <String>{};
@@ -179,8 +181,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               routePath == AppRoutes.homeChurchDepartmentDetail ||
               routePath == AppRoutes.departmentDetail ||
               routePath == AppRoutes.departmentParticipantsAdd ||
-              routePath == AppRoutes.departmentLineups ||
-              routePath == AppRoutes.departmentLineupDetail;
+              routePath == AppRoutes.departmentScaleFormations ||
+              routePath == AppRoutes.departmentScaleFormationDetail;
           if (isDepartmentDetailRoute) {
             final departmentId =
                 state.pathParameters['id'] ??
@@ -193,7 +195,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
           final isDepartmentManagementRoute =
               routePath == AppRoutes.departmentEventCreate ||
-              routePath == AppRoutes.departmentLineupCreate;
+              routePath == AppRoutes.departmentScaleCreate ||
+              routePath == AppRoutes.departmentScaleFormationCreate;
           if (isDepartmentManagementRoute) {
             final departmentId =
                 state.pathParameters['id'] ??
@@ -461,8 +464,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: AppRoutes.departmentLineups,
-        name: AppRoutes.departmentLineupsName,
+        path: AppRoutes.departmentScaleCreate,
+        name: AppRoutes.departmentScaleCreateName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final departmentId = state.pathParameters['id']!;
+          return CreateDepartmentScaleScreen(departmentId: departmentId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.departmentScaleFormations,
+        name: AppRoutes.departmentScaleFormationsName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final departmentId = state.pathParameters['id']!;
@@ -470,8 +482,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: AppRoutes.departmentLineupCreate,
-        name: AppRoutes.departmentLineupCreateName,
+        path: AppRoutes.departmentScaleFormationCreate,
+        name: AppRoutes.departmentScaleFormationCreateName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final departmentId = state.pathParameters['id']!;
@@ -479,8 +491,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: AppRoutes.departmentLineupDetail,
-        name: AppRoutes.departmentLineupDetailName,
+        path: AppRoutes.departmentScaleFormationDetail,
+        name: AppRoutes.departmentScaleFormationDetailName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final departmentId = state.pathParameters['departmentId']!;

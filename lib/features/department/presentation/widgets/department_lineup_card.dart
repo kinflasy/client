@@ -21,15 +21,29 @@ class DepartmentLineupCard extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  lineup.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lineup.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if ((lineup.items ?? const []).isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        _buildRoleSummary(lineup),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
@@ -40,4 +54,24 @@ class DepartmentLineupCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _buildRoleSummary(LineupEntity lineup) {
+  final items = lineup.items ?? const [];
+  final count = items.length;
+  final countLabel = count == 1 ? '1 papel' : '$count papéis';
+  final roles = items
+      .map((item) => item.role?.name.trim() ?? item.description.trim())
+      .where((name) => name.isNotEmpty)
+      .toList();
+
+  if (roles.isEmpty) return countLabel;
+
+  final visibleRoles = roles.take(3).toList();
+  final remaining = roles.length - visibleRoles.length;
+  final roleLabel = remaining > 0
+      ? '${visibleRoles.join(', ')} +$remaining'
+      : visibleRoles.join(', ');
+
+  return '$countLabel · $roleLabel';
 }

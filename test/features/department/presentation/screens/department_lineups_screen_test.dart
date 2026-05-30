@@ -66,7 +66,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Não foi possível carregar as escalas.'), findsOneWidget);
+    expect(
+      find.text('Não foi possível carregar as formações de escala.'),
+      findsOneWidget,
+    );
     expect(find.text('Tente novamente em instantes.'), findsOneWidget);
   });
 
@@ -74,7 +77,10 @@ void main() {
     await _pumpScreen(tester, lineups: const []);
     await tester.pumpAndSettle();
 
-    expect(find.text('Nenhuma escala criada ainda.'), findsOneWidget);
+    expect(
+      find.text('Nenhuma formação de escala criada ainda.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows create button only for department manager', (
@@ -103,11 +109,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Louvor - Culto dominical'), findsOneWidget);
-    expect(find.text('4 papéis'), findsOneWidget);
-    expect(find.text('Vocal'), findsOneWidget);
-    expect(find.text('Guitarra'), findsOneWidget);
-    expect(find.text('Bateria'), findsOneWidget);
-    expect(find.text('+1'), findsOneWidget);
+    expect(find.textContaining('4 papéis'), findsOneWidget);
+    expect(find.textContaining('Vocal'), findsOneWidget);
+    expect(find.textContaining('Guitarra'), findsOneWidget);
+    expect(find.textContaining('Bateria'), findsOneWidget);
+    expect(find.textContaining('+1'), findsOneWidget);
   });
 
   testWidgets('uses singular role count label', (tester) async {
@@ -130,7 +136,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('1 papel'), findsOneWidget);
+    expect(find.textContaining('1 papel'), findsOneWidget);
   });
 
   testWidgets('create button navigates to create route', (tester) async {
@@ -240,23 +246,23 @@ const _lineupWithRoles = LineupEntity(
 
 GoRouter _buildRouter({required List<LineupEntity> lineups}) {
   return GoRouter(
-    initialLocation: '/departamentos/dep-1/escalas',
+    initialLocation: '/departamentos/dep-1/formacoes-de-escala',
     routes: [
       GoRoute(
-        path: AppRoutes.departmentLineups,
-        name: AppRoutes.departmentLineupsName,
+        path: AppRoutes.departmentScaleFormations,
+        name: AppRoutes.departmentScaleFormationsName,
         builder: (context, state) =>
             DepartmentLineupsScreen(departmentId: state.pathParameters['id']!),
       ),
       GoRoute(
-        path: AppRoutes.departmentLineupCreate,
-        name: AppRoutes.departmentLineupCreateName,
+        path: AppRoutes.departmentScaleFormationCreate,
+        name: AppRoutes.departmentScaleFormationCreateName,
         builder: (context, state) =>
             const Scaffold(body: Text('Destino de criação')),
       ),
       GoRoute(
-        path: AppRoutes.departmentLineupDetail,
-        name: AppRoutes.departmentLineupDetailName,
+        path: AppRoutes.departmentScaleFormationDetail,
+        name: AppRoutes.departmentScaleFormationDetailName,
         builder: (context, state) =>
             const Scaffold(body: Text('Destino de detalhe')),
       ),

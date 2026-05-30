@@ -148,7 +148,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selectedRoles.single.name, 'Vocal');
-    expect(find.text('1 no lineup'), findsOneWidget);
+    expect(find.text('1 na formação'), findsOneWidget);
     expect(find.text('Selecionar papel'), findsOneWidget);
   });
 
@@ -166,13 +166,13 @@ void main() {
     );
     await _openSheet(tester);
 
-    expect(find.text('1 no lineup'), findsOneWidget);
+    expect(find.text('1 na formação'), findsOneWidget);
     expect(find.text('-'), findsOneWidget);
 
     await tester.tap(find.widgetWithIcon(IconButton, Icons.add).first);
     await tester.pumpAndSettle();
 
-    expect(find.text('2 no lineup'), findsOneWidget);
+    expect(find.text('2 na formação'), findsOneWidget);
   });
 }
 

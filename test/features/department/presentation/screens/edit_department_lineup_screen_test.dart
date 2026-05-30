@@ -75,7 +75,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField), ' ');
     await tester.pumpAndSettle();
 
-    expect(find.text('Informe o nome do lineup.'), findsOneWidget);
+    expect(find.text('Informe o nome da formação.'), findsOneWidget);
   });
 
   testWidgets('create button enables only with filled name', (tester) async {
@@ -184,7 +184,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Culto'), findsWidgets);
-    expect(find.text('Editar lineup'), findsNothing);
+    expect(find.text('Editar formação'), findsNothing);
     expect(find.text('Vocal'), findsNWidgets(2));
   });
 
@@ -262,10 +262,10 @@ void main() {
 
     await tester.tap(find.byTooltip('Mais opções'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Remover escala'));
+    await tester.tap(find.text('Remover formação'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Remover escala?'), findsOneWidget);
+    expect(find.text('Remover formação?'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(TextButton, 'Remover'));
     await tester.pumpAndSettle();
@@ -289,13 +289,13 @@ void main() {
 
     await tester.tap(find.byTooltip('Mais opções'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Remover escala'));
+    await tester.tap(find.text('Remover formação'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextButton, 'Remover'));
     await tester.pumpAndSettle();
 
     expect(find.text('Culto'), findsWidgets);
-    expect(find.text('Não foi possível remover a escala.'), findsOneWidget);
+    expect(find.text('Não foi possível remover a formação.'), findsOneWidget);
   });
 
   testWidgets('back with name changes shows confirmation', (tester) async {
@@ -326,7 +326,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Louvor'), findsOneWidget);
-    expect(find.text('Não foi possível criar o lineup.'), findsOneWidget);
+    expect(find.text('Não foi possível criar a formação.'), findsOneWidget);
   });
 }
 

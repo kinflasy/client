@@ -184,7 +184,7 @@ void main() {
       permissions: _leaderPermissions,
     );
 
-    expect(find.text('+ Nova escala'), findsOneWidget);
+    expect(find.text('Nova escala'), findsOneWidget);
     expect(find.text('Nenhuma escala cadastrada ainda.'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -196,7 +196,7 @@ void main() {
       permissions: _integrantPermissions,
     );
 
-    expect(find.text('+ Nova escala'), findsNothing);
+    expect(find.text('Nova escala'), findsNothing);
     expect(find.text('Nenhuma escala cadastrada ainda.'), findsOneWidget);
   });
 
@@ -209,7 +209,7 @@ void main() {
       permissions: _assistantPermissions,
     );
 
-    expect(find.text('+ Nova escala'), findsOneWidget);
+    expect(find.text('Nova escala'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
@@ -220,7 +220,7 @@ void main() {
       permissions: _unitAdminPermissions,
     );
 
-    expect(find.text('+ Nova escala'), findsOneWidget);
+    expect(find.text('Nova escala'), findsOneWidget);
   });
 
   testWidgets('scales tab shows loading state', (tester) async {

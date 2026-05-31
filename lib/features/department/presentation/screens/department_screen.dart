@@ -451,7 +451,7 @@ class _DepartmentScalesTabState extends ConsumerState<_DepartmentScalesTab> {
               pathParameters: {'id': widget.departmentId},
             ),
             icon: const Icon(Icons.add),
-            label: const Text('+ Nova escala'),
+            label: const Text('Nova escala'),
           ),
           const SizedBox(height: 16),
         ],

@@ -110,6 +110,18 @@ class CalendarEventsApi {
     return _readMap(response.data);
   }
 
+  Future<List<dynamic>> getDepartmentScales(
+    String departmentId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/scales/department/$departmentId',
+      queryParameters: _rangeQuery(start, end),
+    );
+    return _readList(response.data);
+  }
+
   Future<Map<String, dynamic>> updateCardImage(
     String eventId,
     MultipartFile file,

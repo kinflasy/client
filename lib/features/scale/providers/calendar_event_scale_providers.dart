@@ -22,12 +22,39 @@ class EligibleDepartmentScaleEventsRequest extends Equatable {
   List<Object?> get props => [departmentId, start, end];
 }
 
+class DepartmentScalesRequest extends Equatable {
+  const DepartmentScalesRequest({
+    required this.departmentId,
+    required this.start,
+    required this.end,
+  });
+
+  final String departmentId;
+  final DateTime start;
+  final DateTime end;
+
+  @override
+  List<Object?> get props => [departmentId, start, end];
+}
+
 EligibleDepartmentScaleEventsRequest buildEligibleDepartmentScaleEventsRequest(
   String departmentId, {
   DateTime? now,
 }) {
   final start = now ?? DateTime.now();
   return EligibleDepartmentScaleEventsRequest(
+    departmentId: departmentId,
+    start: start,
+    end: DateTime(start.year, start.month + 6, start.day, 23, 59, 59),
+  );
+}
+
+DepartmentScalesRequest buildDepartmentScalesRequest(
+  String departmentId, {
+  DateTime? now,
+}) {
+  final start = now ?? DateTime.now();
+  return DepartmentScalesRequest(
     departmentId: departmentId,
     start: start,
     end: DateTime(start.year, start.month + 6, start.day, 23, 59, 59),
@@ -44,6 +71,24 @@ final eventScalesProvider =
           .getEventScales(eventId);
 
       return result.fold((failure) => throw failure, (scales) => scales);
+    });
+
+final departmentScalesProvider =
+    FutureProvider.family<
+      List<DepartmentCalendarEventScaleEntity>,
+      DepartmentScalesRequest
+    >((ref, request) async {
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .getDepartmentScales(
+            request.departmentId,
+            request.start,
+            request.end,
+          );
+
+      return result.fold((failure) => throw failure, (scales) {
+        return [...scales]..sort(_compareDepartmentScales);
+      });
     });
 
 final eligibleDepartmentScaleEventsProvider =
@@ -116,6 +161,7 @@ class CreateEventScaleNotifier extends Notifier<AsyncValue<void>> {
         state = const AsyncData(null);
         ref.invalidate(eventScalesProvider(eventId));
         ref.invalidate(eligibleDepartmentScaleEventsProvider);
+        ref.invalidate(departmentScalesProvider);
         return Right(scale);
       },
     );
@@ -129,4 +175,21 @@ int _compareEventsForScaleCreation(
   final startComparison = a.startDateTime.compareTo(b.startDateTime);
   if (startComparison != 0) return startComparison;
   return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+}
+
+int _compareDepartmentScales(
+  DepartmentCalendarEventScaleEntity a,
+  DepartmentCalendarEventScaleEntity b,
+) {
+  final startComparison = a.calendarEvent.startDateTime.compareTo(
+    b.calendarEvent.startDateTime,
+  );
+  if (startComparison != 0) return startComparison;
+
+  final titleComparison = a.calendarEvent.title.toLowerCase().compareTo(
+    b.calendarEvent.title.toLowerCase(),
+  );
+  if (titleComparison != 0) return titleComparison;
+
+  return a.scale.id.compareTo(b.scale.id);
 }

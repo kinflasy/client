@@ -59,6 +59,9 @@ abstract class CalendarEventRepository {
     CalendarEventScaleRequestModel request,
   );
 
+  Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>>
+  getDepartmentScales(String departmentId, DateTime start, DateTime end);
+
   Future<Either<Failure, CalendarEventEntity>> updateCardImage(
     String eventId,
     String filePath,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:client/core/domain/enums/affiliation.dart';
 import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/domain/session_permissions.dart';
@@ -11,6 +13,8 @@ import 'package:client/features/department/domain/repositories/department_reposi
 import 'package:client/features/department/presentation/screens/department_screen.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -174,29 +178,11 @@ void main() {
   testWidgets('scales tab shows create button only for manager', (
     tester,
   ) async {
-    _stubDepartmentDetail(repository);
-    _stubParticipants(repository);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          departmentRepositoryProvider.overrideWithValue(repository),
-          departmentCalendarEventsProvider.overrideWith(
-            (ref, request) async => const [],
-          ),
-          sessionPermissionsProvider.overrideWith(
-            (ref) async => _leaderPermissions,
-          ),
-        ],
-        child: const MaterialApp(
-          home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
-        ),
-      ),
+    await _pumpScaleTab(
+      tester: tester,
+      repository: repository,
+      permissions: _leaderPermissions,
     );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Escalas'));
-    await tester.pumpAndSettle();
 
     expect(find.text('+ Nova escala'), findsOneWidget);
     expect(find.text('Nenhuma escala cadastrada ainda.'), findsOneWidget);
@@ -204,29 +190,85 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          departmentRepositoryProvider.overrideWithValue(repository),
-          departmentCalendarEventsProvider.overrideWith(
-            (ref, request) async => const [],
-          ),
-          sessionPermissionsProvider.overrideWith(
-            (ref) async => _integrantPermissions,
-          ),
-        ],
-        child: const MaterialApp(
-          home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
-        ),
-      ),
+    await _pumpScaleTab(
+      tester: tester,
+      repository: repository,
+      permissions: _integrantPermissions,
     );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Escalas'));
-    await tester.pumpAndSettle();
 
     expect(find.text('+ Nova escala'), findsNothing);
     expect(find.text('Nenhuma escala cadastrada ainda.'), findsOneWidget);
+  });
+
+  testWidgets('scales tab shows create button for assistant and unit admin', (
+    tester,
+  ) async {
+    await _pumpScaleTab(
+      tester: tester,
+      repository: repository,
+      permissions: _assistantPermissions,
+    );
+
+    expect(find.text('+ Nova escala'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    await _pumpScaleTab(
+      tester: tester,
+      repository: repository,
+      permissions: _unitAdminPermissions,
+    );
+
+    expect(find.text('+ Nova escala'), findsOneWidget);
+  });
+
+  testWidgets('scales tab shows loading state', (tester) async {
+    final completer = Completer<List<DepartmentCalendarEventScaleEntity>>();
+
+    await _pumpScaleTab(
+      tester: tester,
+      repository: repository,
+      permissions: _leaderPermissions,
+      scalesBuilder: (ref, request) => completer.future,
+      settleAfterTabTap: false,
+    );
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('scales tab shows loading error', (tester) async {
+    await _pumpScaleTab(
+      tester: tester,
+      repository: repository,
+      permissions: _leaderPermissions,
+      scalesBuilder: (ref, request) =>
+          Future.error(const NetworkFailure('Falha ao carregar escalas')),
+    );
+
+    expect(find.text('Não foi possível carregar as escalas.'), findsOneWidget);
+    expect(find.text('Tente novamente em instantes.'), findsOneWidget);
+  });
+
+  testWidgets('scales tab shows scale cards without navigating on tap', (
+    tester,
+  ) async {
+    await _pumpScaleTab(
+      tester: tester,
+      repository: repository,
+      permissions: _leaderPermissions,
+      scales: [_departmentScale],
+    );
+
+    expect(find.text('Culto da manhã'), findsOneWidget);
+    expect(find.text('Dom, 19 jul - 09:00'), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+
+    await tester.tap(find.text('Culto da manhã'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Culto da manhã'), findsOneWidget);
   });
 
   testWidgets(
@@ -687,6 +729,47 @@ Future<void> _pumpParticipantsTab({
   await tester.pumpAndSettle();
 }
 
+Future<void> _pumpScaleTab({
+  required WidgetTester tester,
+  required DepartmentRepository repository,
+  required SessionPermissions permissions,
+  List<DepartmentCalendarEventScaleEntity>? scales,
+  Future<List<DepartmentCalendarEventScaleEntity>> Function(
+    Ref ref,
+    DepartmentScalesRequest request,
+  )?
+  scalesBuilder,
+  bool settleAfterTabTap = true,
+}) async {
+  _stubDepartmentDetail(repository);
+  _stubParticipants(repository);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        departmentRepositoryProvider.overrideWithValue(repository),
+        departmentCalendarEventsProvider.overrideWith(
+          (ref, request) async => const [],
+        ),
+        departmentScalesProvider.overrideWith(
+          scalesBuilder ?? (ref, request) async => scales ?? const [],
+        ),
+        sessionPermissionsProvider.overrideWith((ref) async => permissions),
+      ],
+      child: const MaterialApp(
+        home: DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+
+  await tester.tap(find.text('Escalas'));
+  await tester.pump();
+  if (settleAfterTabTap) {
+    await tester.pumpAndSettle();
+  }
+}
+
 void _stubDepartmentDetail(DepartmentRepository repository) {
   when(() => repository.getDepartmentById('dep-1')).thenAnswer(
     (_) async => const Right(
@@ -724,4 +807,21 @@ final _departmentEvent = CalendarEventEntity(
   endDateTime: DateTime(2026, 5, 12, 21),
   type: CalendarEventType.department,
   departmentId: 'dep-1',
+);
+
+final _departmentScale = DepartmentCalendarEventScaleEntity(
+  scale: const CalendarEventScaleEntity(
+    id: 'scale-1',
+    lineupId: 'lineup-1',
+    type: CalendarEventScaleType.owner,
+    calendarEventId: 'event-scale-1',
+  ),
+  calendarEvent: CalendarEventEntity(
+    id: 'event-scale-1',
+    title: 'Culto da manhã',
+    startDateTime: DateTime(2026, 7, 19, 9),
+    endDateTime: DateTime(2026, 7, 19, 11),
+    type: CalendarEventType.department,
+    departmentId: 'dep-1',
+  ),
 );

@@ -241,4 +241,41 @@ void main() {
       ),
     ).called(1);
   });
+
+  test('gets department scales using range query', () async {
+    final start = DateTime(2026, 5, 30, 9);
+    final end = DateTime(2026, 11, 30, 23, 59, 59);
+    when(
+      () => dio.get<dynamic>(
+        '/v1/core/calendar-events/scales/department/dep-1',
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/scales/department/dep-1',
+        ),
+        data: {
+          'scales': [
+            {'id': 'scale-1'},
+          ],
+        },
+      ),
+    );
+
+    final list = await api.getDepartmentScales('dep-1', start, end);
+
+    expect(list, [
+      {'id': 'scale-1'},
+    ]);
+    verify(
+      () => dio.get<dynamic>(
+        '/v1/core/calendar-events/scales/department/dep-1',
+        queryParameters: {
+          'start': start.toIso8601String(),
+          'end': end.toIso8601String(),
+        },
+      ),
+    ).called(1);
+  });
 }

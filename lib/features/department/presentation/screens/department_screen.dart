@@ -9,6 +9,8 @@ import 'package:client/features/department/domain/entities/department_detail_ent
 import 'package:client/features/department/presentation/widgets/department_participant_bottom_sheet.dart';
 import 'package:client/features/department/providers/department_detail_providers.dart';
 import 'package:client/features/membership/presentation/widgets/member_summary_card.dart';
+import 'package:client/features/scale/presentation/widgets/department_scale_card.dart';
+import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -155,6 +157,7 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
                       _DepartmentScalesTab(
                         departmentId: widget.departmentId,
                         canManageScales: canManageEvents,
+                        isActive: _selectedTabIndex == 1,
                       ),
                       _DepartmentParticipantsTab(
                         departmentId: widget.departmentId,
@@ -407,36 +410,82 @@ class _CreateDepartmentEventButton extends StatelessWidget {
   }
 }
 
-class _DepartmentScalesTab extends StatelessWidget {
+class _DepartmentScalesTab extends ConsumerStatefulWidget {
   const _DepartmentScalesTab({
     required this.departmentId,
     required this.canManageScales,
+    required this.isActive,
   });
 
   final String departmentId;
   final bool canManageScales;
+  final bool isActive;
+
+  @override
+  ConsumerState<_DepartmentScalesTab> createState() =>
+      _DepartmentScalesTabState();
+}
+
+class _DepartmentScalesTabState extends ConsumerState<_DepartmentScalesTab> {
+  late final DepartmentScalesRequest _scalesRequest;
+
+  @override
+  void initState() {
+    super.initState();
+    _scalesRequest = buildDepartmentScalesRequest(widget.departmentId);
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.isActive) return const SizedBox.shrink();
+
+    final scalesAsync = ref.watch(departmentScalesProvider(_scalesRequest));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (canManageScales) ...[
+        if (widget.canManageScales) ...[
           ElevatedButton.icon(
             onPressed: () => context.pushNamed(
               AppRoutes.departmentScaleCreateName,
-              pathParameters: {'id': departmentId},
+              pathParameters: {'id': widget.departmentId},
             ),
             icon: const Icon(Icons.add),
             label: const Text('+ Nova escala'),
           ),
           const SizedBox(height: 16),
         ],
-        const Expanded(
-          child: _InlineStatus(
-            icon: Icons.assignment_outlined,
-            title: 'Nenhuma escala cadastrada ainda.',
-            subtitle: 'Crie uma escala vinculando um evento a uma formação.',
+        Expanded(
+          child: scalesAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stackTrace) => const _InlineStatus(
+              icon: Icons.assignment_late_outlined,
+              title: 'Não foi possível carregar as escalas.',
+              subtitle: 'Tente novamente em instantes.',
+            ),
+            data: (scales) {
+              if (scales.isEmpty) {
+                return const _InlineStatus(
+                  icon: Icons.assignment_outlined,
+                  title: 'Nenhuma escala cadastrada ainda.',
+                  subtitle:
+                      'Crie uma escala vinculando um evento a uma formação.',
+                );
+              }
+
+              return ListView.separated(
+                padding: const EdgeInsets.only(bottom: 24),
+                itemCount: scales.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  return DepartmentScaleCard(
+                    scale: scales[index],
+                    onTap: () {},
+                  );
+                },
+              );
+            },
           ),
         ),
       ],

@@ -1,3 +1,4 @@
+import 'package:client/features/calendar/data/models/calendar_event_read_model.dart';
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 
 class CalendarEventScaleReadModel {
@@ -37,6 +38,39 @@ class CalendarEventScaleReadModel {
       type: type,
       calendarEventId: calendarEventId,
       collaborationId: collaborationId,
+    );
+  }
+}
+
+class DepartmentCalendarEventScaleReadModel {
+  const DepartmentCalendarEventScaleReadModel({
+    required this.scale,
+    required this.calendarEvent,
+  });
+
+  factory DepartmentCalendarEventScaleReadModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final calendarEvent = json['calendarEvent'];
+    if (calendarEvent is! Map) {
+      throw const FormatException('Escala sem evento de calendário.');
+    }
+
+    return DepartmentCalendarEventScaleReadModel(
+      scale: CalendarEventScaleReadModel.fromJson(json),
+      calendarEvent: CalendarEventReadModel.fromJson(
+        Map<String, dynamic>.from(calendarEvent),
+      ),
+    );
+  }
+
+  final CalendarEventScaleReadModel scale;
+  final CalendarEventReadModel calendarEvent;
+
+  DepartmentCalendarEventScaleEntity toEntity() {
+    return DepartmentCalendarEventScaleEntity(
+      scale: scale.toEntity(),
+      calendarEvent: calendarEvent.toEntity(),
     );
   }
 }

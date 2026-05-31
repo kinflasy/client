@@ -328,24 +328,23 @@ void main() {
     expect(find.text('Imagem do evento removida.'), findsOneWidget);
   });
 
-  testWidgets(
-    'modo duplicação preenche dados copiáveis do evento original',
-    (tester) async {
-      await _pumpApp(
-        tester,
-        buildApp(duplicateFromEventId: 'event-1', event: _event()),
-      );
+  testWidgets('modo duplicação preenche dados copiáveis do evento original', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      buildApp(duplicateFromEventId: 'event-1', event: _event()),
+    );
 
-      expect(find.text('Duplicar evento'), findsOneWidget);
-      expect(_fieldTextAt(tester, 0), 'Culto especial');
-      expect(_fieldTextAt(tester, 1), 'Celebração com toda a unidade.');
-      expect(_fieldText(tester, 'start-date-field'), isEmpty);
-      expect(_fieldText(tester, 'end-date-field'), isEmpty);
-      expect(_fieldText(tester, 'start-time-field'), '18:00');
-      expect(_fieldText(tester, 'end-time-field'), '20:00');
-      expect(find.text('Salvar evento'), findsOneWidget);
-    },
-  );
+    expect(find.text('Duplicar evento'), findsOneWidget);
+    expect(_fieldTextAt(tester, 0), 'Culto especial');
+    expect(_fieldTextAt(tester, 1), 'Celebração com toda a unidade.');
+    expect(_fieldText(tester, 'start-date-field'), isEmpty);
+    expect(_fieldText(tester, 'end-date-field'), isEmpty);
+    expect(_fieldText(tester, 'start-time-field'), '18:00');
+    expect(_fieldText(tester, 'end-time-field'), '20:00');
+    expect(find.text('Salvar evento'), findsOneWidget);
+  });
 
   testWidgets('modo duplicação não exibe imagem original como selecionada', (
     tester,
@@ -743,6 +742,12 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   Future<Either<Failure, List<CalendarEventScaleEntity>>> getEventScales(
     String eventId,
   ) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
+  Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>>
+  getDepartmentScales(String departmentId, DateTime start, DateTime end) async {
     return const Left(ServerFailure('Não implementado no teste.'));
   }
 

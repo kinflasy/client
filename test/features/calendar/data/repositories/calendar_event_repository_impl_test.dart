@@ -344,6 +344,71 @@ void main() {
         expect(failure.message, 'Evento ja possui escala.');
       }, (_) => fail('expected failure'));
     });
+
+    test('gets department scales and maps embedded calendar event', () async {
+      final start = DateTime(2026, 5, 30);
+      final end = DateTime(2026, 11, 30, 23, 59, 59);
+      when(() => api.getDepartmentScales('dep-1', start, end)).thenAnswer(
+        (_) async => [
+          {
+            'id': 'scale-1',
+            'lineupId': 'lineup-1',
+            'type': 'OWNER',
+            'calendarEventId': 'event-1',
+            'calendarEvent': _eventJson(
+              id: 'event-1',
+              type: 'DEPARTMENT',
+              ownerKey: 'departmentId',
+              ownerId: 'dep-1',
+            ),
+          },
+        ],
+      );
+
+      final result = await repository.getDepartmentScales('dep-1', start, end);
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (scales) {
+        expect(scales.single.scale.id, 'scale-1');
+        expect(scales.single.scale.calendarEventId, 'event-1');
+        expect(scales.single.calendarEvent.id, 'event-1');
+        expect(scales.single.calendarEvent.departmentId, 'dep-1');
+      });
+    });
+
+    test('maps department scales DioException into Failure', () async {
+      final start = DateTime(2026, 5, 30);
+      final end = DateTime(2026, 11, 30, 23, 59, 59);
+      when(
+        () => api.getDepartmentScales('dep-1', start, end),
+      ).thenThrow(_dioError(500, 'Falha ao listar escalas.'));
+
+      final result = await repository.getDepartmentScales('dep-1', start, end);
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<NetworkFailure>());
+        expect(failure.message, 'Falha ao listar escalas.');
+      }, (_) => fail('expected failure'));
+    });
+
+    test('maps department scale parse failure into UnknownFailure', () async {
+      final start = DateTime(2026, 5, 30);
+      final end = DateTime(2026, 11, 30, 23, 59, 59);
+      when(() => api.getDepartmentScales('dep-1', start, end)).thenAnswer(
+        (_) async => const [
+          {'id': 'scale-1', 'lineupId': 'lineup-1', 'type': 'OWNER'},
+        ],
+      );
+
+      final result = await repository.getDepartmentScales('dep-1', start, end);
+
+      expect(result.isLeft(), isTrue);
+      result.match(
+        (failure) => expect(failure, isA<UnknownFailure>()),
+        (_) => fail('expected failure'),
+      );
+    });
   });
 }
 

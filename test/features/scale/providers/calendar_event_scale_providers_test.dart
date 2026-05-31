@@ -177,6 +177,164 @@ void main() {
   });
 
   test(
+    'department scales request helper builds interval from now to six months',
+    () {
+      final now = DateTime(2026, 5, 29, 10, 15, 30);
+
+      final request = buildDepartmentScalesRequest('dep-1', now: now);
+
+      expect(request.departmentId, 'dep-1');
+      expect(request.start, now);
+      expect(request.end, DateTime(2026, 11, 29, 23, 59, 59));
+    },
+  );
+
+  test(
+    'department scales provider calls repository with request interval',
+    () async {
+      final start = DateTime(2026, 5, 29, 10);
+      final end = DateTime(2026, 11, 29, 23, 59, 59);
+      final request = DepartmentScalesRequest(
+        departmentId: 'dep-1',
+        start: start,
+        end: end,
+      );
+      when(
+        () => repository.getDepartmentScales('dep-1', start, end),
+      ).thenAnswer(
+        (_) async => const Right(<DepartmentCalendarEventScaleEntity>[]),
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScalesProvider(request),
+      );
+
+      expect(result, isEmpty);
+      verify(
+        () => repository.getDepartmentScales('dep-1', start, end),
+      ).called(1);
+    },
+  );
+
+  test('department scales provider sorts by date title and scale id', () async {
+    final start = DateTime(2026, 5, 29, 10);
+    final end = DateTime(2026, 11, 29, 23, 59, 59);
+    final request = DepartmentScalesRequest(
+      departmentId: 'dep-1',
+      start: start,
+      end: end,
+    );
+    final later = _departmentScale(
+      scaleId: 'scale-later',
+      eventId: 'event-later',
+      title: 'Culto',
+      startDateTime: DateTime(2026, 6, 2, 10),
+    );
+    final sameStartB = _departmentScale(
+      scaleId: 'scale-b',
+      eventId: 'event-b',
+      title: 'Vigília',
+      startDateTime: DateTime(2026, 6),
+    );
+    final sameStartA = _departmentScale(
+      scaleId: 'scale-a',
+      eventId: 'event-a',
+      title: 'Ensaio',
+      startDateTime: DateTime(2026, 6),
+    );
+    final sameTitleLaterId = _departmentScale(
+      scaleId: 'scale-2',
+      eventId: 'event-same-2',
+      title: 'Ceia',
+      startDateTime: DateTime(2026, 5, 31),
+    );
+    final sameTitleEarlierId = _departmentScale(
+      scaleId: 'scale-1',
+      eventId: 'event-same-1',
+      title: 'Ceia',
+      startDateTime: DateTime(2026, 5, 31),
+    );
+
+    when(() => repository.getDepartmentScales('dep-1', start, end)).thenAnswer(
+      (_) async => Right([
+        later,
+        sameStartB,
+        sameStartA,
+        sameTitleLaterId,
+        sameTitleEarlierId,
+      ]),
+    );
+
+    final result = await _readFutureProvider(
+      container,
+      departmentScalesProvider(request),
+    );
+
+    expect(result.map((scale) => scale.scale.id), [
+      'scale-1',
+      'scale-2',
+      'scale-a',
+      'scale-b',
+      'scale-later',
+    ]);
+  });
+
+  test('department scales provider propagates repository failure', () async {
+    final start = DateTime(2026, 5, 29, 10);
+    final end = DateTime(2026, 11, 29, 23, 59, 59);
+    final request = DepartmentScalesRequest(
+      departmentId: 'dep-1',
+      start: start,
+      end: end,
+    );
+    when(() => repository.getDepartmentScales('dep-1', start, end)).thenAnswer(
+      (_) async => const Left(NetworkFailure('Falha ao carregar escalas')),
+    );
+
+    await expectLater(
+      _readFutureProvider(container, departmentScalesProvider(request)),
+      throwsA(isA<NetworkFailure>()),
+    );
+  });
+
+  test('create action invalidates department scales after success', () async {
+    final request = buildDepartmentScalesRequest(
+      'dep-1',
+      now: DateTime(2026, 5, 29, 10),
+    );
+    var loadCount = 0;
+
+    when(
+      () => repository.getDepartmentScales('dep-1', request.start, request.end),
+    ).thenAnswer((_) {
+      loadCount++;
+      return Future.value(const Right(<DepartmentCalendarEventScaleEntity>[]));
+    });
+    when(
+      () => repository.createEventScale('event-1', any()),
+    ).thenAnswer((_) async => const Right(_ownerScale));
+
+    final subscription = container.listen(
+      departmentScalesProvider(request),
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    await container.read(departmentScalesProvider(request).future);
+    await container
+        .read(createEventScaleProvider.notifier)
+        .create(
+          eventId: 'event-1',
+          request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
+        );
+    await container.read(departmentScalesProvider(request).future);
+
+    expect(loadCount, 2);
+  });
+
+  test(
     'eligible provider calls department events with request interval',
     () async {
       final start = DateTime(2026, 5, 29, 10);
@@ -369,5 +527,26 @@ CalendarEventEntity _event({
     endDateTime: startDateTime.add(const Duration(hours: 2)),
     type: CalendarEventType.department,
     departmentId: 'dep-1',
+  );
+}
+
+DepartmentCalendarEventScaleEntity _departmentScale({
+  required String scaleId,
+  required String eventId,
+  required String title,
+  required DateTime startDateTime,
+}) {
+  return DepartmentCalendarEventScaleEntity(
+    scale: CalendarEventScaleEntity(
+      id: scaleId,
+      lineupId: 'lineup-1',
+      type: CalendarEventScaleType.owner,
+      calendarEventId: eventId,
+    ),
+    calendarEvent: _event(
+      id: eventId,
+      title: title,
+      startDateTime: startDateTime,
+    ),
   );
 }

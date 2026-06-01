@@ -11,6 +11,7 @@ import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
+import 'package:client/features/scale/presentation/screens/department_scale_detail_screen.dart';
 import 'package:client/features/calendar/sub_features/create_event/presentation/screens/create_event_screen.dart';
 import 'package:client/features/church/domain/entities/church_entity.dart';
 import 'package:client/features/church/domain/entities/church_unit_entity.dart';
@@ -643,6 +644,65 @@ void main() {
     expect(find.text('Nova escala'), findsOneWidget);
     expect(find.byType(BottomNavigationBar), findsNothing);
   });
+
+  testWidgets('department scale detail route opens with observer access', (
+    tester,
+  ) async {
+    expect(
+      AppRoutes.departmentScaleDetail,
+      '/departamentos/:departmentId/escalas/:scaleId',
+    );
+    expect(AppRoutes.departmentScaleDetailName, 'department-scale-detail');
+
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await pumpRouter(tester);
+
+    router.goNamed(
+      AppRoutes.departmentScaleDetailName,
+      pathParameters: {'departmentId': 'dep-1', 'scaleId': 'scale-1'},
+    );
+    await tester.pump();
+    await pumpRouter(tester);
+
+    expect(find.byType(BottomNavigationBar), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is DepartmentScaleDetailScreen &&
+            widget.departmentId == 'dep-1' &&
+            widget.scaleId == 'scale-1',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'user without department access is redirected from scale detail',
+    (tester) async {
+      final router = container.read(appRouterProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await pumpRouter(tester);
+
+      router.go('/departamentos/dep-2/escalas/scale-1');
+      await pumpRouter(tester);
+
+      expect(find.byType(BottomNavigationBar), findsOneWidget);
+      expect(find.byType(DepartmentScaleDetailScreen), findsNothing);
+    },
+  );
 
   testWidgets('integrant is redirected away from scale create route', (
     tester,

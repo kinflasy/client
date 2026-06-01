@@ -345,6 +345,42 @@ void main() {
       }, (_) => fail('expected failure'));
     });
 
+    test('gets scale by id and maps owner response', () async {
+      when(() => api.getScaleById('scale-1')).thenAnswer(
+        (_) async => const {
+          'id': 'scale-1',
+          'lineupId': 'lineup-1',
+          'type': 'OWNER',
+          'calendarEventId': 'event-1',
+        },
+      );
+
+      final result = await repository.getScaleById('scale-1');
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (scale) {
+        expect(scale.id, 'scale-1');
+        expect(scale.lineupId, 'lineup-1');
+        expect(scale.type, CalendarEventScaleType.owner);
+        expect(scale.calendarEventId, 'event-1');
+      });
+      verify(() => api.getScaleById('scale-1')).called(1);
+    });
+
+    test('maps scale by id DioException into Failure', () async {
+      when(
+        () => api.getScaleById('scale-1'),
+      ).thenThrow(_dioError(500, 'Falha ao carregar escala.'));
+
+      final result = await repository.getScaleById('scale-1');
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<NetworkFailure>());
+        expect(failure.message, 'Falha ao carregar escala.');
+      }, (_) => fail('expected failure'));
+    });
+
     test('gets department scales and maps embedded calendar event', () async {
       final start = DateTime(2026, 5, 30);
       final end = DateTime(2026, 11, 30, 23, 59, 59);

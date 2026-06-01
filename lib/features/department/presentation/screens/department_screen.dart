@@ -481,9 +481,17 @@ class _DepartmentScalesTabState extends ConsumerState<_DepartmentScalesTab> {
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
+                  final scaleWithLineup = scales[index];
                   return DepartmentScaleCard(
-                    scale: scales[index],
-                    onTap: () {},
+                    scale: scaleWithLineup,
+                    onTap: () => context.pushNamed(
+                      AppRoutes.departmentScaleDetailName,
+                      pathParameters: {
+                        'departmentId': widget.departmentId,
+                        'scaleId': scaleWithLineup.scale.scale.id,
+                      },
+                      extra: scaleWithLineup,
+                    ),
                   );
                 },
               );

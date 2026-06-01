@@ -59,6 +59,10 @@ abstract class CalendarEventRepository {
     CalendarEventScaleRequestModel request,
   );
 
+  Future<Either<Failure, CalendarEventScaleEntity>> getScaleById(
+    String scaleId,
+  );
+
   Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>>
   getDepartmentScales(String departmentId, DateTime start, DateTime end);
 

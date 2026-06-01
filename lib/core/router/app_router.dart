@@ -40,6 +40,8 @@ import 'package:client/features/home/presentation/screens/home_screen.dart';
 import 'package:client/features/membership/domain/entities/member_profile_entity.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
 import 'package:client/features/menu/presentation/screens/menu_screen.dart';
+import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
+import 'package:client/features/scale/presentation/screens/department_scale_detail_screen.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,6 +87,7 @@ final _protectedRoutes = <String>{
   AppRoutes.departmentEventCreate,
   AppRoutes.departmentParticipantsAdd,
   AppRoutes.departmentScaleCreate,
+  AppRoutes.departmentScaleDetail,
   AppRoutes.departmentScaleFormations,
   AppRoutes.departmentScaleFormationCreate,
   AppRoutes.departmentScaleFormationDetail,
@@ -181,6 +184,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               routePath == AppRoutes.homeChurchDepartmentDetail ||
               routePath == AppRoutes.departmentDetail ||
               routePath == AppRoutes.departmentParticipantsAdd ||
+              routePath == AppRoutes.departmentScaleDetail ||
               routePath == AppRoutes.departmentScaleFormations ||
               routePath == AppRoutes.departmentScaleFormationDetail;
           if (isDepartmentDetailRoute) {
@@ -470,6 +474,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final departmentId = state.pathParameters['id']!;
           return CreateDepartmentScaleScreen(departmentId: departmentId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.departmentScaleDetail,
+        name: AppRoutes.departmentScaleDetailName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final departmentId = state.pathParameters['departmentId']!;
+          final scaleId = state.pathParameters['scaleId']!;
+          final initialScale = state.extra is DepartmentScaleWithLineupEntity
+              ? state.extra as DepartmentScaleWithLineupEntity
+              : null;
+          return DepartmentScaleDetailScreen(
+            departmentId: departmentId,
+            scaleId: scaleId,
+            initialScale: initialScale,
+          );
         },
       ),
       GoRoute(

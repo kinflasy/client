@@ -41,6 +41,21 @@ class DepartmentScalesRequest extends Equatable {
   List<Object?> get props => [departmentId, start, end];
 }
 
+class DepartmentScaleDetailRequest extends Equatable {
+  const DepartmentScaleDetailRequest({
+    required this.departmentId,
+    required this.scaleId,
+    this.initialScale,
+  });
+
+  final String departmentId;
+  final String scaleId;
+  final DepartmentScaleWithLineupEntity? initialScale;
+
+  @override
+  List<Object?> get props => [departmentId, scaleId, initialScale];
+}
+
 EligibleDepartmentScaleEventsRequest buildEligibleDepartmentScaleEventsRequest(
   String departmentId, {
   DateTime? now,
@@ -145,6 +160,54 @@ final departmentScalesWithLineupsProvider =
       }).toList();
     });
 
+final departmentScaleDetailProvider =
+    StreamProvider.family<
+      DepartmentScaleWithLineupEntity,
+      DepartmentScaleDetailRequest
+    >((ref, request) async* {
+      ref.watch(lineupMutationVersionProvider);
+
+      final initialScale = request.initialScale;
+      if (initialScale != null &&
+          initialScale.scale.scale.id == request.scaleId) {
+        yield initialScale;
+      }
+
+      final calendarRepository = ref.read(calendarEventRepositoryProvider);
+      final scaleResult = await calendarRepository.getScaleById(
+        request.scaleId,
+      );
+      final scale = scaleResult.fold((failure) => throw failure, (scale) {
+        return scale;
+      });
+
+      if (scale.type != CalendarEventScaleType.owner ||
+          scale.calendarEventId == null ||
+          scale.calendarEventId!.trim().isEmpty) {
+        throw const ValidationFailure(
+          'Não foi possível resolver o evento desta escala.',
+        );
+      }
+
+      final eventResult = await calendarRepository.getEventById(
+        scale.calendarEventId!,
+      );
+      final event = eventResult.fold((failure) => throw failure, (event) {
+        return event;
+      });
+
+      final lineupDetail = await _loadLineupDetail(ref, scale.lineupId);
+
+      yield DepartmentScaleWithLineupEntity(
+        scale: DepartmentCalendarEventScaleEntity(
+          scale: scale,
+          calendarEvent: event,
+        ),
+        lineupState: lineupDetail.state,
+        lineup: lineupDetail.lineup,
+      );
+    });
+
 final eligibleDepartmentScaleEventsProvider =
     FutureProvider.family<
       List<CalendarEventEntity>,
@@ -217,6 +280,7 @@ class CreateEventScaleNotifier extends Notifier<AsyncValue<void>> {
         ref.invalidate(eligibleDepartmentScaleEventsProvider);
         ref.invalidate(departmentScalesProvider);
         ref.invalidate(departmentScalesWithLineupsProvider);
+        ref.invalidate(departmentScaleDetailProvider);
         return Right(scale);
       },
     );
@@ -247,4 +311,16 @@ int _compareDepartmentScales(
   if (titleComparison != 0) return titleComparison;
 
   return a.scale.id.compareTo(b.scale.id);
+}
+
+Future<({DepartmentScaleLineupLoadState state, LineupEntity? lineup})>
+_loadLineupDetail(Ref ref, String lineupId) async {
+  final result = await ref
+      .read(departmentRepositoryProvider)
+      .getLineupWithItems(lineupId);
+
+  return result.fold(
+    (_) => (state: DepartmentScaleLineupLoadState.failed, lineup: null),
+    (lineup) => (state: DepartmentScaleLineupLoadState.loaded, lineup: lineup),
+  );
 }

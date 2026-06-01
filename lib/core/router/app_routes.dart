@@ -45,6 +45,8 @@ class AppRoutes {
   static const departmentParticipantsAdd =
       '/departamentos/:id/participantes/adicionar';
   static const departmentScaleCreate = '/departamentos/:id/escalas/nova';
+  static const departmentScaleDetail =
+      '/departamentos/:departmentId/escalas/:scaleId';
   static const departmentScaleFormations =
       '/departamentos/:id/formacoes-de-escala';
   static const departmentScaleFormationCreate =
@@ -100,6 +102,7 @@ class AppRoutes {
   static const departmentEventCreateName = 'department-event-create';
   static const departmentParticipantsAddName = 'department-participants-add';
   static const departmentScaleCreateName = 'department-scale-create';
+  static const departmentScaleDetailName = 'department-scale-detail';
   static const departmentScaleFormationsName = 'department-scale-formations';
   static const departmentScaleFormationCreateName =
       'department-scale-formation-create';

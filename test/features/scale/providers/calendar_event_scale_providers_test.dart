@@ -53,6 +53,34 @@ Future<T> _readFutureProvider<T>(
   }
 }
 
+Future<List<T>> _readProviderValues<T>(
+  ProviderContainer container,
+  dynamic provider, {
+  required int count,
+}) async {
+  final values = <T>[];
+  final completer = Completer<List<T>>();
+  final subscription = container.listen<AsyncValue<T>>(provider, (
+    previous,
+    next,
+  ) {
+    if (next.hasValue) {
+      values.add(next.requireValue);
+      if (values.length >= count && !completer.isCompleted) {
+        completer.complete(values);
+      }
+    } else if (next.hasError && !completer.isCompleted) {
+      completer.completeError(next.error!, next.stackTrace);
+    }
+  }, fireImmediately: true);
+
+  try {
+    return await completer.future;
+  } finally {
+    subscription.close();
+  }
+}
+
 void main() {
   late _MockCalendarEventRepository repository;
   late _MockDepartmentRepository departmentRepository;
@@ -534,6 +562,188 @@ void main() {
     },
   );
 
+  test('department scale detail provider returns complete detail', () async {
+    const lineup = LineupEntity(id: 'lineup-1', name: 'Louvor completo');
+
+    when(
+      () => repository.getScaleById('scale-1'),
+    ).thenAnswer((_) async => const Right(_ownerScale));
+    when(
+      () => repository.getEventById('event-1'),
+    ).thenAnswer((_) async => Right(_event(id: 'event-1')));
+    when(
+      () => departmentRepository.getLineupWithItems('lineup-1'),
+    ).thenAnswer((_) async => const Right(lineup));
+
+    final result = await _readFutureProvider(
+      container,
+      departmentScaleDetailProvider(
+        const DepartmentScaleDetailRequest(
+          departmentId: 'dep-1',
+          scaleId: 'scale-1',
+        ),
+      ),
+    );
+
+    expect(result.scale.scale, _ownerScale);
+    expect(result.scale.calendarEvent.id, 'event-1');
+    expect(result.lineupState, DepartmentScaleLineupLoadState.loaded);
+    expect(result.lineup, lineup);
+  });
+
+  test(
+    'department scale detail provider emits initial scale and still fetches backend',
+    () async {
+      const initialLineup = LineupEntity(
+        id: 'lineup-1',
+        name: 'Formacao local',
+      );
+      const refreshedLineup = LineupEntity(
+        id: 'lineup-2',
+        name: 'Formacao atualizada',
+      );
+      final initialScale = DepartmentScaleWithLineupEntity(
+        scale: _departmentScale(
+          scaleId: 'scale-1',
+          eventId: 'event-1',
+          title: 'Evento local',
+          startDateTime: DateTime(2026, 5, 31),
+          lineupId: 'lineup-1',
+        ),
+        lineupState: DepartmentScaleLineupLoadState.loaded,
+        lineup: initialLineup,
+      );
+      const refreshedScale = CalendarEventScaleEntity(
+        id: 'scale-1',
+        lineupId: 'lineup-2',
+        type: CalendarEventScaleType.owner,
+        calendarEventId: 'event-2',
+      );
+
+      when(
+        () => repository.getScaleById('scale-1'),
+      ).thenAnswer((_) async => const Right(refreshedScale));
+      when(
+        () => repository.getEventById('event-2'),
+      ).thenAnswer((_) async => Right(_event(id: 'event-2')));
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-2'),
+      ).thenAnswer((_) async => const Right(refreshedLineup));
+
+      final values = await _readProviderValues(
+        container,
+        departmentScaleDetailProvider(
+          DepartmentScaleDetailRequest(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+            initialScale: initialScale,
+          ),
+        ),
+        count: 2,
+      );
+
+      expect(values.first, initialScale);
+      expect(values.last.scale.scale, refreshedScale);
+      expect(values.last.scale.calendarEvent.id, 'event-2');
+      expect(values.last.lineup, refreshedLineup);
+      verify(() => repository.getScaleById('scale-1')).called(1);
+    },
+  );
+
+  test(
+    'department scale detail provider keeps detail when lineup fails',
+    () async {
+      when(
+        () => repository.getScaleById('scale-1'),
+      ).thenAnswer((_) async => const Right(_ownerScale));
+      when(
+        () => repository.getEventById('event-1'),
+      ).thenAnswer((_) async => Right(_event(id: 'event-1')));
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-1'),
+      ).thenAnswer(
+        (_) async => const Left(NetworkFailure('Falha na formacao')),
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScaleDetailProvider(
+          const DepartmentScaleDetailRequest(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+          ),
+        ),
+      );
+
+      expect(result.scale.scale, _ownerScale);
+      expect(result.scale.calendarEvent.id, 'event-1');
+      expect(result.lineupState, DepartmentScaleLineupLoadState.failed);
+      expect(result.lineup, isNull);
+    },
+  );
+
+  test(
+    'department scale detail provider fails when scale fetch fails',
+    () async {
+      when(() => repository.getScaleById('scale-1')).thenAnswer(
+        (_) async => const Left(NetworkFailure('Falha ao carregar escala')),
+      );
+
+      await expectLater(
+        _readFutureProvider(
+          container,
+          departmentScaleDetailProvider(
+            const DepartmentScaleDetailRequest(
+              departmentId: 'dep-1',
+              scaleId: 'scale-1',
+            ),
+          ),
+        ),
+        throwsA(isA<NetworkFailure>()),
+      );
+
+      verifyNever(() => repository.getEventById(any()));
+      verifyNever(() => departmentRepository.getLineupWithItems(any()));
+    },
+  );
+
+  test(
+    'department scale detail provider fails with friendly message when event cannot be resolved',
+    () async {
+      const collaboratorScale = CalendarEventScaleEntity(
+        id: 'scale-1',
+        lineupId: 'lineup-1',
+        type: CalendarEventScaleType.collaborator,
+        collaborationId: 'collab-1',
+      );
+      when(
+        () => repository.getScaleById('scale-1'),
+      ).thenAnswer((_) async => const Right(collaboratorScale));
+
+      await expectLater(
+        _readFutureProvider(
+          container,
+          departmentScaleDetailProvider(
+            const DepartmentScaleDetailRequest(
+              departmentId: 'dep-1',
+              scaleId: 'scale-1',
+            ),
+          ),
+        ),
+        throwsA(
+          isA<ValidationFailure>().having(
+            (failure) => failure.message,
+            'message',
+            'Não foi possível resolver o evento desta escala.',
+          ),
+        ),
+      );
+
+      verifyNever(() => repository.getEventById(any()));
+      verifyNever(() => departmentRepository.getLineupWithItems(any()));
+    },
+  );
+
   test('create action invalidates department scales after success', () async {
     final request = buildDepartmentScalesRequest(
       'dep-1',
@@ -888,14 +1098,15 @@ const _ownerScale = CalendarEventScaleEntity(
 
 CalendarEventEntity _event({
   required String id,
-  required String title,
-  required DateTime startDateTime,
+  String title = 'Evento',
+  DateTime? startDateTime,
 }) {
+  final start = startDateTime ?? DateTime(2026, 6);
   return CalendarEventEntity(
     id: id,
     title: title,
-    startDateTime: startDateTime,
-    endDateTime: startDateTime.add(const Duration(hours: 2)),
+    startDateTime: start,
+    endDateTime: start.add(const Duration(hours: 2)),
     type: CalendarEventType.department,
     departmentId: 'dep-1',
   );

@@ -110,6 +110,13 @@ class CalendarEventsApi {
     return _readMap(response.data);
   }
 
+  Future<Map<String, dynamic>> getScaleById(String scaleId) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/scales/$scaleId',
+    );
+    return _readMap(response.data);
+  }
+
   Future<List<dynamic>> getDepartmentScales(
     String departmentId,
     DateTime start,

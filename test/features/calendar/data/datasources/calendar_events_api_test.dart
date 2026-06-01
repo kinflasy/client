@@ -242,6 +242,38 @@ void main() {
     ).called(1);
   });
 
+  test('gets scale by id using scale route', () async {
+    when(
+      () => dio.get<dynamic>('/v1/core/calendar-events/scales/scale-1'),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/scales/scale-1',
+        ),
+        data: {
+          'scale': {
+            'id': 'scale-1',
+            'lineupId': 'lineup-1',
+            'type': 'OWNER',
+            'calendarEventId': 'event-1',
+          },
+        },
+      ),
+    );
+
+    final json = await api.getScaleById('scale-1');
+
+    expect(json, {
+      'id': 'scale-1',
+      'lineupId': 'lineup-1',
+      'type': 'OWNER',
+      'calendarEventId': 'event-1',
+    });
+    verify(
+      () => dio.get<dynamic>('/v1/core/calendar-events/scales/scale-1'),
+    ).called(1);
+  });
+
   test('gets department scales using range query', () async {
     final start = DateTime(2026, 5, 30, 9);
     final end = DateTime(2026, 11, 30, 23, 59, 59);

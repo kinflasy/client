@@ -7,6 +7,7 @@
         "user",
         "member",
         "department",
-        "lineup"
+        "lineup",
+        "scale"
     ]
 }

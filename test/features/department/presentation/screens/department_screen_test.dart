@@ -5,6 +5,7 @@ import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/media/media_providers.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
@@ -24,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockDepartmentRepository extends Mock implements DepartmentRepository {}
@@ -254,14 +256,23 @@ void main() {
     expect(find.text('Tente novamente em instantes.'), findsOneWidget);
   });
 
-  testWidgets('scales tab shows scale cards without navigating on tap', (
+  testWidgets('scales tab navigates to scale detail on card tap', (
     tester,
   ) async {
-    await _pumpScaleTab(
+    Object? capturedExtra;
+    await _pumpScaleTabWithRouter(
       tester: tester,
       repository: repository,
       permissions: _leaderPermissions,
       scales: [_departmentScale],
+      detailBuilder: (context, state) {
+        capturedExtra = state.extra;
+        return Scaffold(
+          body: Text(
+            'Detalhe ${state.pathParameters['departmentId']} ${state.pathParameters['scaleId']}',
+          ),
+        );
+      },
     );
 
     expect(find.text('Culto da manhã'), findsOneWidget);
@@ -271,8 +282,8 @@ void main() {
     await tester.tap(find.text('Culto da manhã'));
     await tester.pumpAndSettle();
 
-    expect(tester.takeException(), isNull);
-    expect(find.text('Culto da manhã'), findsOneWidget);
+    expect(find.text('Detalhe dep-1 scale-1'), findsOneWidget);
+    expect(capturedExtra, same(_departmentScale));
   });
 
   testWidgets('scales tab renders lineup function in card', (tester) async {
@@ -810,6 +821,54 @@ Future<void> _pumpScaleTab({
   if (settleAfterTabTap) {
     await tester.pumpAndSettle();
   }
+}
+
+Future<void> _pumpScaleTabWithRouter({
+  required WidgetTester tester,
+  required DepartmentRepository repository,
+  required SessionPermissions permissions,
+  required List<DepartmentScaleWithLineupEntity> scales,
+  required Widget Function(BuildContext context, GoRouterState state)
+  detailBuilder,
+}) async {
+  _stubDepartmentDetail(repository);
+  _stubParticipants(repository);
+
+  final router = GoRouter(
+    initialLocation: '/departamentos/dep-1',
+    routes: [
+      GoRoute(
+        path: AppRoutes.departmentDetail,
+        builder: (context, state) =>
+            const DepartmentScreen(departmentId: 'dep-1', showBackButton: true),
+      ),
+      GoRoute(
+        path: AppRoutes.departmentScaleDetail,
+        name: AppRoutes.departmentScaleDetailName,
+        builder: detailBuilder,
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        departmentRepositoryProvider.overrideWithValue(repository),
+        departmentCalendarEventsProvider.overrideWith(
+          (ref, request) async => const [],
+        ),
+        departmentScalesWithLineupsProvider.overrideWith(
+          (ref, request) async => scales,
+        ),
+        sessionPermissionsProvider.overrideWith((ref) async => permissions),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pumpAndSettle();
+
+  await tester.tap(find.text('Escalas'));
+  await tester.pumpAndSettle();
 }
 
 void _stubDepartmentDetail(DepartmentRepository repository) {

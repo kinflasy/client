@@ -6,6 +6,13 @@ import 'package:client/features/calendar/domain/entities/calendar_event_entity.d
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/department/data/models/lineup_item_request_model.dart';
+import 'package:client/features/department/domain/entities/lineup_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_item_entity.dart';
+import 'package:client/features/department/domain/repositories/department_repository.dart';
+import 'package:client/features/department/providers/department_lineup_providers.dart';
+import 'package:client/features/department/providers/department_providers.dart';
+import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
 import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,8 +22,13 @@ import 'package:mocktail/mocktail.dart';
 class _MockCalendarEventRepository extends Mock
     implements CalendarEventRepository {}
 
+class _MockDepartmentRepository extends Mock implements DepartmentRepository {}
+
 class _FakeCalendarEventScaleRequestModel extends Fake
     implements CalendarEventScaleRequestModel {}
+
+class _FakeLineupItemRequestModel extends Fake
+    implements LineupItemRequestModel {}
 
 Future<T> _readFutureProvider<T>(
   ProviderContainer container,
@@ -43,17 +55,21 @@ Future<T> _readFutureProvider<T>(
 
 void main() {
   late _MockCalendarEventRepository repository;
+  late _MockDepartmentRepository departmentRepository;
   late ProviderContainer container;
 
   setUpAll(() {
     registerFallbackValue(_FakeCalendarEventScaleRequestModel());
+    registerFallbackValue(_FakeLineupItemRequestModel());
   });
 
   setUp(() {
     repository = _MockCalendarEventRepository();
+    departmentRepository = _MockDepartmentRepository();
     container = ProviderContainer(
       overrides: [
         calendarEventRepositoryProvider.overrideWithValue(repository),
+        departmentRepositoryProvider.overrideWithValue(departmentRepository),
       ],
     );
   });
@@ -298,6 +314,226 @@ void main() {
     );
   });
 
+  test('department scales with lineups provider returns empty list', () async {
+    final request = _departmentScalesRequest();
+    when(
+      () => repository.getDepartmentScales(
+        request.departmentId,
+        request.start,
+        request.end,
+      ),
+    ).thenAnswer(
+      (_) async => const Right(<DepartmentCalendarEventScaleEntity>[]),
+    );
+
+    final result = await _readFutureProvider(
+      container,
+      departmentScalesWithLineupsProvider(request),
+    );
+
+    expect(result, isEmpty);
+    verifyNever(() => departmentRepository.getLineupWithItems(any()));
+  });
+
+  test(
+    'department scales with lineups provider preserves scale and item order',
+    () async {
+      final request = _departmentScalesRequest();
+      final first = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+        lineupId: 'lineup-1',
+      );
+      final second = _departmentScale(
+        scaleId: 'scale-2',
+        eventId: 'event-2',
+        title: 'Culto',
+        startDateTime: DateTime(2026, 6, 7),
+        lineupId: 'lineup-2',
+      );
+      const lineupOne = LineupEntity(
+        id: 'lineup-1',
+        name: 'Ceia',
+        items: [
+          LineupItemEntity(
+            id: 'item-1',
+            lineupId: 'lineup-1',
+            roleId: 'role-1',
+            description: 'Vocal',
+          ),
+          LineupItemEntity(
+            id: 'item-2',
+            lineupId: 'lineup-1',
+            roleId: 'role-2',
+            description: 'Violao',
+          ),
+        ],
+      );
+      const lineupTwo = LineupEntity(id: 'lineup-2', name: 'Culto');
+
+      when(
+        () => repository.getDepartmentScales(
+          request.departmentId,
+          request.start,
+          request.end,
+        ),
+      ).thenAnswer((_) async => Right([second, first]));
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-1'),
+      ).thenAnswer((_) async => const Right(lineupOne));
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-2'),
+      ).thenAnswer((_) async => const Right(lineupTwo));
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScalesWithLineupsProvider(request),
+      );
+
+      expect(result.map((item) => item.scale.scale.id), ['scale-1', 'scale-2']);
+      expect(result.map((item) => item.lineup?.id), ['lineup-1', 'lineup-2']);
+      expect(result.first.lineup?.items?.map((item) => item.description), [
+        'Vocal',
+        'Violao',
+      ]);
+    },
+  );
+
+  test(
+    'department scales with lineups provider deduplicates lineup id',
+    () async {
+      final request = _departmentScalesRequest();
+      final first = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+        lineupId: 'lineup-shared',
+      );
+      final second = _departmentScale(
+        scaleId: 'scale-2',
+        eventId: 'event-2',
+        title: 'Culto',
+        startDateTime: DateTime(2026, 6, 7),
+        lineupId: 'lineup-shared',
+      );
+      const lineup = LineupEntity(id: 'lineup-shared', name: 'Louvor');
+
+      when(
+        () => repository.getDepartmentScales(
+          request.departmentId,
+          request.start,
+          request.end,
+        ),
+      ).thenAnswer((_) async => Right([first, second]));
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-shared'),
+      ).thenAnswer((_) async => const Right(lineup));
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScalesWithLineupsProvider(request),
+      );
+
+      expect(result.map((item) => item.lineup), [lineup, lineup]);
+      verify(
+        () => departmentRepository.getLineupWithItems('lineup-shared'),
+      ).called(1);
+    },
+  );
+
+  test(
+    'department scales with lineups provider keeps cards on partial failure',
+    () async {
+      final request = _departmentScalesRequest();
+      final failedFirst = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+        lineupId: 'lineup-failed',
+      );
+      final loaded = _departmentScale(
+        scaleId: 'scale-2',
+        eventId: 'event-2',
+        title: 'Culto',
+        startDateTime: DateTime(2026, 6, 7),
+        lineupId: 'lineup-loaded',
+      );
+      final failedSecond = _departmentScale(
+        scaleId: 'scale-3',
+        eventId: 'event-3',
+        title: 'Ensaio',
+        startDateTime: DateTime(2026, 6, 8),
+        lineupId: 'lineup-failed',
+      );
+      const lineup = LineupEntity(id: 'lineup-loaded', name: 'Culto');
+
+      when(
+        () => repository.getDepartmentScales(
+          request.departmentId,
+          request.start,
+          request.end,
+        ),
+      ).thenAnswer((_) async => Right([failedFirst, loaded, failedSecond]));
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-failed'),
+      ).thenAnswer(
+        (_) async => const Left(NetworkFailure('Falha ao carregar formacao')),
+      );
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-loaded'),
+      ).thenAnswer((_) async => const Right(lineup));
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScalesWithLineupsProvider(request),
+      );
+
+      expect(result.map((item) => item.scale.scale.id), [
+        'scale-1',
+        'scale-2',
+        'scale-3',
+      ]);
+      expect(result[0].hasLineupFailure, isTrue);
+      expect(result[0].lineup, isNull);
+      expect(result[1].lineupState, DepartmentScaleLineupLoadState.loaded);
+      expect(result[1].lineup, lineup);
+      expect(result[2].hasLineupFailure, isTrue);
+      verify(
+        () => departmentRepository.getLineupWithItems('lineup-failed'),
+      ).called(1);
+    },
+  );
+
+  test(
+    'department scales with lineups provider propagates general scale failure',
+    () async {
+      final request = _departmentScalesRequest();
+      when(
+        () => repository.getDepartmentScales(
+          request.departmentId,
+          request.start,
+          request.end,
+        ),
+      ).thenAnswer(
+        (_) async => const Left(NetworkFailure('Falha ao carregar escalas')),
+      );
+
+      await expectLater(
+        _readFutureProvider(
+          container,
+          departmentScalesWithLineupsProvider(request),
+        ),
+        throwsA(isA<NetworkFailure>()),
+      );
+
+      verifyNever(() => departmentRepository.getLineupWithItems(any()));
+    },
+  );
+
   test('create action invalidates department scales after success', () async {
     final request = buildDepartmentScalesRequest(
       'dep-1',
@@ -333,6 +569,141 @@ void main() {
 
     expect(loadCount, 2);
   });
+
+  test(
+    'create action invalidates department scales with lineups after success',
+    () async {
+      final request = _departmentScalesRequest();
+      var loadCount = 0;
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+        lineupId: 'lineup-1',
+      );
+
+      when(
+        () => repository.getDepartmentScales(
+          request.departmentId,
+          request.start,
+          request.end,
+        ),
+      ).thenAnswer((_) {
+        loadCount++;
+        return Future.value(Right([scale]));
+      });
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-1'),
+      ).thenAnswer(
+        (_) async => const Right(LineupEntity(id: 'lineup-1', name: 'Ceia')),
+      );
+      when(
+        () => repository.createEventScale('event-1', any()),
+      ).thenAnswer((_) async => const Right(_ownerScale));
+
+      final subscription = container.listen(
+        departmentScalesWithLineupsProvider(request),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      await container.read(departmentScalesWithLineupsProvider(request).future);
+      await container
+          .read(createEventScaleProvider.notifier)
+          .create(
+            eventId: 'event-1',
+            request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
+          );
+      await container.read(departmentScalesWithLineupsProvider(request).future);
+
+      expect(loadCount, 2);
+    },
+  );
+
+  test(
+    'lineup item changes invalidate lineup detail used by enriched scales',
+    () async {
+      final request = _departmentScalesRequest();
+      var lineupLoadCount = 0;
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+        lineupId: 'lineup-1',
+      );
+
+      when(
+        () => repository.getDepartmentScales(
+          request.departmentId,
+          request.start,
+          request.end,
+        ),
+      ).thenAnswer((_) async => Right([scale]));
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-1'),
+      ).thenAnswer((_) {
+        lineupLoadCount++;
+        return Future.value(
+          Right(
+            LineupEntity(
+              id: 'lineup-1',
+              name: 'Ceia $lineupLoadCount',
+              items: [
+                LineupItemEntity(
+                  id: 'item-$lineupLoadCount',
+                  lineupId: 'lineup-1',
+                  roleId: 'role-1',
+                  description: 'Funcao $lineupLoadCount',
+                ),
+              ],
+            ),
+          ),
+        );
+      });
+      when(
+        () => departmentRepository.createLineupItem('lineup-1', any()),
+      ).thenAnswer(
+        (_) async => const Right(
+          LineupItemEntity(
+            id: 'item-new',
+            lineupId: 'lineup-1',
+            roleId: 'role-1',
+            description: 'Nova funcao',
+          ),
+        ),
+      );
+
+      final subscription = container.listen(
+        departmentScalesWithLineupsProvider(request),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      final first = await container.read(
+        departmentScalesWithLineupsProvider(request).future,
+      );
+      await container
+          .read(lineupItemActionsProvider.notifier)
+          .create(
+            lineupId: 'lineup-1',
+            departmentId: 'dep-1',
+            request: const LineupItemRequestModel(
+              roleId: 'role-1',
+              description: 'Nova funcao',
+            ),
+          );
+      final second = await container.read(
+        departmentScalesWithLineupsProvider(request).future,
+      );
+
+      expect(first.single.lineup?.name, 'Ceia 1');
+      expect(second.single.lineup?.name, 'Ceia 2');
+    },
+  );
 
   test(
     'eligible provider calls department events with request interval',
@@ -535,11 +906,12 @@ DepartmentCalendarEventScaleEntity _departmentScale({
   required String eventId,
   required String title,
   required DateTime startDateTime,
+  String lineupId = 'lineup-1',
 }) {
   return DepartmentCalendarEventScaleEntity(
     scale: CalendarEventScaleEntity(
       id: scaleId,
-      lineupId: 'lineup-1',
+      lineupId: lineupId,
       type: CalendarEventScaleType.owner,
       calendarEventId: eventId,
     ),
@@ -548,5 +920,13 @@ DepartmentCalendarEventScaleEntity _departmentScale({
       title: title,
       startDateTime: startDateTime,
     ),
+  );
+}
+
+DepartmentScalesRequest _departmentScalesRequest() {
+  return DepartmentScalesRequest(
+    departmentId: 'dep-1',
+    start: DateTime(2026, 5, 29, 10),
+    end: DateTime(2026, 11, 29, 23, 59, 59),
   );
 }

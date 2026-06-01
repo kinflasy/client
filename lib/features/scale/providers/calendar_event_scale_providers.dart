@@ -1,8 +1,12 @@
 import 'package:client/core/errors/failure.dart';
-import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
-import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/department/domain/entities/lineup_entity.dart';
+import 'package:client/features/department/providers/department_lineup_providers.dart';
+import 'package:client/features/department/providers/department_providers.dart';
+import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
@@ -91,6 +95,56 @@ final departmentScalesProvider =
       });
     });
 
+final departmentScalesWithLineupsProvider =
+    FutureProvider.family<
+      List<DepartmentScaleWithLineupEntity>,
+      DepartmentScalesRequest
+    >((ref, request) async {
+      ref.watch(lineupMutationVersionProvider);
+      final scalesResult = await ref
+          .read(calendarEventRepositoryProvider)
+          .getDepartmentScales(
+            request.departmentId,
+            request.start,
+            request.end,
+          );
+      final scales = scalesResult.fold((failure) => throw failure, (scales) {
+        return [...scales]..sort(_compareDepartmentScales);
+      });
+      if (scales.isEmpty) return const [];
+
+      final lineupIds = scales.map((item) => item.scale.lineupId).toSet();
+      final lineupsById = <String, LineupEntity>{};
+      final failedLineupIds = <String>{};
+
+      await Future.wait(
+        lineupIds.map((lineupId) async {
+          final result = await ref
+              .read(departmentRepositoryProvider)
+              .getLineupWithItems(lineupId);
+
+          result.fold(
+            (_) => failedLineupIds.add(lineupId),
+            (lineup) => lineupsById[lineupId] = lineup,
+          );
+        }),
+      );
+
+      return scales.map((scale) {
+        final lineupId = scale.scale.lineupId;
+        final lineup = lineupsById[lineupId];
+        final lineupState = failedLineupIds.contains(lineupId)
+            ? DepartmentScaleLineupLoadState.failed
+            : DepartmentScaleLineupLoadState.loaded;
+
+        return DepartmentScaleWithLineupEntity(
+          scale: scale,
+          lineupState: lineupState,
+          lineup: lineup,
+        );
+      }).toList();
+    });
+
 final eligibleDepartmentScaleEventsProvider =
     FutureProvider.family<
       List<CalendarEventEntity>,
@@ -162,6 +216,7 @@ class CreateEventScaleNotifier extends Notifier<AsyncValue<void>> {
         ref.invalidate(eventScalesProvider(eventId));
         ref.invalidate(eligibleDepartmentScaleEventsProvider);
         ref.invalidate(departmentScalesProvider);
+        ref.invalidate(departmentScalesWithLineupsProvider);
         return Right(scale);
       },
     );

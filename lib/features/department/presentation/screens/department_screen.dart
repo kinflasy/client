@@ -439,7 +439,9 @@ class _DepartmentScalesTabState extends ConsumerState<_DepartmentScalesTab> {
   Widget build(BuildContext context) {
     if (!widget.isActive) return const SizedBox.shrink();
 
-    final scalesAsync = ref.watch(departmentScalesProvider(_scalesRequest));
+    final scalesAsync = ref.watch(
+      departmentScalesWithLineupsProvider(_scalesRequest),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

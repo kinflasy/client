@@ -9,11 +9,15 @@ import 'package:client/features/calendar/domain/entities/calendar_event_entity.d
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/department/domain/entities/department_detail_entity.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_item_entity.dart';
+import 'package:client/features/department/domain/entities/role_entity.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
 import 'package:client/features/department/presentation/screens/department_screen.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
 import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
@@ -224,7 +228,7 @@ void main() {
   });
 
   testWidgets('scales tab shows loading state', (tester) async {
-    final completer = Completer<List<DepartmentCalendarEventScaleEntity>>();
+    final completer = Completer<List<DepartmentScaleWithLineupEntity>>();
 
     await _pumpScaleTab(
       tester: tester,
@@ -269,6 +273,44 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Culto da manhã'), findsOneWidget);
+  });
+
+  testWidgets('scales tab renders lineup function in card', (tester) async {
+    await _pumpScaleTab(
+      tester: tester,
+      repository: repository,
+      permissions: _leaderPermissions,
+      scales: [
+        _departmentScaleWithLineup([
+          const LineupItemEntity(
+            id: 'item-1',
+            lineupId: 'lineup-1',
+            roleId: 'role-1',
+            description: 'Voz principal',
+            role: RoleEntity(id: 'role-1', name: 'Vocal', slug: 'vocal'),
+          ),
+        ]),
+      ],
+    );
+
+    expect(find.text('Culto da manhã'), findsOneWidget);
+    expect(find.text('Vocal'), findsOneWidget);
+    expect(find.text('Voz principal'), findsNothing);
+  });
+
+  testWidgets('scales tab keeps card visible when lineup partially fails', (
+    tester,
+  ) async {
+    await _pumpScaleTab(
+      tester: tester,
+      repository: repository,
+      permissions: _leaderPermissions,
+      scales: [_departmentScaleWithFailure],
+    );
+
+    expect(find.text('Culto da manhã'), findsOneWidget);
+    expect(find.text('Vocal'), findsNothing);
+    expect(find.text('Nenhuma função definida'), findsNothing);
   });
 
   testWidgets(
@@ -733,8 +775,8 @@ Future<void> _pumpScaleTab({
   required WidgetTester tester,
   required DepartmentRepository repository,
   required SessionPermissions permissions,
-  List<DepartmentCalendarEventScaleEntity>? scales,
-  Future<List<DepartmentCalendarEventScaleEntity>> Function(
+  List<DepartmentScaleWithLineupEntity>? scales,
+  Future<List<DepartmentScaleWithLineupEntity>> Function(
     Ref ref,
     DepartmentScalesRequest request,
   )?
@@ -751,7 +793,7 @@ Future<void> _pumpScaleTab({
         departmentCalendarEventsProvider.overrideWith(
           (ref, request) async => const [],
         ),
-        departmentScalesProvider.overrideWith(
+        departmentScalesWithLineupsProvider.overrideWith(
           scalesBuilder ?? (ref, request) async => scales ?? const [],
         ),
         sessionPermissionsProvider.overrideWith((ref) async => permissions),
@@ -809,19 +851,37 @@ final _departmentEvent = CalendarEventEntity(
   departmentId: 'dep-1',
 );
 
-final _departmentScale = DepartmentCalendarEventScaleEntity(
-  scale: const CalendarEventScaleEntity(
-    id: 'scale-1',
-    lineupId: 'lineup-1',
-    type: CalendarEventScaleType.owner,
-    calendarEventId: 'event-scale-1',
-  ),
-  calendarEvent: CalendarEventEntity(
-    id: 'event-scale-1',
-    title: 'Culto da manhã',
-    startDateTime: DateTime(2026, 7, 19, 9),
-    endDateTime: DateTime(2026, 7, 19, 11),
-    type: CalendarEventType.department,
-    departmentId: 'dep-1',
+final _departmentScale = DepartmentScaleWithLineupEntity(
+  lineupState: DepartmentScaleLineupLoadState.loaded,
+  scale: DepartmentCalendarEventScaleEntity(
+    scale: const CalendarEventScaleEntity(
+      id: 'scale-1',
+      lineupId: 'lineup-1',
+      type: CalendarEventScaleType.owner,
+      calendarEventId: 'event-scale-1',
+    ),
+    calendarEvent: CalendarEventEntity(
+      id: 'event-scale-1',
+      title: 'Culto da manhã',
+      startDateTime: DateTime(2026, 7, 19, 9),
+      endDateTime: DateTime(2026, 7, 19, 11),
+      type: CalendarEventType.department,
+      departmentId: 'dep-1',
+    ),
   ),
 );
+
+final _departmentScaleWithFailure = DepartmentScaleWithLineupEntity(
+  lineupState: DepartmentScaleLineupLoadState.failed,
+  scale: _departmentScale.scale,
+);
+
+DepartmentScaleWithLineupEntity _departmentScaleWithLineup(
+  List<LineupItemEntity> items,
+) {
+  return DepartmentScaleWithLineupEntity(
+    scale: _departmentScale.scale,
+    lineupState: DepartmentScaleLineupLoadState.loaded,
+    lineup: LineupEntity(id: 'lineup-1', name: 'Banda', items: items),
+  );
+}

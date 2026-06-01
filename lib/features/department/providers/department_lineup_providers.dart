@@ -94,6 +94,18 @@ final lineupItemsProvider =
       return result.fold((failure) => throw failure, (items) => items);
     });
 
+final lineupMutationVersionProvider =
+    NotifierProvider<LineupMutationVersionNotifier, int>(
+      LineupMutationVersionNotifier.new,
+    );
+
+class LineupMutationVersionNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
+}
+
 final roleActionsProvider =
     NotifierProvider<RoleActionsNotifier, AsyncValue<void>>(
       RoleActionsNotifier.new,
@@ -192,6 +204,7 @@ class LineupActionsNotifier extends Notifier<AsyncValue<void>> {
     if (!shouldInvalidate) return;
 
     ref.invalidate(departmentLineupsProvider(departmentId));
+    ref.read(lineupMutationVersionProvider.notifier).bump();
     if (lineupId != null) {
       ref.invalidate(lineupWithItemsProvider(lineupId));
       ref.invalidate(lineupItemsProvider(lineupId));
@@ -267,6 +280,7 @@ class LineupItemActionsNotifier extends Notifier<AsyncValue<void>> {
 
     ref.invalidate(lineupWithItemsProvider(lineupId));
     ref.invalidate(lineupItemsProvider(lineupId));
+    ref.read(lineupMutationVersionProvider.notifier).bump();
     if (departmentId != null && departmentId.isNotEmpty) {
       ref.invalidate(departmentLineupsProvider(departmentId));
     }

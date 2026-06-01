@@ -1,5 +1,9 @@
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_item_entity.dart';
+import 'package:client/features/department/domain/entities/role_entity.dart';
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
 import 'package:client/features/scale/presentation/widgets/department_scale_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,21 +38,219 @@ void main() {
     expect(tapped, isTrue);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('shows lineup functions in separate rows', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DepartmentScaleCard(
+            scale: _scaleWithItems([
+              _lineupItem('item-1', roleName: 'Vocal'),
+              _lineupItem('item-2', roleName: 'Violão'),
+              _lineupItem('item-3', roleName: 'Baixo'),
+            ]),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Vocal'), findsOneWidget);
+    expect(find.text('Violão'), findsOneWidget);
+    expect(find.text('Baixo'), findsOneWidget);
+    expect(find.byIcon(Icons.circle), findsNWidgets(3));
+  });
+
+  testWidgets('uses role name before description and preserves item order', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DepartmentScaleCard(
+            scale: _scaleWithItems([
+              _lineupItem('item-1', description: 'Descrição um'),
+              _lineupItem(
+                'item-2',
+                roleName: 'Teclado',
+                description: 'Descrição dois',
+              ),
+              _lineupItem('item-3', description: 'Descrição três'),
+            ]),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Descrição um'), findsOneWidget);
+    expect(find.text('Teclado'), findsOneWidget);
+    expect(find.text('Descrição dois'), findsNothing);
+    expect(find.text('Descrição três'), findsOneWidget);
+
+    final firstTop = tester.getTopLeft(find.text('Descrição um')).dy;
+    final secondTop = tester.getTopLeft(find.text('Teclado')).dy;
+    final thirdTop = tester.getTopLeft(find.text('Descrição três')).dy;
+
+    expect(firstTop, lessThan(secondTop));
+    expect(secondTop, lessThan(thirdTop));
+  });
+
+  testWidgets('shows empty lineup message when there are no items', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: DepartmentScaleCard(scale: _scaleWithItems([]))),
+      ),
+    );
+
+    expect(find.text('Nenhuma função definida'), findsOneWidget);
+  });
+
+  testWidgets('hides lineup section when lineup load failed', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: DepartmentScaleCard(scale: _scaleWithFailure)),
+      ),
+    );
+
+    expect(find.text('Culto da manhã'), findsOneWidget);
+    expect(find.text('Nenhuma função definida'), findsNothing);
+    expect(find.byIcon(Icons.circle), findsNothing);
+  });
+
+  testWidgets('limits functions to three and expands to show all', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DepartmentScaleCard(
+            scale: _scaleWithItems([
+              _lineupItem('item-1', roleName: 'Vocal'),
+              _lineupItem('item-2', roleName: 'Violão'),
+              _lineupItem('item-3', roleName: 'Baixo'),
+              _lineupItem('item-4', roleName: 'Bateria'),
+            ]),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Vocal'), findsOneWidget);
+    expect(find.text('Violão'), findsOneWidget);
+    expect(find.text('Baixo'), findsOneWidget);
+    expect(find.text('Bateria'), findsNothing);
+    expect(find.text('Ver todas (+1)'), findsOneWidget);
+
+    await tester.tap(find.text('Ver todas (+1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bateria'), findsOneWidget);
+    expect(find.text('Mostrar menos'), findsOneWidget);
+
+    await tester.tap(find.text('Mostrar menos'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bateria'), findsNothing);
+    expect(find.text('Ver todas (+1)'), findsOneWidget);
+  });
+
+  testWidgets('hides expansion button when there are up to three functions', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DepartmentScaleCard(
+            scale: _scaleWithItems([
+              _lineupItem('item-1', roleName: 'Vocal'),
+              _lineupItem('item-2', roleName: 'Violão'),
+              _lineupItem('item-3', roleName: 'Baixo'),
+            ]),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Ver todas (+0)'), findsNothing);
+    expect(find.textContaining('Ver todas'), findsNothing);
+    expect(find.text('Mostrar menos'), findsNothing);
+  });
+
+  testWidgets('does not trigger card tap when expansion button is tapped', (
+    tester,
+  ) async {
+    var tapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DepartmentScaleCard(
+            scale: _scaleWithItems([
+              _lineupItem('item-1', roleName: 'Vocal'),
+              _lineupItem('item-2', roleName: 'Violão'),
+              _lineupItem('item-3', roleName: 'Baixo'),
+              _lineupItem('item-4', roleName: 'Bateria'),
+            ]),
+            onTap: () => tapped = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Ver todas (+1)'));
+    await tester.pumpAndSettle();
+
+    expect(tapped, isFalse);
+    expect(find.text('Bateria'), findsOneWidget);
+  });
 }
 
-final _scale = DepartmentCalendarEventScaleEntity(
-  scale: const CalendarEventScaleEntity(
-    id: 'scale-1',
-    lineupId: 'lineup-1',
-    type: CalendarEventScaleType.owner,
-    calendarEventId: 'event-1',
-  ),
-  calendarEvent: CalendarEventEntity(
-    id: 'event-1',
-    title: 'Culto da manhã',
-    startDateTime: DateTime(2026, 7, 19, 9),
-    endDateTime: DateTime(2026, 7, 19, 11),
-    type: CalendarEventType.department,
-    departmentId: 'dep-1',
+final _scale = DepartmentScaleWithLineupEntity(
+  lineupState: DepartmentScaleLineupLoadState.loaded,
+  scale: DepartmentCalendarEventScaleEntity(
+    scale: const CalendarEventScaleEntity(
+      id: 'scale-1',
+      lineupId: 'lineup-1',
+      type: CalendarEventScaleType.owner,
+      calendarEventId: 'event-1',
+    ),
+    calendarEvent: CalendarEventEntity(
+      id: 'event-1',
+      title: 'Culto da manhã',
+      startDateTime: DateTime(2026, 7, 19, 9),
+      endDateTime: DateTime(2026, 7, 19, 11),
+      type: CalendarEventType.department,
+      departmentId: 'dep-1',
+    ),
   ),
 );
+
+final _scaleWithFailure = DepartmentScaleWithLineupEntity(
+  lineupState: DepartmentScaleLineupLoadState.failed,
+  scale: _scale.scale,
+);
+
+DepartmentScaleWithLineupEntity _scaleWithItems(List<LineupItemEntity> items) {
+  return DepartmentScaleWithLineupEntity(
+    scale: _scale.scale,
+    lineupState: DepartmentScaleLineupLoadState.loaded,
+    lineup: LineupEntity(id: 'lineup-1', name: 'Banda', items: items),
+  );
+}
+
+LineupItemEntity _lineupItem(
+  String id, {
+  String roleName = '',
+  String description = '',
+}) {
+  return LineupItemEntity(
+    id: id,
+    lineupId: 'lineup-1',
+    roleId: 'role-$id',
+    description: description,
+    role: roleName.isEmpty
+        ? null
+        : RoleEntity(id: 'role-$id', name: roleName, slug: roleName),
+  );
+}

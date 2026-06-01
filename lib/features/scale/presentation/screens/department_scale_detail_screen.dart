@@ -1,6 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
-import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/department/domain/entities/lineup_entity.dart';
 import 'package:client/features/department/domain/entities/lineup_item_entity.dart';
 import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
@@ -120,7 +119,7 @@ class _LineupItemsSection extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _inactiveTabBackground(context),
+        color: AppColors.inactiveBackground,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -187,7 +186,7 @@ class _InlineMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _inactiveTabBackground(context),
+        color: AppColors.inactiveBackground,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -249,14 +248,6 @@ String _appBarTitle(AsyncValue<DepartmentScaleWithLineupEntity> detailAsync) {
     loading: () => 'Carregando...',
     error: (_, _) => 'Escala',
     data: (detail) => detail.scale.calendarEvent.title,
-  );
-}
-
-Color _inactiveTabBackground(BuildContext context) {
-  final colorScheme = Theme.of(context).colorScheme;
-  return Color.alphaBlend(
-    colorScheme.primary.withValues(alpha: 0.12),
-    colorScheme.surfaceContainerHigh,
   );
 }
 

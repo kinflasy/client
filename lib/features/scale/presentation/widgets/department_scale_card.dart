@@ -22,7 +22,7 @@ class _DepartmentScaleCardState extends State<DepartmentScaleCard> {
     final lineupSection = _buildLineupSection();
 
     return Material(
-      color: AppColors.surface,
+      color: AppColors.surfaceContainerHigh.withValues(alpha: 0.35),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:client/core/config/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class AppTabBar extends StatefulWidget {
@@ -101,10 +102,12 @@ class _AppTabBarState extends State<AppTabBar> {
           fontSize: 14,
           fontWeight: FontWeight.w600,
         );
-    final backgroundColor = Color.alphaBlend(
-      activeColor.withValues(alpha: 0.12),
-      colorScheme.surfaceContainerHigh,
-    );
+    final backgroundColor = widget.activeColor == null
+        ? AppColors.inactiveBackground
+        : Color.alphaBlend(
+            activeColor.withValues(alpha: 0.12),
+            AppColors.surfaceContainerHigh,
+          );
 
     return LayoutBuilder(
       builder: (context, constraints) {

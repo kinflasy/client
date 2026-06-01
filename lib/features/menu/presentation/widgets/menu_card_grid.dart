@@ -1,3 +1,4 @@
+import 'package:client/core/config/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class MenuSectionLabel extends StatelessWidget {
@@ -68,7 +69,7 @@ class MenuGridCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isInteractive = isEnabled && onTap != null;
-    final backgroundColor = colorScheme.surfaceContainerHigh;
+    const backgroundColor = AppColors.surfaceContainerHigh;
     final iconColor = isEnabled
         ? colorScheme.onSurface
         : colorScheme.onSurfaceVariant;

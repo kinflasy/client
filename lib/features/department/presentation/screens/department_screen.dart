@@ -69,7 +69,7 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       endDrawer: canObserveDepartment
           ? _DepartmentSettingsSidebar(
               departmentId: widget.departmentId,
@@ -81,7 +81,7 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
           SliverAppBar(
             automaticallyImplyLeading: widget.showBackButton,
             title: Text(_buildTitle(departmentAsync)),
-            backgroundColor: AppColors.background,
+            backgroundColor: AppColors.surface,
             foregroundColor: AppColors.textPrimary,
             elevation: 0,
             floating: true,
@@ -546,7 +546,7 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 24),
                 itemCount: participants.length,
                 separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 0),
                 itemBuilder: (context, index) {
                   final participant = participants[index];
                   return MemberSummaryCard(
@@ -556,6 +556,7 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
                     birthDate: participant.birthDate,
                     age: participant.age,
                     profileImageId: participant.profileImageId,
+                    backgroundColor: AppColors.surface,
                     onTap: () => showDepartmentParticipantBottomSheet(
                       context,
                       departmentId: departmentId,

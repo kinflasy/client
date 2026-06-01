@@ -1,3 +1,4 @@
+import 'package:client/core/config/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class MenuQuickActionsRow extends StatelessWidget {
@@ -51,7 +52,7 @@ class MenuQuickActionButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: isEnabled
             ? colorScheme.primaryContainer
-            : colorScheme.surfaceContainerHigh,
+            : AppColors.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Icon(

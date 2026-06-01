@@ -11,6 +11,7 @@ class MemberSummaryCard extends StatelessWidget {
     this.birthDate,
     this.age,
     this.profileImageId,
+    this.backgroundColor = AppColors.surface,
     this.onTap,
   });
 
@@ -20,6 +21,7 @@ class MemberSummaryCard extends StatelessWidget {
   final DateTime? birthDate;
   final int? age;
   final String? profileImageId;
+  final Color backgroundColor;
   final VoidCallback? onTap;
 
   @override
@@ -32,7 +34,7 @@ class MemberSummaryCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(18),
       ),
       child: ListTile(

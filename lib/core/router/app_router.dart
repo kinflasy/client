@@ -234,7 +234,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state, navigationShell) {
-          return HomeScreen(navigationShell: navigationShell);
+          final routePath = state.fullPath ?? state.matchedLocation;
+          return HomeScreen(
+            navigationShell: navigationShell,
+            showBottomNavigationBar:
+                routePath != AppRoutes.homeChurchDepartmentDetail,
+          );
         },
         branches: [
           StatefulShellBranch(

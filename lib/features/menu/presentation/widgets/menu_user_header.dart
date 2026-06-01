@@ -1,3 +1,4 @@
+import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/presentation/widgets/user_avatar.dart';
 import 'package:client/features/auth/domain/entities/logged_user_profile_entity.dart';
 import 'package:client/features/auth/domain/entities/user_entity.dart';
@@ -91,7 +92,7 @@ class MenuUserHeaderLoading extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHigh,
+              color: AppColors.surfaceContainerHigh,
               shape: BoxShape.circle,
             ),
           ),

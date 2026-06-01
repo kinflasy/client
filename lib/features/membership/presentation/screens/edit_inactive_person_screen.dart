@@ -128,7 +128,7 @@ class _EditInactivePersonScreenState
           child: _LoadError(
             message: error is Failure
                 ? error.message
-                : 'Nao foi possivel carregar os dados para edicao.',
+                : 'Não foi possível carregar os dados para edição.',
             onRetry: () =>
                 ref.invalidate(memberProfileProvider(widget.personId)),
           ),

@@ -12,7 +12,7 @@ class AdminPanelScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Gestão da Igreja'),
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.background,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

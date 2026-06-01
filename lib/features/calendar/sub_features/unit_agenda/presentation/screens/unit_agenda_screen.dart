@@ -18,7 +18,7 @@ class UnitAgendaScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Calendário'),
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.background,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),

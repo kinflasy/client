@@ -8,7 +8,11 @@
         {
             "name": "client",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "toolArgs": [
+                "--dart-define-from-file",
+                ".env"
+            ]
         },
         {
             "name": "client (profile mode)",

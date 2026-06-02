@@ -50,3 +50,4 @@ app.*.map.json
 .agents
 .claude
 .firebase
+.env

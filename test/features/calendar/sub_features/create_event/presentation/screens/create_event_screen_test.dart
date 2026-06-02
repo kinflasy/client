@@ -2,8 +2,10 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/core/media/media_providers.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
+import 'package:client/features/scale/data/models/scale_item_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/scale_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
@@ -753,6 +755,13 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, List<ScaleItemEntity>>> getScaleItems(
+    String scaleId,
+  ) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
   Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>>
   getDepartmentScales(String departmentId, DateTime start, DateTime end) async {
     return const Left(ServerFailure('Não implementado no teste.'));
@@ -791,6 +800,22 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
     CalendarEventScaleRequestModel request,
   ) async {
     return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
+  Future<Either<Failure, ScaleItemEntity>> addScaleItem({
+    required String scaleId,
+    required ScaleItemRequestModel request,
+  }) async {
+    return const Left(ServerFailure('NÃ£o implementado no teste.'));
+  }
+
+  @override
+  Future<Either<Failure, void>> removeScaleItem({
+    required String scaleId,
+    required ScaleItemRequestModel request,
+  }) async {
+    return const Left(ServerFailure('NÃ£o implementado no teste.'));
   }
 
   @override

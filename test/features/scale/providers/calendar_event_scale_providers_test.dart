@@ -1,18 +1,28 @@
 import 'dart:async';
 
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/domain/enums/integration_type.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
+import 'package:client/features/scale/data/models/scale_item_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/department/data/models/lineup_item_request_model.dart';
+import 'package:client/features/department/domain/entities/department_participant_entity.dart';
 import 'package:client/features/department/domain/entities/lineup_entity.dart';
 import 'package:client/features/department/domain/entities/lineup_item_entity.dart';
 import 'package:client/features/department/domain/repositories/department_repository.dart';
 import 'package:client/features/department/providers/department_lineup_providers.dart';
 import 'package:client/features/department/providers/department_providers.dart';
+import 'package:client/features/membership/data/models/person_profile_model.dart';
+import 'package:client/features/membership/domain/enums/person_type.dart';
+import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
+import 'package:client/features/membership/providers/member_profile_providers.dart';
+import 'package:client/features/scale/domain/entities/scale_assignment_person_entity.dart';
 import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
+import 'package:client/features/scale/domain/entities/editable_scale_assignment_entity.dart';
+import 'package:client/features/scale/domain/entities/scale_item_entity.dart';
 import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,8 +34,14 @@ class _MockCalendarEventRepository extends Mock
 
 class _MockDepartmentRepository extends Mock implements DepartmentRepository {}
 
+class _MockMemberProfileRepository extends Mock
+    implements MemberProfileRepository {}
+
 class _FakeCalendarEventScaleRequestModel extends Fake
     implements CalendarEventScaleRequestModel {}
+
+class _FakeScaleItemRequestModel extends Fake
+    implements ScaleItemRequestModel {}
 
 class _FakeLineupItemRequestModel extends Fake
     implements LineupItemRequestModel {}
@@ -84,20 +100,26 @@ Future<List<T>> _readProviderValues<T>(
 void main() {
   late _MockCalendarEventRepository repository;
   late _MockDepartmentRepository departmentRepository;
+  late _MockMemberProfileRepository memberProfileRepository;
   late ProviderContainer container;
 
   setUpAll(() {
     registerFallbackValue(_FakeCalendarEventScaleRequestModel());
+    registerFallbackValue(_FakeScaleItemRequestModel());
     registerFallbackValue(_FakeLineupItemRequestModel());
   });
 
   setUp(() {
     repository = _MockCalendarEventRepository();
     departmentRepository = _MockDepartmentRepository();
+    memberProfileRepository = _MockMemberProfileRepository();
     container = ProviderContainer(
       overrides: [
         calendarEventRepositoryProvider.overrideWithValue(repository),
         departmentRepositoryProvider.overrideWithValue(departmentRepository),
+        memberProfileRepositoryProvider.overrideWithValue(
+          memberProfileRepository,
+        ),
       ],
     );
   });
@@ -176,6 +198,221 @@ void main() {
     final state = container.read(createEventScaleProvider);
     expect(state.hasError, isTrue);
     expect(state.error, failure);
+  });
+
+  test('save assignments does not call backend when diff is empty', () async {
+    final assignments = [_editableAssignment('a1', 'role-1', 'person-1')];
+
+    final result = await container
+        .read(saveScaleAssignmentsProvider.notifier)
+        .save(
+          departmentId: 'dep-1',
+          scaleId: 'scale-1',
+          originalAssignments: assignments,
+          currentAssignments: assignments,
+        );
+
+    expect(result.isRight(), isTrue);
+    verifyNever(
+      () => repository.addScaleItem(
+        scaleId: any(named: 'scaleId'),
+        request: any(named: 'request'),
+      ),
+    );
+    verifyNever(
+      () => repository.removeScaleItem(
+        scaleId: any(named: 'scaleId'),
+        request: any(named: 'request'),
+      ),
+    );
+  });
+
+  test('save assignments calls POST for creations', () async {
+    when(
+      () => repository.addScaleItem(
+        scaleId: 'scale-1',
+        request: any(named: 'request'),
+      ),
+    ).thenAnswer((_) async => const Right(_scaleItem));
+
+    final result = await container
+        .read(saveScaleAssignmentsProvider.notifier)
+        .save(
+          departmentId: 'dep-1',
+          scaleId: 'scale-1',
+          originalAssignments: const [],
+          currentAssignments: [_editableAssignment('a1', 'role-1', 'person-1')],
+        );
+
+    expect(result.isRight(), isTrue);
+    verify(
+      () => repository.addScaleItem(
+        scaleId: 'scale-1',
+        request: any(
+          named: 'request',
+          that: isA<ScaleItemRequestModel>()
+              .having((request) => request.roleId, 'roleId', 'role-1')
+              .having((request) => request.personId, 'personId', 'person-1'),
+        ),
+      ),
+    ).called(1);
+    verifyNever(
+      () => repository.removeScaleItem(
+        scaleId: any(named: 'scaleId'),
+        request: any(named: 'request'),
+      ),
+    );
+  });
+
+  test('save assignments calls DELETE for removals', () async {
+    when(
+      () => repository.removeScaleItem(
+        scaleId: 'scale-1',
+        request: any(named: 'request'),
+      ),
+    ).thenAnswer((_) async => const Right(null));
+
+    final result = await container
+        .read(saveScaleAssignmentsProvider.notifier)
+        .save(
+          departmentId: 'dep-1',
+          scaleId: 'scale-1',
+          originalAssignments: [
+            _editableAssignment('a1', 'role-1', 'person-1'),
+          ],
+          currentAssignments: const [],
+        );
+
+    expect(result.isRight(), isTrue);
+    verify(
+      () => repository.removeScaleItem(
+        scaleId: 'scale-1',
+        request: any(
+          named: 'request',
+          that: isA<ScaleItemRequestModel>()
+              .having((request) => request.roleId, 'roleId', 'role-1')
+              .having((request) => request.personId, 'personId', 'person-1'),
+        ),
+      ),
+    ).called(1);
+    verifyNever(
+      () => repository.addScaleItem(
+        scaleId: any(named: 'scaleId'),
+        request: any(named: 'request'),
+      ),
+    );
+  });
+
+  test('save assignments calls correct quantity for duplicate diff', () async {
+    when(
+      () => repository.addScaleItem(
+        scaleId: 'scale-1',
+        request: any(named: 'request'),
+      ),
+    ).thenAnswer((_) async => const Right(_scaleItem));
+
+    final result = await container
+        .read(saveScaleAssignmentsProvider.notifier)
+        .save(
+          departmentId: 'dep-1',
+          scaleId: 'scale-1',
+          originalAssignments: [
+            _editableAssignment('a1', 'role-1', 'person-1'),
+          ],
+          currentAssignments: [
+            _editableAssignment('a1', 'role-1', 'person-1'),
+            _editableAssignment('a2', 'role-1', 'person-1'),
+            _editableAssignment('a3', 'role-1', 'person-1'),
+          ],
+        );
+
+    expect(result.isRight(), isTrue);
+    verify(
+      () => repository.addScaleItem(
+        scaleId: 'scale-1',
+        request: any(named: 'request'),
+      ),
+    ).called(2);
+  });
+
+  test('save assignments invalidates detail providers on success', () async {
+    var itemsLoadCount = 0;
+    when(
+      () => repository.getScaleById('scale-1'),
+    ).thenAnswer((_) async => const Right(_ownerScale));
+    when(
+      () => repository.getEventById('event-1'),
+    ).thenAnswer((_) async => Right(_event(id: 'event-1')));
+    when(
+      () => departmentRepository.getLineupWithItems('lineup-1'),
+    ).thenAnswer((_) async => const Right(_assignmentLineup));
+    when(() => repository.getScaleItems('scale-1')).thenAnswer((_) {
+      itemsLoadCount++;
+      return Future.value(const Right(<ScaleItemEntity>[]));
+    });
+    when(
+      () => departmentRepository.getParticipants('dep-1'),
+    ).thenAnswer((_) async => const Right(<DepartmentParticipantEntity>[]));
+    when(
+      () => repository.addScaleItem(
+        scaleId: 'scale-1',
+        request: any(named: 'request'),
+      ),
+    ).thenAnswer((_) async => const Right(_scaleItem));
+
+    final provider = departmentScaleAssignmentDetailProvider(
+      const DepartmentScaleDetailRequest(
+        departmentId: 'dep-1',
+        scaleId: 'scale-1',
+      ),
+    );
+    final subscription = container.listen(provider, (_, _) {});
+    addTearDown(subscription.close);
+
+    await container.read(provider.future);
+    await container
+        .read(saveScaleAssignmentsProvider.notifier)
+        .save(
+          departmentId: 'dep-1',
+          scaleId: 'scale-1',
+          originalAssignments: const [],
+          currentAssignments: [_editableAssignment('a1', 'role-1', 'person-1')],
+        );
+    await container.read(provider.future);
+
+    expect(itemsLoadCount, 2);
+  });
+
+  test('save assignments preserves error when a call fails', () async {
+    const failure = NetworkFailure('Falha ao salvar escala.');
+    when(
+      () => repository.removeScaleItem(
+        scaleId: 'scale-1',
+        request: any(named: 'request'),
+      ),
+    ).thenAnswer((_) async => const Left(failure));
+
+    final result = await container
+        .read(saveScaleAssignmentsProvider.notifier)
+        .save(
+          departmentId: 'dep-1',
+          scaleId: 'scale-1',
+          originalAssignments: [
+            _editableAssignment('a1', 'role-1', 'person-1'),
+          ],
+          currentAssignments: const [],
+        );
+
+    expect(result.isLeft(), isTrue);
+    final state = container.read(saveScaleAssignmentsProvider);
+    expect(state.hasError, isTrue);
+    expect(state.error, failure);
+    verifyNever(
+      () => repository.addScaleItem(
+        scaleId: any(named: 'scaleId'),
+        request: any(named: 'request'),
+      ),
+    );
   });
 
   test('create action invalidates event scales after success', () async {
@@ -744,6 +981,326 @@ void main() {
     },
   );
 
+  test(
+    'assignment detail provider returns roles with people from participants',
+    () async {
+      _stubAssignmentDetailBase(
+        repository,
+        departmentRepository,
+        scaleItems: const [
+          ScaleItemEntity(
+            id: 'scale-item-1',
+            scaleId: 'scale-1',
+            roleId: 'role-1',
+            personId: 'person-1',
+          ),
+        ],
+        participants: const [
+          DepartmentParticipantEntity(
+            personId: 'person-1',
+            membershipId: 'membership-1',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Ana',
+            username: 'ana.silva',
+            profileImageId: 'image-1',
+            affiliation: 'MEMBER',
+            gender: 'FEMALE',
+          ),
+        ],
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScaleAssignmentDetailProvider(
+          const DepartmentScaleDetailRequest(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+          ),
+        ),
+      );
+
+      expect(result.roleAssignments, hasLength(2));
+      expect(result.roleAssignments.first.item.roleId, 'role-1');
+      expect(result.roleAssignments.first.people.single.displayName, 'Ana');
+      expect(
+        result.roleAssignments.first.people.single.profileImageId,
+        'image-1',
+      );
+      expect(
+        result.roleAssignments.first.people.single.source,
+        ScaleAssignmentPersonSource.participant,
+      );
+      expect(result.roleAssignments.last.hasOpenVacancy, isTrue);
+    },
+  );
+
+  test(
+    'assignment detail provider shows open vacancy for role without item',
+    () async {
+      _stubAssignmentDetailBase(
+        repository,
+        departmentRepository,
+        scaleItems: const [
+          ScaleItemEntity(
+            id: 'scale-item-1',
+            scaleId: 'scale-1',
+            roleId: 'role-1',
+            personId: 'person-1',
+          ),
+        ],
+        participants: const [
+          DepartmentParticipantEntity(
+            personId: 'person-1',
+            membershipId: 'membership-1',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Ana',
+            affiliation: 'MEMBER',
+            gender: 'FEMALE',
+          ),
+        ],
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScaleAssignmentDetailProvider(
+          const DepartmentScaleDetailRequest(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+          ),
+        ),
+      );
+
+      final emptyRole = result.roleAssignments.singleWhere(
+        (assignment) => assignment.item.roleId == 'role-2',
+      );
+      expect(emptyRole.people, isEmpty);
+      expect(emptyRole.hasOpenVacancy, isTrue);
+    },
+  );
+
+  test(
+    'assignment detail provider preserves duplicated role and person rows',
+    () async {
+      _stubAssignmentDetailBase(
+        repository,
+        departmentRepository,
+        scaleItems: const [
+          ScaleItemEntity(
+            id: 'scale-item-1',
+            scaleId: 'scale-1',
+            roleId: 'role-1',
+            personId: 'person-1',
+          ),
+          ScaleItemEntity(
+            id: 'scale-item-2',
+            scaleId: 'scale-1',
+            roleId: 'role-1',
+            personId: 'person-1',
+          ),
+        ],
+        participants: const [
+          DepartmentParticipantEntity(
+            personId: 'person-1',
+            membershipId: 'membership-1',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Ana',
+            affiliation: 'MEMBER',
+            gender: 'FEMALE',
+          ),
+        ],
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScaleAssignmentDetailProvider(
+          const DepartmentScaleDetailRequest(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+          ),
+        ),
+      );
+
+      final people = result.roleAssignments.first.people;
+      expect(people, hasLength(2));
+      expect(people.map((person) => person.personId), ['person-1', 'person-1']);
+      expect(people.map((person) => person.displayName), ['Ana', 'Ana']);
+    },
+  );
+
+  test(
+    'assignment detail provider fetches profile when participant is missing',
+    () async {
+      _stubAssignmentDetailBase(
+        repository,
+        departmentRepository,
+        scaleItems: const [
+          ScaleItemEntity(
+            id: 'scale-item-1',
+            scaleId: 'scale-1',
+            roleId: 'role-1',
+            personId: 'person-2',
+          ),
+        ],
+        participants: const [],
+      );
+      when(
+        () => memberProfileRepository.getPersonProfile('person-2'),
+      ).thenAnswer(
+        (_) async => const Right(
+          PersonProfileModel(
+            type: PersonType.user,
+            id: 'person-2',
+            fullName: 'Beatriz Souza',
+            nickname: 'Bia',
+            gender: 'FEMALE',
+            profileImageId: 'image-2',
+          ),
+        ),
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScaleAssignmentDetailProvider(
+          const DepartmentScaleDetailRequest(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+          ),
+        ),
+      );
+
+      final person = result.roleAssignments.first.people.single;
+      expect(person.displayName, 'Bia');
+      expect(person.profileImageId, 'image-2');
+      expect(person.source, ScaleAssignmentPersonSource.profileFallback);
+      verify(
+        () => memberProfileRepository.getPersonProfile('person-2'),
+      ).called(1);
+    },
+  );
+
+  test(
+    'assignment detail provider uses not found label when profile fallback fails',
+    () async {
+      _stubAssignmentDetailBase(
+        repository,
+        departmentRepository,
+        scaleItems: const [
+          ScaleItemEntity(
+            id: 'scale-item-1',
+            scaleId: 'scale-1',
+            roleId: 'role-1',
+            personId: 'person-404',
+          ),
+        ],
+        participants: const [],
+      );
+      when(
+        () => memberProfileRepository.getPersonProfile('person-404'),
+      ).thenAnswer(
+        (_) async => const Left(NotFoundFailure('Pessoa nao encontrada.')),
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScaleAssignmentDetailProvider(
+          const DepartmentScaleDetailRequest(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+          ),
+        ),
+      );
+
+      final person = result.roleAssignments.first.people.single;
+      expect(person.displayName, 'Pessoa não encontrada');
+      expect(person.source, ScaleAssignmentPersonSource.notFound);
+      expect(result.profileFailurePersonIds, ['person-404']);
+      expect(result.hasPeoplePartialFailure, isTrue);
+    },
+  );
+
+  test(
+    'assignment detail provider keeps roles when participants fail',
+    () async {
+      _stubAssignmentDetailBase(
+        repository,
+        departmentRepository,
+        scaleItems: const [
+          ScaleItemEntity(
+            id: 'scale-item-1',
+            scaleId: 'scale-1',
+            roleId: 'role-1',
+            personId: 'person-2',
+          ),
+        ],
+        participantsFailure: const NetworkFailure('Falha nos participantes'),
+      );
+      when(
+        () => memberProfileRepository.getPersonProfile('person-2'),
+      ).thenAnswer(
+        (_) async => const Right(
+          PersonProfileModel(
+            type: PersonType.user,
+            id: 'person-2',
+            fullName: 'Beatriz Souza',
+            gender: 'FEMALE',
+          ),
+        ),
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScaleAssignmentDetailProvider(
+          const DepartmentScaleDetailRequest(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+          ),
+        ),
+      );
+
+      expect(result.roleAssignments, hasLength(2));
+      expect(
+        result.roleAssignments.first.people.single.displayName,
+        'Beatriz Souza',
+      );
+      expect(result.roleAssignments.last.hasOpenVacancy, isTrue);
+      expect(
+        result.peopleLoadFailureMessage,
+        'Não foi possível carregar todos os dados das pessoas.',
+      );
+      expect(result.hasPeoplePartialFailure, isTrue);
+    },
+  );
+
+  test('assignment detail provider fails when scale items fail', () async {
+    when(
+      () => repository.getScaleById('scale-1'),
+    ).thenAnswer((_) async => const Right(_ownerScale));
+    when(
+      () => repository.getEventById('event-1'),
+    ).thenAnswer((_) async => Right(_event(id: 'event-1')));
+    when(
+      () => departmentRepository.getLineupWithItems('lineup-1'),
+    ).thenAnswer((_) async => const Right(_assignmentLineup));
+    when(() => repository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Left(NetworkFailure('Falha ao carregar itens')),
+    );
+
+    await expectLater(
+      _readFutureProvider(
+        container,
+        departmentScaleAssignmentDetailProvider(
+          const DepartmentScaleDetailRequest(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+          ),
+        ),
+      ),
+      throwsA(isA<NetworkFailure>()),
+    );
+
+    verifyNever(() => departmentRepository.getParticipants(any()));
+  });
+
   test('create action invalidates department scales after success', () async {
     final request = buildDepartmentScalesRequest(
       'dep-1',
@@ -1096,6 +1653,58 @@ const _ownerScale = CalendarEventScaleEntity(
   calendarEventId: 'event-1',
 );
 
+const _scaleItem = ScaleItemEntity(
+  id: 'scale-item-1',
+  scaleId: 'scale-1',
+  roleId: 'role-1',
+  personId: 'person-1',
+);
+
+const _assignmentLineup = LineupEntity(
+  id: 'lineup-1',
+  name: 'Louvor',
+  items: [
+    LineupItemEntity(
+      id: 'lineup-item-1',
+      lineupId: 'lineup-1',
+      roleId: 'role-1',
+      description: 'Vocal',
+    ),
+    LineupItemEntity(
+      id: 'lineup-item-2',
+      lineupId: 'lineup-1',
+      roleId: 'role-2',
+      description: 'Violao',
+    ),
+  ],
+);
+
+void _stubAssignmentDetailBase(
+  _MockCalendarEventRepository repository,
+  _MockDepartmentRepository departmentRepository, {
+  List<ScaleItemEntity> scaleItems = const [],
+  List<DepartmentParticipantEntity> participants = const [],
+  Failure? participantsFailure,
+}) {
+  when(
+    () => repository.getScaleById('scale-1'),
+  ).thenAnswer((_) async => const Right(_ownerScale));
+  when(
+    () => repository.getEventById('event-1'),
+  ).thenAnswer((_) async => Right(_event(id: 'event-1')));
+  when(
+    () => departmentRepository.getLineupWithItems('lineup-1'),
+  ).thenAnswer((_) async => const Right(_assignmentLineup));
+  when(
+    () => repository.getScaleItems('scale-1'),
+  ).thenAnswer((_) async => Right(scaleItems));
+  when(() => departmentRepository.getParticipants('dep-1')).thenAnswer(
+    (_) async => participantsFailure != null
+        ? Left(participantsFailure)
+        : Right(participants),
+  );
+}
+
 CalendarEventEntity _event({
   required String id,
   String title = 'Evento',
@@ -1139,5 +1748,20 @@ DepartmentScalesRequest _departmentScalesRequest() {
     departmentId: 'dep-1',
     start: DateTime(2026, 5, 29, 10),
     end: DateTime(2026, 11, 29, 23, 59, 59),
+  );
+}
+
+EditableScaleAssignmentEntity _editableAssignment(
+  String localId,
+  String roleId,
+  String personId,
+) {
+  return EditableScaleAssignmentEntity(
+    localId: localId,
+    scaleItemId: localId,
+    roleId: roleId,
+    personId: personId,
+    displayName: personId,
+    isPersisted: true,
   );
 }

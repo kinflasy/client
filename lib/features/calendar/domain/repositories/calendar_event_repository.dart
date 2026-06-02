@@ -1,8 +1,10 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
+import 'package:client/features/scale/data/models/scale_item_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/scale_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -62,6 +64,18 @@ abstract class CalendarEventRepository {
   Future<Either<Failure, CalendarEventScaleEntity>> getScaleById(
     String scaleId,
   );
+
+  Future<Either<Failure, List<ScaleItemEntity>>> getScaleItems(String scaleId);
+
+  Future<Either<Failure, ScaleItemEntity>> addScaleItem({
+    required String scaleId,
+    required ScaleItemRequestModel request,
+  });
+
+  Future<Either<Failure, void>> removeScaleItem({
+    required String scaleId,
+    required ScaleItemRequestModel request,
+  });
 
   Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>>
   getDepartmentScales(String departmentId, DateTime start, DateTime end);

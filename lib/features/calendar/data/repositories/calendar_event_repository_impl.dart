@@ -4,9 +4,12 @@ import 'package:client/features/calendar/data/models/calendar_event_read_model.d
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_read_model.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
+import 'package:client/features/scale/data/models/scale_item_read_model.dart';
+import 'package:client/features/scale/data/models/scale_item_request_model.dart';
 import 'package:client/features/calendar/data/models/event_collaboration_read_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/scale_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:dio/dio.dart';
@@ -175,6 +178,52 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
     }
+  }
+
+  @override
+  Future<Either<Failure, List<ScaleItemEntity>>> getScaleItems(
+    String scaleId,
+  ) async {
+    try {
+      final jsonList = await _api.getScaleItems(scaleId);
+      final items = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(ScaleItemReadModel.fromJson)
+          .map((model) => model.toEntity())
+          .toList();
+      return Right(items);
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao carregar pessoas da escala.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ScaleItemEntity>> addScaleItem({
+    required String scaleId,
+    required ScaleItemRequestModel request,
+  }) async {
+    try {
+      final json = await _api.addScaleItem(scaleId, request.toJson());
+      return Right(ScaleItemReadModel.fromJson(json).toEntity());
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao adicionar pessoa na escala.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> removeScaleItem({
+    required String scaleId,
+    required ScaleItemRequestModel request,
+  }) {
+    return _delete(
+      () => _api.removeScaleItem(scaleId, request.toJson()),
+      fallbackMessage: 'Erro ao remover pessoa da escala.',
+    );
   }
 
   @override

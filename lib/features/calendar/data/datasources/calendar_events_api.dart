@@ -117,6 +117,34 @@ class CalendarEventsApi {
     return _readMap(response.data);
   }
 
+  Future<List<dynamic>> getScaleItems(String scaleId) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/scales/$scaleId/items',
+    );
+    return _readList(response.data);
+  }
+
+  Future<Map<String, dynamic>> addScaleItem(
+    String scaleId,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await _dio.post<dynamic>(
+      '/v1/core/calendar-events/scales/$scaleId/items',
+      data: payload,
+    );
+    return _readMap(response.data);
+  }
+
+  Future<void> removeScaleItem(
+    String scaleId,
+    Map<String, dynamic> payload,
+  ) async {
+    await _dio.delete<void>(
+      '/v1/core/calendar-events/scales/$scaleId/items',
+      data: payload,
+    );
+  }
+
   Future<List<dynamic>> getDepartmentScales(
     String departmentId,
     DateTime start,
@@ -181,6 +209,7 @@ class CalendarEventsApi {
         'content',
         'items',
         'events',
+        'item',
         'scale',
         'scales',
       ]) {

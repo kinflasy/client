@@ -5,6 +5,7 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/datasources/calendar_events_api.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
+import 'package:client/features/scale/data/models/scale_item_request_model.dart';
 import 'package:client/features/calendar/data/repositories/calendar_event_repository_impl.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
@@ -378,6 +379,145 @@ void main() {
       result.match((failure) {
         expect(failure, isA<NetworkFailure>());
         expect(failure.message, 'Falha ao carregar escala.');
+      }, (_) => fail('expected failure'));
+    });
+
+    test('gets scale items and preserves duplicated assignment rows', () async {
+      when(() => api.getScaleItems('scale-1')).thenAnswer(
+        (_) async => const [
+          {
+            'id': 'item-1',
+            'scaleId': 'scale-1',
+            'roleId': 'role-1',
+            'personId': 'person-1',
+          },
+          {
+            'id': 'item-2',
+            'scaleId': 'scale-1',
+            'roleId': 'role-1',
+            'personId': 'person-1',
+          },
+        ],
+      );
+
+      final result = await repository.getScaleItems('scale-1');
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (items) {
+        expect(items, hasLength(2));
+        expect(items.map((item) => item.id), ['item-1', 'item-2']);
+        expect(items.map((item) => item.roleId), ['role-1', 'role-1']);
+        expect(items.map((item) => item.personId), ['person-1', 'person-1']);
+      });
+      verify(() => api.getScaleItems('scale-1')).called(1);
+    });
+
+    test('maps scale items DioException into Failure', () async {
+      when(
+        () => api.getScaleItems('scale-1'),
+      ).thenThrow(_dioError(500, 'Falha ao carregar alocacoes.'));
+
+      final result = await repository.getScaleItems('scale-1');
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<NetworkFailure>());
+        expect(failure.message, 'Falha ao carregar alocacoes.');
+      }, (_) => fail('expected failure'));
+    });
+
+    test('adds scale item and maps response', () async {
+      when(() => api.addScaleItem('scale-1', any(that: isA<Map>()))).thenAnswer(
+        (_) async => const {
+          'id': 'item-1',
+          'scaleId': 'scale-1',
+          'roleId': 'role-1',
+          'personId': 'person-1',
+        },
+      );
+
+      final result = await repository.addScaleItem(
+        scaleId: 'scale-1',
+        request: const ScaleItemRequestModel(
+          roleId: 'role-1',
+          personId: 'person-1',
+        ),
+      );
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (item) {
+        expect(item.id, 'item-1');
+        expect(item.scaleId, 'scale-1');
+        expect(item.roleId, 'role-1');
+        expect(item.personId, 'person-1');
+      });
+      verify(
+        () => api.addScaleItem('scale-1', {
+          'roleId': 'role-1',
+          'personId': 'person-1',
+        }),
+      ).called(1);
+    });
+
+    test('maps add scale item DioException into Failure', () async {
+      when(
+        () => api.addScaleItem('scale-1', any(that: isA<Map>())),
+      ).thenThrow(_dioError(403, 'Sem permissao para editar escala.'));
+
+      final result = await repository.addScaleItem(
+        scaleId: 'scale-1',
+        request: const ScaleItemRequestModel(
+          roleId: 'role-1',
+          personId: 'person-1',
+        ),
+      );
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<ValidationFailure>());
+        expect(failure.message, 'Sem permissao para editar escala.');
+      }, (_) => fail('expected failure'));
+    });
+
+    test('removes scale item and treats 204 as success', () async {
+      when(
+        () => api.removeScaleItem('scale-1', any(that: isA<Map>())),
+      ).thenAnswer((_) async {});
+
+      final result = await repository.removeScaleItem(
+        scaleId: 'scale-1',
+        request: const ScaleItemRequestModel(
+          roleId: 'role-1',
+          personId: 'person-1',
+        ),
+      );
+
+      expect(result.isRight(), isTrue);
+      verify(
+        () => api.removeScaleItem('scale-1', {
+          'roleId': 'role-1',
+          'personId': 'person-1',
+        }),
+      ).called(1);
+    });
+
+    test('maps remove scale item DioException into Failure', () async {
+      when(
+        () => api.removeScaleItem('scale-1', any(that: isA<Map>())),
+      ).thenThrow(_dioError(500, 'Falha ao remover item.'));
+
+      final result = await repository.removeScaleItem(
+        scaleId: 'scale-1',
+        request: const ScaleItemRequestModel(
+          roleId: 'role-1',
+          personId: 'person-1',
+        ),
+      );
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<NetworkFailure>());
+        expect(failure.message, 'Falha ao remover item.');
       }, (_) => fail('expected failure'));
     });
 

@@ -274,6 +274,100 @@ void main() {
     ).called(1);
   });
 
+  test('gets scale items using scale items route', () async {
+    when(
+      () => dio.get<dynamic>('/v1/core/calendar-events/scales/scale-1/items'),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/scales/scale-1/items',
+        ),
+        data: {
+          'items': [
+            {'id': 'item-1'},
+          ],
+        },
+      ),
+    );
+
+    final list = await api.getScaleItems('scale-1');
+
+    expect(list, [
+      {'id': 'item-1'},
+    ]);
+    verify(
+      () => dio.get<dynamic>('/v1/core/calendar-events/scales/scale-1/items'),
+    ).called(1);
+  });
+
+  test('adds scale item using scale items route', () async {
+    when(
+      () => dio.post<dynamic>(
+        '/v1/core/calendar-events/scales/scale-1/items',
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/scales/scale-1/items',
+        ),
+        data: {
+          'item': {
+            'id': 'item-1',
+            'scaleId': 'scale-1',
+            'roleId': 'role-1',
+            'personId': 'person-1',
+          },
+        },
+      ),
+    );
+
+    final json = await api.addScaleItem('scale-1', {
+      'roleId': 'role-1',
+      'personId': 'person-1',
+    });
+
+    expect(json, {
+      'id': 'item-1',
+      'scaleId': 'scale-1',
+      'roleId': 'role-1',
+      'personId': 'person-1',
+    });
+    verify(
+      () => dio.post<dynamic>(
+        '/v1/core/calendar-events/scales/scale-1/items',
+        data: {'roleId': 'role-1', 'personId': 'person-1'},
+      ),
+    ).called(1);
+  });
+
+  test('removes scale item with request body', () async {
+    when(
+      () => dio.delete<void>(
+        '/v1/core/calendar-events/scales/scale-1/items',
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<void>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/scales/scale-1/items',
+        ),
+      ),
+    );
+
+    await api.removeScaleItem('scale-1', {
+      'roleId': 'role-1',
+      'personId': 'person-1',
+    });
+
+    verify(
+      () => dio.delete<void>(
+        '/v1/core/calendar-events/scales/scale-1/items',
+        data: {'roleId': 'role-1', 'personId': 'person-1'},
+      ),
+    ).called(1);
+  });
+
   test('gets department scales using range query', () async {
     final start = DateTime(2026, 5, 30, 9);
     final end = DateTime(2026, 11, 30, 23, 59, 59);

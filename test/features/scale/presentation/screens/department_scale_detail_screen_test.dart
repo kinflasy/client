@@ -251,6 +251,7 @@ void main() {
     expect(find.text('Adicionar Pessoa'), findsNothing);
     expect(find.text('Concluir'), findsNothing);
     expect(find.text('Editar escala'), findsNothing);
+    expect(find.text('Cancelar'), findsNothing);
   });
 
   testWidgets('usuario sem permissao nao ve Adicionar pessoa', (tester) async {
@@ -313,6 +314,33 @@ void main() {
 
     expect(find.text('Bruno Lima'), findsOneWidget);
     expect(find.text('Concluir'), findsOneWidget);
+    expect(find.text('Cancelar'), findsOneWidget);
+  });
+
+  testWidgets('Cancelar desfaz alteracoes locais sem salvar', (tester) async {
+    await _pumpScreen(
+      tester,
+      detail: _detail(
+        assignments: [
+          _assignment(roleId: 'role-1', roleName: 'Vocal', capacity: 2),
+        ],
+      ),
+      canManageScale: true,
+    );
+
+    await tester.tap(find.text('Adicionar pessoa'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Vocal').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bruno Lima'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bruno Lima'), findsNothing);
+    expect(find.text('Concluir'), findsNothing);
+    expect(find.text('Cancelar'), findsNothing);
   });
 
   testWidgets('Vaga aberta abre seletor direto de pessoa para a funcao', (
@@ -439,7 +467,9 @@ void main() {
 
     expect(find.text('Ana Silva'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Remover Ana Silva'));
+    await tester.longPress(find.text('Ana Silva'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remover da escala'));
     await tester.pumpAndSettle();
 
     expect(find.text('Ana Silva'), findsNothing);
@@ -481,7 +511,9 @@ void main() {
     expect(find.text('Ana Silva'), findsOneWidget);
     expect(find.text('Bruno Lima'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Remover Ana Silva').first);
+    await tester.longPress(find.text('Ana Silva'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remover da escala'));
     await tester.pumpAndSettle();
 
     expect(find.text('Ana Silva'), findsNothing);
@@ -494,7 +526,9 @@ void main() {
   ) async {
     await _pumpScreen(tester, detail: _detail(), canManageScale: true);
 
-    await tester.tap(find.byTooltip('Remover Ana Silva'));
+    await tester.longPress(find.text('Ana Silva'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remover da escala'));
     await tester.pumpAndSettle();
 
     expect(find.text('Vaga aberta'), findsOneWidget);
@@ -504,7 +538,9 @@ void main() {
     await _pumpScreen(tester, detail: _detail());
 
     expect(find.text('Ana Silva'), findsOneWidget);
-    expect(find.byTooltip('Remover Ana Silva'), findsNothing);
+    await tester.longPress(find.text('Ana Silva'));
+    await tester.pumpAndSettle();
+    expect(find.text('Remover da escala'), findsNothing);
   });
 
   testWidgets('toca em Concluir e chama salvamento', (tester) async {
@@ -578,7 +614,9 @@ void main() {
       find.byType(ElevatedButton),
     );
     expect(completeButton.onPressed, isNull);
-    expect(find.byTooltip('Remover Bruno Lima'), findsNothing);
+    await tester.longPress(find.text('Bruno Lima'));
+    await tester.pump();
+    expect(find.text('Remover da escala'), findsNothing);
 
     completer.complete(const Right(_scaleItem));
     await tester.pumpAndSettle();

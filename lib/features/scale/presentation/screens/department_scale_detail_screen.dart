@@ -11,6 +11,7 @@ import 'package:client/features/scale/domain/entities/scale_role_assignments_ent
 import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:client/features/scale/presentation/widgets/scale_assignment_picker_bottom_sheet.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -78,6 +79,10 @@ class _DepartmentScaleDetailScreenState
             detail: detail,
             assignments: _assignmentSnapshot,
             canManageScale: canManageScale && !isSavingAssignments,
+            canAddPeople: detail.roleAssignments.any(_hasEditableVacancy),
+            onAddPerson: isSavingAssignments
+                ? null
+                : () => _openAssignmentPicker(detail),
             onOpenVacancy: (role) =>
                 _openAssignmentPicker(detail, initialRole: role),
             onRemoveAssignment: _removeAssignment,
@@ -85,17 +90,11 @@ class _DepartmentScaleDetailScreenState
         },
       ),
       bottomNavigationBar: detailAsync.maybeWhen(
-        data: (detail) => canManageScale
+        data: (detail) => canManageScale && _hasPendingChanges
             ? _ScaleEditActionBar(
-                canAddPeople: detail.roleAssignments.any(_hasEditableVacancy),
-                hasPendingChanges: _hasPendingChanges,
                 isSaving: isSavingAssignments,
-                onAddPerson:
-                    !detail.roleAssignments.any(_hasEditableVacancy) ||
-                        isSavingAssignments
-                    ? null
-                    : () => _openAssignmentPicker(detail),
-                onComplete: _hasPendingChanges && !isSavingAssignments
+                onCancel: isSavingAssignments ? null : _cancelAssignmentChanges,
+                onComplete: !isSavingAssignments
                     ? () => _saveAssignments(detail)
                     : null,
               )
@@ -183,6 +182,15 @@ class _DepartmentScaleDetailScreenState
     });
   }
 
+  void _cancelAssignmentChanges() {
+    setState(() {
+      _assignmentSnapshot = EditableScaleAssignmentSnapshot(
+        original: _assignmentSnapshot.original,
+        current: _assignmentSnapshot.original,
+      );
+    });
+  }
+
   bool _hasEditableVacancy(ScaleRoleAssignmentsEntity assignment) {
     final assignedCount = _assignmentSnapshot
         .assignmentsForRole(assignment.item.roleId)
@@ -196,6 +204,8 @@ class _ScaleDetailContent extends StatelessWidget {
     required this.detail,
     required this.assignments,
     required this.canManageScale,
+    required this.canAddPeople,
+    required this.onAddPerson,
     required this.onOpenVacancy,
     required this.onRemoveAssignment,
   });
@@ -203,6 +213,8 @@ class _ScaleDetailContent extends StatelessWidget {
   final DepartmentScaleDetailEntity detail;
   final EditableScaleAssignmentSnapshot assignments;
   final bool canManageScale;
+  final bool canAddPeople;
+  final VoidCallback? onAddPerson;
   final ValueChanged<LineupItemEntity> onOpenVacancy;
   final ValueChanged<String> onRemoveAssignment;
 
@@ -255,6 +267,10 @@ class _ScaleDetailContent extends StatelessWidget {
           onOpenVacancy: onOpenVacancy,
           onRemoveAssignment: onRemoveAssignment,
         ),
+        if (canManageScale) ...[
+          const SizedBox(height: 16),
+          _AddPersonButton(enabled: canAddPeople, onPressed: onAddPerson),
+        ],
       ],
     );
   }
@@ -290,7 +306,7 @@ class _LineupItemsSection extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.inactiveBackground,
+        color: AppColors.primary.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -405,31 +421,104 @@ class _AssignedPersonRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final row = Row(
       children: [
-        UserAvatar(
-          displayName: assignment.displayName,
-          radius: 18,
-          profileImageId: assignment.profileImageId,
-        ),
-        const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            assignment.displayName,
-            style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+          child: Row(
+            children: [
+              UserAvatar(
+                displayName: assignment.displayName,
+                radius: 18,
+                profileImageId: assignment.profileImageId,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  assignment.displayName,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        if (onRemove != null)
-          IconButton(
-            tooltip: 'Remover ${assignment.displayName}',
-            onPressed: onRemove,
-            icon: const Icon(Icons.close),
-            visualDensity: VisualDensity.compact,
+        if (kIsWeb && onRemove != null)
+          PopupMenuButton<_AssignedPersonAction>(
+            tooltip: 'Ações de ${assignment.displayName}',
+            icon: const Icon(Icons.more_vert_rounded),
+            itemBuilder: (context) => _removeAssignmentMenuItems,
+            onSelected: (action) {
+              if (action == _AssignedPersonAction.remove) {
+                onRemove?.call();
+              }
+            },
           ),
       ],
     );
+
+    if (onRemove == null || kIsWeb) return row;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onLongPress: () => _showRemoveAssignmentMenu(context),
+      child: row,
+    );
+  }
+
+  Future<void> _showRemoveAssignmentMenu(BuildContext context) async {
+    final anchor = context.findRenderObject();
+    if (anchor is! RenderBox) return;
+
+    final overlay = Overlay.of(context).context.findRenderObject();
+    if (overlay is! RenderBox) return;
+
+    final anchorBounds = MatrixUtils.transformRect(
+      anchor.getTransformTo(overlay),
+      Offset.zero & anchor.size,
+    );
+
+    final action = await showMenu<_AssignedPersonAction>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        anchorBounds.left,
+        anchorBounds.bottom,
+        overlay.size.width - anchorBounds.right,
+        overlay.size.height - anchorBounds.bottom,
+      ),
+      items: _removeAssignmentMenuItems,
+    );
+
+    if (action == _AssignedPersonAction.remove) {
+      onRemove?.call();
+    }
   }
 }
+
+enum _AssignedPersonAction { remove }
+
+const _removeAssignmentMenuItems = [
+  PopupMenuItem<_AssignedPersonAction>(
+    value: _AssignedPersonAction.remove,
+    child: SizedBox(
+      width: 184,
+      child: Row(
+        children: [
+          Icon(Icons.person_remove_outlined),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Remover da escala',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+];
 
 class _OpenVacancyRow extends StatelessWidget {
   const _OpenVacancyRow({required this.onTap, required this.vacancyCount});
@@ -473,19 +562,30 @@ class _OpenVacancyRow extends StatelessWidget {
   }
 }
 
+class _AddPersonButton extends StatelessWidget {
+  const _AddPersonButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: enabled ? onPressed : null,
+      child: const Text('Adicionar pessoa'),
+    );
+  }
+}
+
 class _ScaleEditActionBar extends StatelessWidget {
   const _ScaleEditActionBar({
-    required this.canAddPeople,
-    required this.hasPendingChanges,
     required this.isSaving,
-    required this.onAddPerson,
+    required this.onCancel,
     required this.onComplete,
   });
 
-  final bool canAddPeople;
-  final bool hasPendingChanges;
   final bool isSaving;
-  final VoidCallback? onAddPerson;
+  final VoidCallback? onCancel;
   final VoidCallback? onComplete;
 
   @override
@@ -499,25 +599,23 @@ class _ScaleEditActionBar extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: canAddPeople ? onAddPerson : null,
-                child: const Text('Adicionar pessoa'),
+                onPressed: onCancel,
+                child: const Text('Cancelar'),
               ),
             ),
-            if (hasPendingChanges) ...[
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onComplete,
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Concluir'),
-                ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: onComplete,
+                child: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Concluir'),
               ),
-            ],
+            ),
           ],
         ),
       ),

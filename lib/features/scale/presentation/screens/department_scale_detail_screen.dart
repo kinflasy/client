@@ -474,7 +474,7 @@ class _ScaleEditActionBar extends StatelessWidget {
             Expanded(
               child: OutlinedButton(
                 onPressed: canAddPeople ? onAddPerson : null,
-                child: const Text('+ Adicionar pessoa'),
+                child: const Text('Adicionar pessoa'),
               ),
             ),
             if (hasPendingChanges) ...[

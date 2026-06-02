@@ -1,4 +1,5 @@
 import 'package:client/core/config/theme/app_colors.dart';
+import 'package:client/core/presentation/widgets/app_action_button_thin.dart';
 import 'package:client/core/presentation/widgets/app_tab_bar.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/calendar/presentation/widgets/event_card.dart';
@@ -399,13 +400,13 @@ class _CreateDepartmentEventButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: () => context.pushNamed(
+    return AppActionButtonThin(
+      icon: Icons.add,
+      title: 'Criar evento',
+      onTap: () => context.pushNamed(
         AppRoutes.departmentEventCreateName,
         pathParameters: {'id': departmentId},
       ),
-      icon: const Icon(Icons.add),
-      label: const Text('Criar evento'),
     );
   }
 }
@@ -447,13 +448,13 @@ class _DepartmentScalesTabState extends ConsumerState<_DepartmentScalesTab> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (widget.canManageScales) ...[
-          ElevatedButton.icon(
-            onPressed: () => context.pushNamed(
+          AppActionButtonThin(
+            icon: Icons.add,
+            title: 'Nova escala',
+            onTap: () => context.pushNamed(
               AppRoutes.departmentScaleCreateName,
               pathParameters: {'id': widget.departmentId},
             ),
-            icon: const Icon(Icons.add),
-            label: const Text('Nova escala'),
           ),
           const SizedBox(height: 16),
         ],
@@ -579,13 +580,13 @@ class _AddParticipantsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: () => context.pushNamed(
+    return AppActionButtonThin(
+      icon: Icons.person_add_alt_1,
+      title: 'Adicionar integrantes',
+      onTap: () => context.pushNamed(
         AppRoutes.departmentParticipantsAddName,
         pathParameters: {'id': departmentId},
       ),
-      icon: const Icon(Icons.person_add_alt_1),
-      label: const Text('Adicionar integrantes'),
     );
   }
 }

@@ -113,7 +113,7 @@ class _DepartmentScaleCardState extends State<DepartmentScaleCard> {
                 });
               },
               child: Text(
-                _isExpanded ? 'Mostrar menos' : 'Ver todas (+$hiddenCount)',
+                _isExpanded ? 'Mostrar menos' : 'Ver tudo (+$hiddenCount)',
               ),
             ),
           ),

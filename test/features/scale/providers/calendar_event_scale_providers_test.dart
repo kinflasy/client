@@ -1232,7 +1232,7 @@ void main() {
             personId: 'person-2',
           ),
         ],
-        participantsFailure: const NetworkFailure('Falha nos participantes'),
+        participantsFailure: const NetworkFailure('Falha nos integrantes'),
       );
       when(
         () => memberProfileRepository.getPersonProfile('person-2'),

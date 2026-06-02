@@ -144,15 +144,15 @@ void main() {
 
     expect(find.text('Louvor'), findsOneWidget);
     expect(find.text('Eventos'), findsOneWidget);
-    expect(find.text('Participantes'), findsOneWidget);
+    expect(find.text('Integrantes'), findsOneWidget);
     expect(find.text('Nenhum evento encontrado.'), findsOneWidget);
 
-    await tester.tap(find.text('Participantes'));
+    await tester.tap(find.text('Integrantes'));
     await tester.pumpAndSettle();
 
     expect(find.text('Maria'), findsOneWidget);
     expect(find.textContaining('34 anos'), findsOneWidget);
-    expect(find.text('Adicionar participantes'), findsOneWidget);
+    expect(find.text('Adicionar integrantes'), findsOneWidget);
   });
 
   testWidgets('shows department events empty state', (tester) async {
@@ -490,7 +490,7 @@ void main() {
       find.text('Não foi possível carregar o departamento.'),
       findsOneWidget,
     );
-    expect(find.text('Participantes'), findsOneWidget);
+    expect(find.text('Integrantes'), findsOneWidget);
   });
 
   testWidgets('hides add participants button for user without management', (
@@ -538,11 +538,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Participantes'));
+    await tester.tap(find.text('Integrantes'));
     await tester.pumpAndSettle();
 
     expect(find.text('Maria'), findsOneWidget);
-    expect(find.text('Adicionar participantes'), findsNothing);
+    expect(find.text('Adicionar integrantes'), findsNothing);
   });
 
   testWidgets('shows add participants button for assistant', (tester) async {
@@ -553,7 +553,7 @@ void main() {
     );
 
     expect(find.text('Maria'), findsOneWidget);
-    expect(find.text('Adicionar participantes'), findsOneWidget);
+    expect(find.text('Adicionar integrantes'), findsOneWidget);
   });
 
   testWidgets('opens participant bottom sheet from participant card', (
@@ -653,7 +653,7 @@ void main() {
       ],
     );
 
-    expect(find.text('Participante'), findsOneWidget);
+    expect(find.text('Integrante'), findsOneWidget);
   });
 
   testWidgets('shows add participants button for unit admin', (tester) async {
@@ -664,7 +664,7 @@ void main() {
     );
 
     expect(find.text('Maria'), findsOneWidget);
-    expect(find.text('Adicionar participantes'), findsOneWidget);
+    expect(find.text('Adicionar integrantes'), findsOneWidget);
   });
 
   testWidgets('shows create event button and event menu for leader', (
@@ -778,7 +778,7 @@ Future<void> _pumpParticipantsTab({
   );
   await tester.pumpAndSettle();
 
-  await tester.tap(find.text('Participantes'));
+  await tester.tap(find.text('Integrantes'));
   await tester.pumpAndSettle();
 }
 

@@ -39,7 +39,7 @@ class DepartmentParticipantEntity extends Equatable {
       return trimmedUsername;
     }
 
-    return 'Participante';
+    return 'Integrante';
   }
 
   @override

@@ -228,7 +228,7 @@ class _ParticipantContentState extends ConsumerState<_ParticipantContent> {
     if (!mounted) return;
     result.fold((failure) => _showSnackBar(_failureMessage(failure)), (_) {
       Navigator.of(context).pop();
-      _showSnackBar('Participante retirado do ministério.');
+      _showSnackBar('Integrante retirado do ministério.');
     });
   }
 

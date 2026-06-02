@@ -56,7 +56,7 @@ void main() {
       participants: const [],
     );
 
-    expect(find.text('Nenhum participante encontrado'), findsOneWidget);
+    expect(find.text('Nenhum integrante encontrado'), findsOneWidget);
   });
 
   testWidgets('mostra erro de participantes', (tester) async {
@@ -67,7 +67,7 @@ void main() {
     );
 
     expect(
-      find.text('Não foi possível carregar os participantes.'),
+      find.text('Não foi possível carregar os integrantes.'),
       findsOneWidget,
     );
   });

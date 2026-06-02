@@ -193,7 +193,7 @@ void main() {
           expect(participants, hasLength(1));
           expect(participants.first.nickname, isNull);
           expect(participants.first.username, isNull);
-          expect(participants.first.displayName, 'Participante');
+          expect(participants.first.displayName, 'Integrante');
         });
       },
     );
@@ -335,7 +335,7 @@ void main() {
               path: '/v1/core/church/unit/departments/dep-1/integrants',
             ),
             statusCode: 409,
-            data: {'message': 'Participante já vinculado.'},
+            data: {'message': 'Integrante já vinculado.'},
           ),
         ),
       );
@@ -348,7 +348,7 @@ void main() {
       expect(result.isLeft(), isTrue);
       result.match((failure) {
         expect(failure, isA<ValidationFailure>());
-        expect(failure.message, 'Participante já vinculado.');
+        expect(failure.message, 'Integrante já vinculado.');
       }, (_) => fail('expected failure'));
     });
   });

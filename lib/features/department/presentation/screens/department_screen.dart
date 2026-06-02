@@ -34,7 +34,7 @@ class _DepartmentScreenState extends ConsumerState<DepartmentScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedTabIndex = 0;
 
-  static const _tabs = ['Eventos', 'Escalas', 'Participantes'];
+  static const _tabs = ['Eventos', 'Escalas', 'Integrantes'];
 
   @override
   Widget build(BuildContext context) {
@@ -518,7 +518,7 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => const _InlineStatus(
         icon: Icons.group_off_outlined,
-        title: 'Não foi possível carregar os participantes.',
+        title: 'Não foi possível carregar os integrantes.',
         subtitle: 'Tente novamente em instantes.',
       ),
       data: (participants) {
@@ -529,7 +529,7 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
               const Expanded(
                 child: _InlineStatus(
                   icon: Icons.groups_outlined,
-                  title: 'Nenhum participante encontrado.',
+                  title: 'Nenhum integrante encontrado.',
                   subtitle:
                       'Quando houver pessoas vinculadas a este departamento, elas aparecerão aqui.',
                 ),
@@ -545,8 +545,7 @@ class _DepartmentParticipantsTab extends ConsumerWidget {
               child: ListView.separated(
                 padding: const EdgeInsets.only(bottom: 24),
                 itemCount: participants.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 0),
+                separatorBuilder: (context, index) => const SizedBox(height: 0),
                 itemBuilder: (context, index) {
                   final participant = participants[index];
                   return MemberSummaryCard(
@@ -586,7 +585,7 @@ class _AddParticipantsButton extends StatelessWidget {
         pathParameters: {'id': departmentId},
       ),
       icon: const Icon(Icons.person_add_alt_1),
-      label: const Text('Adicionar participantes'),
+      label: const Text('Adicionar integrantes'),
     );
   }
 }

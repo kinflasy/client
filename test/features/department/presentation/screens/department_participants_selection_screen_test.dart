@@ -245,9 +245,9 @@ void main() {
     await tester.tap(find.text('Adicionar 1'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Adicionar participantes'), findsOneWidget);
+    expect(find.text('Adicionar integrantes'), findsOneWidget);
     expect(
-      find.text('Deseja adicionar 1 participante ao departamento?'),
+      find.text('Deseja adicionar 1 integrante ao departamento?'),
       findsOneWidget,
     );
     verifyNever(() => repository.addParticipant(any(), any()));
@@ -308,7 +308,7 @@ void main() {
     await tester.tap(find.text('Adicionar').last);
     await tester.pump();
 
-    expect(find.text('Participantes adicionados com sucesso.'), findsOneWidget);
+    expect(find.text('Integrantes adicionados com sucesso.'), findsOneWidget);
   });
 
   testWidgets('partial success shows failure counter', (tester) async {
@@ -335,7 +335,7 @@ void main() {
 
     expect(
       find.text(
-        '1 participante adicionados. 1 participante não puderam ser adicionados.',
+        '1 integrante adicionados. 1 integrante não puderam ser adicionados.',
       ),
       findsOneWidget,
     );
@@ -357,7 +357,7 @@ void main() {
     await tester.pump();
 
     expect(
-      find.text('Não foi possível adicionar os participantes selecionados.'),
+      find.text('Não foi possível adicionar os integrantes selecionados.'),
       findsOneWidget,
     );
     expect(find.text('Pesquisar nome ou apelido...'), findsOneWidget);

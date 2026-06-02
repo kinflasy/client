@@ -223,7 +223,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Retirar do ministério'), findsNothing);
-    expect(find.text('Participante retirado do ministério.'), findsOneWidget);
+    expect(find.text('Integrante retirado do ministério.'), findsOneWidget);
   });
 
   testWidgets('keeps sheet open when removal fails', (tester) async {

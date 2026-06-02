@@ -151,7 +151,7 @@ void main() {
     test('surfaces repository failure', () async {
       when(() => repository.getParticipants('dep-1')).thenAnswer(
         (_) async =>
-            const Left(NetworkFailure('Falha ao carregar participantes')),
+            const Left(NetworkFailure('Falha ao carregar integrantes')),
       );
 
       await expectLater(
@@ -202,7 +202,7 @@ void main() {
           ),
         ),
       ).thenAnswer(
-        (_) async => const Left(ValidationFailure('Participante inválido.')),
+        (_) async => const Left(ValidationFailure('Integrante inválido.')),
       );
 
       final result = await container

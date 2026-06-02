@@ -100,9 +100,7 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
 
       return Right(participants);
     } on DioException catch (e) {
-      return Left(
-        NetworkFailure(e.message ?? 'Erro ao carregar participantes.'),
-      );
+      return Left(NetworkFailure(e.message ?? 'Erro ao carregar integrantes.'));
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
     }
@@ -121,12 +119,10 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
       if (statusCode == 400 || statusCode == 403 || statusCode == 409) {
         final message =
             _readMap(e.response?.data)['message'] as String? ??
-            'Não foi possível adicionar este participante.';
+            'Não foi possível adicionar este integrante.';
         return Left(ValidationFailure(message));
       }
-      return Left(
-        NetworkFailure(e.message ?? 'Erro ao adicionar participante.'),
-      );
+      return Left(NetworkFailure(e.message ?? 'Erro ao adicionar integrante.'));
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
     }
@@ -146,7 +142,7 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
         return Left(
           ValidationFailure(
             _readMessage(e.response?.data) ??
-                'Não foi possível alterar o papel deste participante.',
+                'Não foi possível alterar o papel deste integrante.',
           ),
         );
       }
@@ -154,12 +150,12 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
         return Left(
           NotFoundFailure(
             _readMessage(e.response?.data) ??
-                'Participante não encontrado neste ministério.',
+                'Integrante não encontrado neste ministério.',
           ),
         );
       }
       return Left(
-        NetworkFailure(e.message ?? 'Erro ao alterar papel do participante.'),
+        NetworkFailure(e.message ?? 'Erro ao alterar papel do integrante.'),
       );
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
@@ -180,7 +176,7 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
         return Left(
           ValidationFailure(
             _readMessage(e.response?.data) ??
-                'Não foi possível retirar este participante.',
+                'Não foi possível retirar este integrante.',
           ),
         );
       }
@@ -188,11 +184,11 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
         return Left(
           NotFoundFailure(
             _readMessage(e.response?.data) ??
-                'Participante não encontrado neste ministério.',
+                'Integrante não encontrado neste ministério.',
           ),
         );
       }
-      return Left(NetworkFailure(e.message ?? 'Erro ao retirar participante.'));
+      return Left(NetworkFailure(e.message ?? 'Erro ao retirar integrante.'));
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
     }

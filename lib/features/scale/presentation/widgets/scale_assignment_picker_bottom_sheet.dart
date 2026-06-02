@@ -237,7 +237,7 @@ class _PersonPicker extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stackTrace) => const _PickerStatus(
               icon: Icons.group_off_outlined,
-              title: 'Não foi possível carregar os participantes.',
+              title: 'Não foi possível carregar os integrantes.',
             ),
             data: (participants) {
               final filteredParticipants = _filterParticipants(
@@ -248,7 +248,7 @@ class _PersonPicker extends ConsumerWidget {
               if (filteredParticipants.isEmpty) {
                 return const _PickerStatus(
                   icon: Icons.person_search_outlined,
-                  title: 'Nenhum participante encontrado',
+                  title: 'Nenhum integrante encontrado',
                 );
               }
 

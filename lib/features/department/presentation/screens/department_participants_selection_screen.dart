@@ -101,7 +101,7 @@ class _DepartmentParticipantsSelectionScreenState
           if (participantsAsync.hasError) {
             return const _SelectionStatus(
               icon: Icons.group_off_outlined,
-              title: 'Não foi possível carregar os participantes atuais.',
+              title: 'Não foi possível carregar os integrantes atuais.',
             );
           }
 
@@ -186,7 +186,7 @@ class _DepartmentParticipantsSelectionScreenState
     final selectedMembers = _selectedByMembershipId.values.toList();
     final confirmed = await showActionConfirmationDialog(
       context,
-      title: 'Adicionar participantes',
+      title: 'Adicionar integrantes',
       message:
           'Deseja adicionar ${_participantsLabel(selectedMembers.length)} ao departamento?',
       confirmLabel: 'Adicionar',
@@ -210,7 +210,7 @@ class _DepartmentParticipantsSelectionScreenState
     final messenger = ScaffoldMessenger.of(context);
     if (result.hasSuccess && !result.hasFailures) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Participantes adicionados com sucesso.')),
+        const SnackBar(content: Text('Integrantes adicionados com sucesso.')),
       );
       Navigator.of(context).maybePop();
       return;
@@ -232,7 +232,7 @@ class _DepartmentParticipantsSelectionScreenState
     messenger.showSnackBar(
       const SnackBar(
         content: Text(
-          'Não foi possível adicionar os participantes selecionados.',
+          'Não foi possível adicionar os integrantes selecionados.',
         ),
       ),
     );
@@ -447,5 +447,5 @@ class _SelectionStatus extends StatelessWidget {
 }
 
 String _participantsLabel(int count) {
-  return count == 1 ? '1 participante' : '$count participantes';
+  return count == 1 ? '1 integrante' : '$count integrantes';
 }

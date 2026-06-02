@@ -92,11 +92,16 @@ void main() {
             ),
             GoRoute(
               path: 'departamentos/:id',
-              name: AppRoutes.homeChurchDepartmentDetailName,
               builder: (context, state) =>
-                  const Scaffold(body: Text('detail-shell')),
+                  const Scaffold(body: Text('legacy-detail-shell')),
             ),
           ],
+        ),
+        GoRoute(
+          path: AppRoutes.departmentDetail,
+          name: AppRoutes.departmentDetailName,
+          builder: (context, state) =>
+              const Scaffold(body: Text('detail-shell')),
         ),
       ],
     );
@@ -256,7 +261,7 @@ void main() {
     expect(find.text('category:general'), findsOneWidget);
   });
 
-  testWidgets('navigates from church departments tab to shell detail route', (
+  testWidgets('navigates from church departments tab to root detail route', (
     tester,
   ) async {
     await tester.pumpWidget(

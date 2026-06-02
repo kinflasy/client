@@ -73,8 +73,8 @@ void main() {
           builder: (context, state) => const MyDepartmentsMenuScreen(),
         ),
         GoRoute(
-          path: AppRoutes.homeChurchDepartmentDetail,
-          name: AppRoutes.homeChurchDepartmentDetailName,
+          path: AppRoutes.departmentDetail,
+          name: AppRoutes.departmentDetailName,
           builder: (context, state) =>
               const Scaffold(body: Text('detail-shell')),
         ),

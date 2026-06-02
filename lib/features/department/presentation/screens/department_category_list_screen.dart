@@ -219,7 +219,7 @@ class _DepartmentListItem extends StatelessWidget {
       department: department,
       onTap: canOpen == true
           ? () => context.pushNamed(
-              AppRoutes.homeChurchDepartmentDetailName,
+              AppRoutes.departmentDetailName,
               pathParameters: {'id': department.id},
             )
           : null,

@@ -155,7 +155,7 @@ void main() {
     expect(find.text('0 departamentos'), findsOneWidget);
   });
 
-  testWidgets('navigates to shell department detail from category list', (
+  testWidgets('navigates to root department detail from category list', (
     tester,
   ) async {
     final router = GoRouter(
@@ -176,11 +176,15 @@ void main() {
             ),
             GoRoute(
               path: 'departamentos/:id',
-              name: AppRoutes.homeChurchDepartmentDetailName,
-              builder: (context, state) =>
-                  const Scaffold(body: Text('detail-shell')),
+              builder: (context, state) => const SizedBox.shrink(),
             ),
           ],
+        ),
+        GoRoute(
+          path: AppRoutes.departmentDetail,
+          name: AppRoutes.departmentDetailName,
+          builder: (context, state) =>
+              const Scaffold(body: Text('detail-shell')),
         ),
       ],
     );
@@ -253,11 +257,15 @@ void main() {
             ),
             GoRoute(
               path: 'departamentos/:id',
-              name: AppRoutes.homeChurchDepartmentDetailName,
-              builder: (context, state) =>
-                  const Scaffold(body: Text('detail-shell')),
+              builder: (context, state) => const SizedBox.shrink(),
             ),
           ],
+        ),
+        GoRoute(
+          path: AppRoutes.departmentDetail,
+          name: AppRoutes.departmentDetailName,
+          builder: (context, state) =>
+              const Scaffold(body: Text('detail-shell')),
         ),
       ],
     );
@@ -323,11 +331,15 @@ void main() {
             ),
             GoRoute(
               path: 'departamentos/:id',
-              name: AppRoutes.homeChurchDepartmentDetailName,
-              builder: (context, state) =>
-                  const Scaffold(body: Text('detail-shell')),
+              builder: (context, state) => const SizedBox.shrink(),
             ),
           ],
+        ),
+        GoRoute(
+          path: AppRoutes.departmentDetail,
+          name: AppRoutes.departmentDetailName,
+          builder: (context, state) =>
+              const Scaffold(body: Text('detail-shell')),
         ),
       ],
     );

@@ -278,7 +278,7 @@ void main() {
     return routeContainer;
   }
 
-  testWidgets('shell department detail keeps bottom navigation visible', (
+  testWidgets('legacy shell department detail redirects to root detail', (
     tester,
   ) async {
     final router = container.read(appRouterProvider);
@@ -294,9 +294,12 @@ void main() {
     router.go('/home/church/departamentos/dep-1');
     await pumpRouter(tester);
 
-    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsNothing);
     expect(find.text('Louvor'), findsOneWidget);
-    expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      '/departamentos/dep-1',
+    );
   });
 
   testWidgets('standalone department detail hides bottom navigation', (
@@ -683,6 +686,39 @@ void main() {
     );
   });
 
+  testWidgets('legacy shell scale detail redirects to root scale detail', (
+    tester,
+  ) async {
+    final router = container.read(appRouterProvider);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await pumpRouter(tester);
+
+    router.go('/home/church/departamentos/dep-1/escalas/scale-1');
+    await tester.pump();
+    await pumpRouter(tester);
+
+    expect(find.byType(BottomNavigationBar), findsNothing);
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      '/departamentos/dep-1/escalas/scale-1',
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is DepartmentScaleDetailScreen &&
+            widget.departmentId == 'dep-1' &&
+            widget.scaleId == 'scale-1',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets(
     'user without department access is redirected from scale detail',
     (tester) async {
@@ -699,7 +735,6 @@ void main() {
       router.go('/departamentos/dep-2/escalas/scale-1');
       await pumpRouter(tester);
 
-      expect(find.byType(BottomNavigationBar), findsOneWidget);
       expect(find.byType(DepartmentScaleDetailScreen), findsNothing);
     },
   );

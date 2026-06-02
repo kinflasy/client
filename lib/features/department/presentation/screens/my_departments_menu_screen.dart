@@ -48,9 +48,8 @@ class _MyDepartmentsMenuScreenState
                         itemCount: groups.length,
                         separatorBuilder: (context, index) =>
                             const SizedBox(height: 24),
-                        itemBuilder: (context, index) => _UnitGroupSection(
-                          group: groups[index],
-                        ),
+                        itemBuilder: (context, index) =>
+                            _UnitGroupSection(group: groups[index]),
                       ),
               ),
             ],
@@ -113,7 +112,7 @@ class _DepartmentList extends StatelessWidget {
         return DepartmentCard(
           department: department,
           onTap: () => context.pushNamed(
-            AppRoutes.homeChurchDepartmentDetailName,
+            AppRoutes.departmentDetailName,
             pathParameters: {'id': department.id},
           ),
         );

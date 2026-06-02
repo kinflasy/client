@@ -51,6 +51,9 @@ final _authRoutes = <String>{AppRoutes.login, AppRoutes.register};
 
 final _systemRoutes = <String>{AppRoutes.splash};
 
+const _legacyDepartmentScaleDetailRoute =
+    '/home/church/departamentos/:departmentId/escalas/:scaleId';
+
 final _protectedRoutes = <String>{
   AppRoutes.homeCalendar,
   AppRoutes.homeChurch,
@@ -88,6 +91,7 @@ final _protectedRoutes = <String>{
   AppRoutes.departmentParticipantsAdd,
   AppRoutes.departmentScaleCreate,
   AppRoutes.departmentScaleDetail,
+  _legacyDepartmentScaleDetailRoute,
   AppRoutes.departmentScaleFormations,
   AppRoutes.departmentScaleFormationCreate,
   AppRoutes.departmentScaleFormationDetail,
@@ -185,6 +189,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               routePath == AppRoutes.departmentDetail ||
               routePath == AppRoutes.departmentParticipantsAdd ||
               routePath == AppRoutes.departmentScaleDetail ||
+              routePath == _legacyDepartmentScaleDetailRoute ||
               routePath == AppRoutes.departmentScaleFormations ||
               routePath == AppRoutes.departmentScaleFormationDetail;
           if (isDepartmentDetailRoute) {
@@ -234,12 +239,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state, navigationShell) {
-          final routePath = state.fullPath ?? state.matchedLocation;
-          return HomeScreen(
-            navigationShell: navigationShell,
-            showBottomNavigationBar:
-                routePath != AppRoutes.homeChurchDepartmentDetail,
-          );
+          return HomeScreen(navigationShell: navigationShell);
         },
         branches: [
           StatefulShellBranch(
@@ -261,12 +261,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'departamentos/:id',
                     name: AppRoutes.homeChurchDepartmentDetailName,
-                    builder: (context, state) {
+                    redirect: (context, state) {
                       final departmentId = state.pathParameters['id']!;
-                      return DepartmentScreen(
-                        departmentId: departmentId,
-                        showBackButton: true,
+                      return AppRoutes.departmentDetail.replaceFirst(
+                        ':id',
+                        departmentId,
                       );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'departamentos/:departmentId/escalas/:scaleId',
+                    redirect: (context, state) {
+                      final departmentId =
+                          state.pathParameters['departmentId']!;
+                      final scaleId = state.pathParameters['scaleId']!;
+                      return AppRoutes.departmentScaleDetail
+                          .replaceFirst(':departmentId', departmentId)
+                          .replaceFirst(':scaleId', scaleId);
                     },
                   ),
                 ],

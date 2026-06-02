@@ -13,9 +13,16 @@ class EditableScaleAssignmentSnapshot extends Equatable {
   ) {
     var fallbackIndex = 0;
     final assignments = <EditableScaleAssignmentEntity>[];
+    final seenPersonByRoleId = <String, Set<String>>{};
 
     for (final roleAssignment in roleAssignments) {
       for (final person in roleAssignment.people) {
+        final seenPeople = seenPersonByRoleId.putIfAbsent(
+          roleAssignment.item.roleId,
+          () => {},
+        );
+        if (!seenPeople.add(person.personId)) continue;
+
         final scaleItemId = person.scaleItemId;
         final localId = scaleItemId == null || scaleItemId.trim().isEmpty
             ? 'persisted:${roleAssignment.item.roleId}:${person.personId}:${fallbackIndex++}'
@@ -58,6 +65,8 @@ class EditableScaleAssignmentSnapshot extends Equatable {
     required String displayName,
     String? profileImageId,
   }) {
+    if (hasPersonForRole(roleId: roleId, personId: personId)) return this;
+
     return EditableScaleAssignmentSnapshot(
       original: original,
       current: List.unmodifiable([
@@ -86,6 +95,13 @@ class EditableScaleAssignmentSnapshot extends Equatable {
     return current
         .where((assignment) => assignment.roleId == roleId)
         .toList(growable: false);
+  }
+
+  bool hasPersonForRole({required String roleId, required String personId}) {
+    return current.any(
+      (assignment) =>
+          assignment.roleId == roleId && assignment.personId == personId,
+    );
   }
 
   @override

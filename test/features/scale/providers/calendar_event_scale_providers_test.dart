@@ -1079,11 +1079,29 @@ void main() {
   );
 
   test(
-    'assignment detail provider preserves duplicated role and person rows',
+    'assignment detail provider groups duplicated role slots and dedupes person',
     () async {
       _stubAssignmentDetailBase(
         repository,
         departmentRepository,
+        lineup: const LineupEntity(
+          id: 'lineup-1',
+          name: 'Louvor',
+          items: [
+            LineupItemEntity(
+              id: 'lineup-item-1',
+              lineupId: 'lineup-1',
+              roleId: 'role-1',
+              description: 'Vocal',
+            ),
+            LineupItemEntity(
+              id: 'lineup-item-2',
+              lineupId: 'lineup-1',
+              roleId: 'role-1',
+              description: 'Vocal apoio',
+            ),
+          ],
+        ),
         scaleItems: const [
           ScaleItemEntity(
             id: 'scale-item-1',
@@ -1120,10 +1138,12 @@ void main() {
         ),
       );
 
-      final people = result.roleAssignments.first.people;
-      expect(people, hasLength(2));
-      expect(people.map((person) => person.personId), ['person-1', 'person-1']);
-      expect(people.map((person) => person.displayName), ['Ana', 'Ana']);
+      expect(result.roleAssignments, hasLength(1));
+      expect(result.roleAssignments.single.capacity, 2);
+      final people = result.roleAssignments.single.people;
+      expect(people, hasLength(1));
+      expect(people.single.personId, 'person-1');
+      expect(people.single.displayName, 'Ana');
     },
   );
 
@@ -1682,6 +1702,7 @@ const _assignmentLineup = LineupEntity(
 void _stubAssignmentDetailBase(
   _MockCalendarEventRepository repository,
   _MockDepartmentRepository departmentRepository, {
+  LineupEntity lineup = _assignmentLineup,
   List<ScaleItemEntity> scaleItems = const [],
   List<DepartmentParticipantEntity> participants = const [],
   Failure? participantsFailure,
@@ -1694,7 +1715,7 @@ void _stubAssignmentDetailBase(
   ).thenAnswer((_) async => Right(_event(id: 'event-1')));
   when(
     () => departmentRepository.getLineupWithItems('lineup-1'),
-  ).thenAnswer((_) async => const Right(_assignmentLineup));
+  ).thenAnswer((_) async => Right(lineup));
   when(
     () => repository.getScaleItems('scale-1'),
   ).thenAnswer((_) async => Right(scaleItems));

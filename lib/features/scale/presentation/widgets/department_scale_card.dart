@@ -74,10 +74,9 @@ class _DepartmentScaleCardState extends State<DepartmentScaleCard> {
   Widget? _buildLineupSection() {
     if (widget.scale.hasLineupFailure) return null;
 
-    final labels = (widget.scale.lineup?.items ?? const <LineupItemEntity>[])
-        .map(_lineupItemLabel)
-        .where((label) => label.isNotEmpty)
-        .toList();
+    final labels = _lineupItemLabels(
+      widget.scale.lineup?.items ?? const <LineupItemEntity>[],
+    );
 
     if (labels.isEmpty) {
       return const Text(
@@ -151,6 +150,25 @@ String _lineupItemLabel(LineupItemEntity item) {
   final roleName = item.role?.name.trim() ?? '';
   if (roleName.isNotEmpty) return roleName;
   return item.description.trim();
+}
+
+List<String> _lineupItemLabels(List<LineupItemEntity> items) {
+  final labelsByRoleId = <String, String>{};
+  final countsByRoleId = <String, int>{};
+
+  for (final item in items) {
+    final label = _lineupItemLabel(item);
+    if (label.isEmpty) continue;
+
+    labelsByRoleId.putIfAbsent(item.roleId, () => label);
+    countsByRoleId[item.roleId] = (countsByRoleId[item.roleId] ?? 0) + 1;
+  }
+
+  return labelsByRoleId.entries.map((entry) {
+    final count = countsByRoleId[entry.key] ?? 1;
+    if (count <= 1) return entry.value;
+    return '${entry.value} ($count vagas)';
+  }).toList();
 }
 
 String _formatScaleDate(DateTime dateTime) {

@@ -94,6 +94,29 @@ void main() {
     expect(secondTop, lessThan(thirdTop));
   });
 
+  testWidgets('groups duplicated roles and shows vacancy count', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DepartmentScaleCard(
+            scale: _scaleWithItems([
+              _lineupItem('item-1', roleId: 'role-1', roleName: 'Vocal'),
+              _lineupItem('item-2', roleId: 'role-1', roleName: 'Vocal'),
+              _lineupItem('item-3', roleName: 'ViolÃ£o'),
+            ]),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Vocal (2 vagas)'), findsOneWidget);
+    expect(find.text('Vocal'), findsNothing);
+    expect(find.text('ViolÃ£o'), findsOneWidget);
+    expect(find.byIcon(Icons.circle), findsNWidgets(2));
+  });
+
   testWidgets('shows empty lineup message when there are no items', (
     tester,
   ) async {
@@ -140,9 +163,9 @@ void main() {
     expect(find.text('Violão'), findsOneWidget);
     expect(find.text('Baixo'), findsOneWidget);
     expect(find.text('Bateria'), findsNothing);
-    expect(find.text('Ver todas (+1)'), findsOneWidget);
+    expect(find.text('Ver tudo (+1)'), findsOneWidget);
 
-    await tester.tap(find.text('Ver todas (+1)'));
+    await tester.tap(find.text('Ver tudo (+1)'));
     await tester.pumpAndSettle();
 
     expect(find.text('Bateria'), findsOneWidget);
@@ -152,7 +175,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Bateria'), findsNothing);
-    expect(find.text('Ver todas (+1)'), findsOneWidget);
+    expect(find.text('Ver tudo (+1)'), findsOneWidget);
   });
 
   testWidgets('hides expansion button when there are up to three functions', (
@@ -172,8 +195,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Ver todas (+0)'), findsNothing);
-    expect(find.textContaining('Ver todas'), findsNothing);
+    expect(find.text('Ver tudo (+0)'), findsNothing);
+    expect(find.textContaining('Ver tudo'), findsNothing);
     expect(find.text('Mostrar menos'), findsNothing);
   });
 
@@ -198,7 +221,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Ver todas (+1)'));
+    await tester.tap(find.text('Ver tudo (+1)'));
     await tester.pumpAndSettle();
 
     expect(tapped, isFalse);
@@ -241,16 +264,18 @@ DepartmentScaleWithLineupEntity _scaleWithItems(List<LineupItemEntity> items) {
 
 LineupItemEntity _lineupItem(
   String id, {
+  String? roleId,
   String roleName = '',
   String description = '',
 }) {
+  final resolvedRoleId = roleId ?? 'role-$id';
   return LineupItemEntity(
     id: id,
     lineupId: 'lineup-1',
-    roleId: 'role-$id',
+    roleId: resolvedRoleId,
     description: description,
     role: roleName.isEmpty
         ? null
-        : RoleEntity(id: 'role-$id', name: roleName, slug: roleName),
+        : RoleEntity(id: resolvedRoleId, name: roleName, slug: roleName),
   );
 }

@@ -191,36 +191,81 @@ void main() {
       ),
     );
 
-    expect(find.text('Ana Silva'), findsNWidgets(2));
+    expect(find.text('Ana Silva'), findsOneWidget);
+  });
+
+  testWidgets('agrupa vagas repetidas do mesmo papel em uma secao', (
+    tester,
+  ) async {
+    await _pumpScreen(
+      tester,
+      detail: _detail(
+        assignments: [
+          _assignment(
+            roleId: 'role-1',
+            roleName: 'Vocal',
+            capacity: 2,
+            people: const [
+              ScaleAssignmentPersonEntity(
+                personId: 'person-1',
+                displayName: 'Ana Silva',
+                source: ScaleAssignmentPersonSource.participant,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Vocal'), findsOneWidget);
+    expect(find.text('Ana Silva'), findsOneWidget);
+    expect(find.text('Vaga aberta'), findsOneWidget);
+  });
+
+  testWidgets('mostra quantidade quando ha multiplas vagas abertas', (
+    tester,
+  ) async {
+    await _pumpScreen(
+      tester,
+      detail: _detail(
+        assignments: [
+          _assignment(
+            roleId: 'role-1',
+            roleName: 'Vocal',
+            capacity: 2,
+            people: const [],
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('2 vagas abertas'), findsOneWidget);
+    expect(find.text('Vaga aberta'), findsNothing);
   });
 
   testWidgets('confirma ausência de ações fora do escopo', (tester) async {
     await _pumpScreen(tester, detail: _detail());
 
     expect(find.text('+ Adicionar Pessoa'), findsNothing);
-    expect(find.text('+ Adicionar pessoa'), findsNothing);
+    expect(find.text('Adicionar pessoa'), findsNothing);
     expect(find.text('Adicionar Pessoa'), findsNothing);
     expect(find.text('Concluir'), findsNothing);
     expect(find.text('Editar escala'), findsNothing);
   });
 
-  testWidgets('usuario sem permissao nao ve + Adicionar pessoa', (
-    tester,
-  ) async {
+  testWidgets('usuario sem permissao nao ve Adicionar pessoa', (tester) async {
     await _pumpScreen(tester, detail: _detail());
 
-    expect(find.text('+ Adicionar pessoa'), findsNothing);
+    expect(find.text('Adicionar pessoa'), findsNothing);
   });
 
-  testWidgets('usuario com canManageDept ve + Adicionar pessoa', (
-    tester,
-  ) async {
+  testWidgets('usuario com canManageDept ve Adicionar pessoa', (tester) async {
     await _pumpScreen(tester, detail: _detail(), canManageScale: true);
 
-    expect(find.text('+ Adicionar pessoa'), findsOneWidget);
+    expect(find.text('Adicionar pessoa'), findsOneWidget);
   });
 
-  testWidgets('botao + Adicionar pessoa fica desabilitado sem funcoes', (
+  testWidgets('botao Adicionar pessoa fica desabilitado sem funcoes', (
     tester,
   ) async {
     await _pumpScreen(
@@ -239,7 +284,7 @@ void main() {
     );
 
     final button = tester.widget<OutlinedButton>(
-      find.widgetWithText(OutlinedButton, '+ Adicionar pessoa'),
+      find.widgetWithText(OutlinedButton, 'Adicionar pessoa'),
     );
     expect(button.onPressed, isNull);
   });
@@ -247,11 +292,19 @@ void main() {
   testWidgets('Concluir aparece apos selecionar pessoa localmente', (
     tester,
   ) async {
-    await _pumpScreen(tester, detail: _detail(), canManageScale: true);
+    await _pumpScreen(
+      tester,
+      detail: _detail(
+        assignments: [
+          _assignment(roleId: 'role-1', roleName: 'Vocal', capacity: 2),
+        ],
+      ),
+      canManageScale: true,
+    );
 
     expect(find.text('Concluir'), findsNothing);
 
-    await tester.tap(find.text('+ Adicionar pessoa'));
+    await tester.tap(find.text('Adicionar pessoa'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Vocal').last);
     await tester.pumpAndSettle();
@@ -288,10 +341,18 @@ void main() {
     expect(find.text('Concluir'), findsOneWidget);
   });
 
-  testWidgets('+ Adicionar pessoa pede funcao antes de pessoa', (tester) async {
-    await _pumpScreen(tester, detail: _detail(), canManageScale: true);
+  testWidgets('Adicionar pessoa pede funcao antes de pessoa', (tester) async {
+    await _pumpScreen(
+      tester,
+      detail: _detail(
+        assignments: [
+          _assignment(roleId: 'role-1', roleName: 'Vocal', capacity: 2),
+        ],
+      ),
+      canManageScale: true,
+    );
 
-    await tester.tap(find.text('+ Adicionar pessoa'));
+    await tester.tap(find.text('Adicionar pessoa'));
     await tester.pumpAndSettle();
 
     expect(find.text('Escolher função'), findsOneWidget);
@@ -304,12 +365,67 @@ void main() {
     expect(find.text('Bruno Lima'), findsOneWidget);
   });
 
-  testWidgets('selecionar pessoa duplicada cria nova linha', (tester) async {
-    await _pumpScreen(tester, detail: _detail(), canManageScale: true);
+  testWidgets(
+    'selecionar pessoa duplicada no mesmo papel nao cria nova linha',
+    (tester) async {
+      await _pumpScreen(
+        tester,
+        detail: _detail(
+          assignments: [
+            _assignment(
+              roleId: 'role-1',
+              roleName: 'Vocal',
+              capacity: 2,
+              people: const [
+                ScaleAssignmentPersonEntity(
+                  personId: 'person-1',
+                  displayName: 'Ana Silva',
+                  source: ScaleAssignmentPersonSource.participant,
+                ),
+              ],
+            ),
+          ],
+        ),
+        canManageScale: true,
+      );
 
-    await tester.tap(find.text('+ Adicionar pessoa'));
+      await tester.tap(find.text('Adicionar pessoa'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Vocal').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ana Silva').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ana Silva'), findsOneWidget);
+      expect(find.text('Concluir'), findsNothing);
+    },
+  );
+
+  testWidgets('mesma pessoa pode ocupar papeis diferentes', (tester) async {
+    await _pumpScreen(
+      tester,
+      detail: _detail(
+        assignments: [
+          _assignment(
+            roleId: 'role-1',
+            roleName: 'Vocal',
+            people: const [
+              ScaleAssignmentPersonEntity(
+                personId: 'person-1',
+                displayName: 'Ana Silva',
+                source: ScaleAssignmentPersonSource.participant,
+              ),
+            ],
+          ),
+          _assignment(roleId: 'role-2', roleName: 'ViolÃ£o', people: const []),
+        ],
+      ),
+      canManageScale: true,
+    );
+
+    await tester.tap(find.text('Adicionar pessoa'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Vocal').last);
+    await tester.tap(find.text('ViolÃ£o').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ana Silva').last);
     await tester.pumpAndSettle();
@@ -331,7 +447,9 @@ void main() {
     expect(find.text('Concluir'), findsOneWidget);
   });
 
-  testWidgets('remove apenas uma duplicidade', (tester) async {
+  testWidgets('remove pessoa e revela vaga quando havia capacidade maior', (
+    tester,
+  ) async {
     await _pumpScreen(
       tester,
       canManageScale: true,
@@ -340,6 +458,7 @@ void main() {
           _assignment(
             roleId: 'role-1',
             roleName: 'Vocal',
+            capacity: 2,
             people: const [
               ScaleAssignmentPersonEntity(
                 personId: 'person-1',
@@ -348,8 +467,8 @@ void main() {
                 source: ScaleAssignmentPersonSource.participant,
               ),
               ScaleAssignmentPersonEntity(
-                personId: 'person-1',
-                displayName: 'Ana Silva',
+                personId: 'person-2',
+                displayName: 'Bruno Lima',
                 scaleItemId: 'item-2',
                 source: ScaleAssignmentPersonSource.participant,
               ),
@@ -359,13 +478,15 @@ void main() {
       ),
     );
 
-    expect(find.text('Ana Silva'), findsNWidgets(2));
+    expect(find.text('Ana Silva'), findsOneWidget);
+    expect(find.text('Bruno Lima'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Remover Ana Silva').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Ana Silva'), findsOneWidget);
-    expect(find.text('Vaga aberta'), findsNothing);
+    expect(find.text('Ana Silva'), findsNothing);
+    expect(find.text('Bruno Lima'), findsOneWidget);
+    expect(find.text('Vaga aberta'), findsOneWidget);
   });
 
   testWidgets('mostra Vaga aberta depois de remover ultima pessoa', (
@@ -728,6 +849,7 @@ ScaleRoleAssignmentsEntity _assignment({
   required String roleId,
   required String roleName,
   String description = '',
+  int capacity = 1,
   List<ScaleAssignmentPersonEntity> people = const [],
 }) {
   return ScaleRoleAssignmentsEntity(
@@ -739,5 +861,6 @@ ScaleRoleAssignmentsEntity _assignment({
       role: RoleEntity(id: roleId, name: roleName, slug: roleId),
     ),
     people: people,
+    capacity: capacity,
   );
 }

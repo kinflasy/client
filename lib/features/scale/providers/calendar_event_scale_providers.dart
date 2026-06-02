@@ -3,6 +3,7 @@ import 'package:client/features/calendar/domain/entities/calendar_event_entity.d
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/department/domain/entities/department_participant_entity.dart';
 import 'package:client/features/department/domain/entities/lineup_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_item_entity.dart';
 import 'package:client/features/department/providers/department_lineup_providers.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/data/models/person_profile_model.dart';
@@ -463,20 +464,20 @@ Future<DepartmentScaleDetailEntity> _composeAssignmentDetail(
   }
 
   final peopleByRoleId = <String, List<ScaleAssignmentPersonEntity>>{};
+  final seenPeopleByRoleId = <String, Set<String>>{};
   for (final item in scaleItems) {
+    final seenPeople = seenPeopleByRoleId.putIfAbsent(item.roleId, () => {});
+    if (!seenPeople.add(item.personId)) continue;
+
     final people = peopleByRoleId.putIfAbsent(item.roleId, () => []);
     final person = await resolvePerson(item.personId);
     people.add(person.copyWith(scaleItemId: item.id));
   }
 
-  final roleAssignments = (detail.lineup?.items ?? const [])
-      .map(
-        (item) => ScaleRoleAssignmentsEntity(
-          item: item,
-          people: peopleByRoleId[item.roleId] ?? const [],
-        ),
-      )
-      .toList();
+  final roleAssignments = _groupRoleAssignments(
+    detail.lineup?.items ?? const [],
+    peopleByRoleId,
+  );
 
   return DepartmentScaleDetailEntity(
     base: detail,
@@ -484,6 +485,29 @@ Future<DepartmentScaleDetailEntity> _composeAssignmentDetail(
     peopleLoadFailureMessage: participantsDetail.failureMessage,
     profileFailurePersonIds: profileFailurePersonIds,
   );
+}
+
+List<ScaleRoleAssignmentsEntity> _groupRoleAssignments(
+  List<LineupItemEntity> lineupItems,
+  Map<String, List<ScaleAssignmentPersonEntity>> peopleByRoleId,
+) {
+  final itemsByRoleId = <String, LineupItemEntity>{};
+  final capacityByRoleId = <String, int>{};
+
+  for (final item in lineupItems) {
+    itemsByRoleId.putIfAbsent(item.roleId, () => item);
+    capacityByRoleId[item.roleId] = (capacityByRoleId[item.roleId] ?? 0) + 1;
+  }
+
+  return itemsByRoleId.entries
+      .map(
+        (entry) => ScaleRoleAssignmentsEntity(
+          item: entry.value,
+          people: peopleByRoleId[entry.key] ?? const [],
+          capacity: capacityByRoleId[entry.key] ?? 1,
+        ),
+      )
+      .toList();
 }
 
 Future<

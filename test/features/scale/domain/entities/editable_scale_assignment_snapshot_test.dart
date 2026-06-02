@@ -5,7 +5,7 @@ import 'package:client/features/scale/domain/entities/scale_role_assignments_ent
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('diferencia duplicidades iguais por localId', () {
+  test('deduplica mesma pessoa no mesmo papel', () {
     final snapshot = EditableScaleAssignmentSnapshot.fromRoleAssignments([
       _roleAssignment(
         people: const [
@@ -25,10 +25,21 @@ void main() {
       ),
     ]);
 
-    expect(snapshot.current, hasLength(2));
-    expect(snapshot.current[0].localId, isNot(snapshot.current[1].localId));
-    expect(snapshot.current[0].personId, snapshot.current[1].personId);
-    expect(snapshot.current[0].roleId, snapshot.current[1].roleId);
+    expect(snapshot.current, hasLength(1));
+    expect(snapshot.current.single.personId, 'person-1');
+    expect(snapshot.current.single.roleId, 'role-1');
+  });
+
+  test('nao adiciona mesma pessoa no mesmo papel', () {
+    final snapshot = _snapshot().addPerson(
+      localId: 'local:1',
+      roleId: 'role-1',
+      personId: 'person-1',
+      displayName: 'Ana Silva',
+    );
+
+    expect(snapshot.current, hasLength(1));
+    expect(snapshot.hasPendingChanges, isFalse);
   });
 
   test('adiciona pessoa sem remover alocacoes existentes', () {
@@ -48,19 +59,34 @@ void main() {
     expect(snapshot.current.last.scaleItemId, isNull);
   });
 
+  test('permite mesma pessoa em papeis diferentes', () {
+    final snapshot = _snapshot().addPerson(
+      localId: 'local:1',
+      roleId: 'role-2',
+      personId: 'person-1',
+      displayName: 'Ana Silva',
+    );
+
+    expect(snapshot.current, hasLength(2));
+    expect(snapshot.current.map((assignment) => assignment.roleId), [
+      'role-1',
+      'role-2',
+    ]);
+  });
+
   test('remove apenas a linha selecionada', () {
     final snapshot = _snapshot()
         .addPerson(
           localId: 'local:1',
           roleId: 'role-1',
-          personId: 'person-1',
-          displayName: 'Ana Silva',
+          personId: 'person-2',
+          displayName: 'Bruno Lima',
         )
         .removeByLocalId('persisted:item-1');
 
     expect(snapshot.current, hasLength(1));
     expect(snapshot.current.single.localId, 'local:1');
-    expect(snapshot.current.single.personId, 'person-1');
+    expect(snapshot.current.single.personId, 'person-2');
   });
 
   test('marca alteracao pendente apos adicionar', () {

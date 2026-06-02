@@ -87,11 +87,12 @@ class _DepartmentScaleDetailScreenState
       bottomNavigationBar: detailAsync.maybeWhen(
         data: (detail) => canManageScale
             ? _ScaleEditActionBar(
-                canAddPeople: detail.roleAssignments.isNotEmpty,
+                canAddPeople: detail.roleAssignments.any(_hasEditableVacancy),
                 hasPendingChanges: _hasPendingChanges,
                 isSaving: isSavingAssignments,
                 onAddPerson:
-                    detail.roleAssignments.isEmpty || isSavingAssignments
+                    !detail.roleAssignments.any(_hasEditableVacancy) ||
+                        isSavingAssignments
                     ? null
                     : () => _openAssignmentPicker(detail),
                 onComplete: _hasPendingChanges && !isSavingAssignments
@@ -125,6 +126,7 @@ class _DepartmentScaleDetailScreenState
       context: context,
       departmentId: widget.departmentId,
       roles: detail.roleAssignments
+          .where(_hasEditableVacancy)
           .map((assignment) => assignment.item)
           .toList(),
       initialRole: initialRole,
@@ -179,6 +181,13 @@ class _DepartmentScaleDetailScreenState
     setState(() {
       _assignmentSnapshot = _assignmentSnapshot.removeByLocalId(localId);
     });
+  }
+
+  bool _hasEditableVacancy(ScaleRoleAssignmentsEntity assignment) {
+    final assignedCount = _assignmentSnapshot
+        .assignmentsForRole(assignment.item.roleId)
+        .length;
+    return assignedCount < assignment.capacity;
   }
 }
 
@@ -356,8 +365,9 @@ class _LineupItemTile extends StatelessWidget {
           if (editableAssignments.isEmpty)
             _OpenVacancyRow(
               onTap: canManageScale ? () => onOpenVacancy(item) : null,
+              vacancyCount: assignment.openVacancyCount,
             )
-          else
+          else ...[
             for (
               var index = 0;
               index < editableAssignments.length;
@@ -373,6 +383,14 @@ class _LineupItemTile extends StatelessWidget {
               if (index < editableAssignments.length - 1)
                 const Divider(height: 20),
             ],
+            if (assignment.capacity > editableAssignments.length) ...[
+              const Divider(height: 20),
+              _OpenVacancyRow(
+                onTap: canManageScale ? () => onOpenVacancy(item) : null,
+                vacancyCount: assignment.capacity - editableAssignments.length,
+              ),
+            ],
+          ],
         ],
       ),
     );
@@ -414,18 +432,23 @@ class _AssignedPersonRow extends StatelessWidget {
 }
 
 class _OpenVacancyRow extends StatelessWidget {
-  const _OpenVacancyRow({required this.onTap});
+  const _OpenVacancyRow({required this.onTap, required this.vacancyCount});
 
   final VoidCallback? onTap;
+  final int vacancyCount;
 
   @override
   Widget build(BuildContext context) {
+    final label = vacancyCount <= 1
+        ? 'Vaga aberta'
+        : '$vacancyCount vagas abertas';
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
-      child: const Row(
+      child: Row(
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 18,
             backgroundColor: Colors.transparent,
             child: Icon(
@@ -434,11 +457,14 @@ class _OpenVacancyRow extends StatelessWidget {
               size: 24,
             ),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Vaga aberta',
-              style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
+              label,
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],

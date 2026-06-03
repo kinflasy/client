@@ -90,6 +90,43 @@ void main() {
     ]);
   });
 
+  test('gets department events with collabs using range query', () async {
+    final start = DateTime(2026, 5, 30, 9);
+    final end = DateTime(2026, 11, 30, 23, 59, 59);
+    when(
+      () => dio.get<dynamic>(
+        '/v1/core/calendar-events/department/dep-1/with-collabs',
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/department/dep-1/with-collabs',
+        ),
+        data: {
+          'events': [
+            {'id': 'event-1'},
+          ],
+        },
+      ),
+    );
+
+    final list = await api.getDepartmentEventsWithCollabs('dep-1', start, end);
+
+    expect(list, [
+      {'id': 'event-1'},
+    ]);
+    verify(
+      () => dio.get<dynamic>(
+        '/v1/core/calendar-events/department/dep-1/with-collabs',
+        queryParameters: {
+          'start': start.toIso8601String(),
+          'end': end.toIso8601String(),
+        },
+      ),
+    ).called(1);
+  });
+
   test('sends card image upload as multipart file field', () async {
     when(
       () => dio.put<dynamic>(
@@ -237,6 +274,46 @@ void main() {
     verify(
       () => dio.post<dynamic>(
         '/v1/core/calendar-events/event-1/scales',
+        data: {'lineupId': 'lineup-1'},
+      ),
+    ).called(1);
+  });
+
+  test('creates collaborator event scale with lineup payload', () async {
+    when(
+      () => dio.post<dynamic>(
+        '/v1/core/calendar-events/event-1/collaborators/dep-1/scales',
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/event-1/collaborators/dep-1/scales',
+        ),
+        data: {
+          'scale': {
+            'id': 'scale-1',
+            'lineupId': 'lineup-1',
+            'type': 'COLLABORATOR',
+            'collaborationId': 'collab-1',
+          },
+        },
+      ),
+    );
+
+    final json = await api.createCollaboratorEventScale('event-1', 'dep-1', {
+      'lineupId': 'lineup-1',
+    });
+
+    expect(json, {
+      'id': 'scale-1',
+      'lineupId': 'lineup-1',
+      'type': 'COLLABORATOR',
+      'collaborationId': 'collab-1',
+    });
+    verify(
+      () => dio.post<dynamic>(
+        '/v1/core/calendar-events/event-1/collaborators/dep-1/scales',
         data: {'lineupId': 'lineup-1'},
       ),
     ).called(1);

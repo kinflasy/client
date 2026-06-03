@@ -45,6 +45,19 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, List<CalendarEventEntity>>>
+  getDepartmentEventsWithCollabs(
+    String departmentId,
+    DateTime start,
+    DateTime end,
+  ) {
+    return _getEvents(
+      () => _api.getDepartmentEventsWithCollabs(departmentId, start, end),
+      fallbackMessage: 'Erro ao carregar eventos do departamento.',
+    );
+  }
+
+  @override
   Future<Either<Failure, CalendarEventEntity>> createUnitEvent(
     String unitId,
     CalendarEventRequestModel request,
@@ -158,6 +171,27 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
   ) async {
     try {
       final json = await _api.createEventScale(eventId, request.toJson());
+      return Right(CalendarEventScaleReadModel.fromJson(json).toEntity());
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao criar escala do evento.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, CalendarEventScaleEntity>>
+  createCollaboratorEventScale(
+    String eventId,
+    String departmentId,
+    CalendarEventScaleRequestModel request,
+  ) async {
+    try {
+      final json = await _api.createCollaboratorEventScale(
+        eventId,
+        departmentId,
+        request.toJson(),
+      );
       return Right(CalendarEventScaleReadModel.fromJson(json).toEntity());
     } on DioException catch (e) {
       return Left(_mapDioFailure(e, 'Erro ao criar escala do evento.'));

@@ -55,6 +55,48 @@ void main() {
       });
     });
 
+    test('returns department events with collabs on success', () async {
+      final start = DateTime(2026, 5);
+      final end = DateTime(2026, 6);
+      when(
+        () => api.getDepartmentEventsWithCollabs('dep-1', start, end),
+      ).thenAnswer(
+        (_) async => [
+          _eventJson(
+            id: 'event-owner',
+            type: 'DEPARTMENT',
+            ownerKey: 'departmentId',
+            ownerId: 'dep-1',
+          ),
+          _eventJson(
+            id: 'event-collab',
+            type: 'DEPARTMENT',
+            ownerKey: 'departmentId',
+            ownerId: 'dep-owner',
+          ),
+        ],
+      );
+
+      final result = await repository.getDepartmentEventsWithCollabs(
+        'dep-1',
+        start,
+        end,
+      );
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (events) {
+        expect(events.map((event) => event.id), [
+          'event-owner',
+          'event-collab',
+        ]);
+        expect(events.first.departmentId, 'dep-1');
+        expect(events.last.departmentId, 'dep-owner');
+      });
+      verify(
+        () => api.getDepartmentEventsWithCollabs('dep-1', start, end),
+      ).called(1);
+    });
+
     test('maps DioException into NetworkFailure', () async {
       final start = DateTime(2026, 5);
       final end = DateTime(2026, 6);
@@ -326,6 +368,41 @@ void main() {
       });
       verify(
         () => api.createEventScale('event-1', {'lineupId': 'lineup-1'}),
+      ).called(1);
+    });
+
+    test('creates collaborator event scale and maps response', () async {
+      when(
+        () => api.createCollaboratorEventScale(
+          'event-1',
+          'dep-1',
+          any(that: isA<Map>()),
+        ),
+      ).thenAnswer(
+        (_) async => const {
+          'id': 'scale-2',
+          'lineupId': 'lineup-1',
+          'type': 'COLLABORATOR',
+          'collaborationId': 'collab-1',
+        },
+      );
+
+      final result = await repository.createCollaboratorEventScale(
+        'event-1',
+        'dep-1',
+        const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
+      );
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (scale) {
+        expect(scale.lineupId, 'lineup-1');
+        expect(scale.type, CalendarEventScaleType.collaborator);
+        expect(scale.collaborationId, 'collab-1');
+      });
+      verify(
+        () => api.createCollaboratorEventScale('event-1', 'dep-1', {
+          'lineupId': 'lineup-1',
+        }),
       ).called(1);
     });
 

@@ -1,8 +1,10 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:client/features/department/domain/entities/lineup_entity.dart';
 import 'package:client/features/department/providers/department_lineup_providers.dart';
@@ -192,7 +194,7 @@ class _CreateDepartmentScaleScreenState
         ),
         const SizedBox(height: 24),
         FilledButton(
-          onPressed: isSaving ? null : _createScale,
+          onPressed: isSaving ? null : () => _createScale(events),
           child: isSaving
               ? const SizedBox.square(
                   dimension: 20,
@@ -204,7 +206,7 @@ class _CreateDepartmentScaleScreenState
     );
   }
 
-  Future<void> _createScale() async {
+  Future<void> _createScale(List<CalendarEventEntity> events) async {
     final eventId = _eventId;
     final lineupId = _lineupId;
     final messenger = ScaffoldMessenger.of(context);
@@ -216,10 +218,26 @@ class _CreateDepartmentScaleScreenState
       return;
     }
 
+    final selectedEvent = _findEvent(events, eventId);
+    if (selectedEvent == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Selecione um evento e uma formação.')),
+      );
+      return;
+    }
+
+    final shouldContinue = await _confirmIfEventHasScale(
+      selectedEvent,
+      messenger,
+    );
+    if (!shouldContinue) return;
+    if (!mounted) return;
+
     final result = await ref
         .read(createEventScaleProvider.notifier)
         .create(
-          eventId: eventId,
+          departmentId: widget.departmentId,
+          event: selectedEvent,
           request: CalendarEventScaleRequestModel(lineupId: lineupId),
         );
 
@@ -235,6 +253,40 @@ class _CreateDepartmentScaleScreenState
         );
         Navigator.of(context).maybePop();
       },
+    );
+  }
+
+  CalendarEventEntity? _findEvent(
+    List<CalendarEventEntity> events,
+    String eventId,
+  ) {
+    for (final event in events) {
+      if (event.id == eventId) return event;
+    }
+    return null;
+  }
+
+  Future<bool> _confirmIfEventHasScale(
+    CalendarEventEntity event,
+    ScaffoldMessengerState messenger,
+  ) async {
+    final result = await ref
+        .read(calendarEventRepositoryProvider)
+        .getEventScales(event.id);
+    final scales = result.fold((failure) {
+      messenger.showSnackBar(SnackBar(content: Text(failure.message)));
+      return null;
+    }, (scales) => scales);
+    if (scales == null) return false;
+
+    if (scales.isEmpty) return true;
+    if (!mounted) return false;
+
+    return showActionConfirmationDialog(
+      context,
+      title: 'Criar outra escala?',
+      message: 'Já existe uma escala para esse evento.',
+      confirmLabel: 'Criar outra escala',
     );
   }
 }

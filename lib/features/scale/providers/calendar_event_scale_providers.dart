@@ -234,41 +234,23 @@ final eligibleDepartmentScaleEventsProvider =
       List<CalendarEventEntity>,
       EligibleDepartmentScaleEventsRequest
     >((ref, request) async {
-      final events = await ref.watch(
-        departmentCalendarEventsProvider(
-          DepartmentCalendarEventsRequest(
-            departmentId: request.departmentId,
-            start: request.start,
-            end: request.end,
-          ),
-        ).future,
-      );
-
-      final futureEvents = events
-          .where((event) => !event.startDateTime.isBefore(request.start))
-          .toList();
-
-      final checks = await Future.wait(
-        futureEvents.map((event) async {
-          final result = await ref
-              .read(calendarEventRepositoryProvider)
-              .getEventScales(event.id);
-          final scales = result.fold(
-            (failure) => throw failure,
-            (value) => value,
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .getDepartmentEventsWithCollabs(
+            request.departmentId,
+            request.start,
+            request.end,
           );
-          return (event: event, hasScale: scales.isNotEmpty);
-        }),
+
+      final events = result.fold(
+        (failure) => throw failure,
+        (events) => events,
       );
 
-      final eligibleEvents =
-          checks
-              .where((check) => !check.hasScale)
-              .map((check) => check.event)
-              .toList()
-            ..sort(_compareEventsForScaleCreation);
-
-      return eligibleEvents;
+      return events
+          .where((event) => !event.startDateTime.isBefore(request.start))
+          .toList()
+        ..sort(_compareEventsForScaleCreation);
     });
 
 final createEventScaleProvider =
@@ -286,14 +268,24 @@ class CreateEventScaleNotifier extends Notifier<AsyncValue<void>> {
   AsyncValue<void> build() => const AsyncData(null);
 
   Future<Either<Failure, CalendarEventScaleEntity>> create({
-    required String eventId,
+    required String departmentId,
+    required CalendarEventEntity event,
     required CalendarEventScaleRequestModel request,
   }) async {
     state = const AsyncLoading();
 
-    final result = await ref
-        .read(calendarEventRepositoryProvider)
-        .createEventScale(eventId, request);
+    final repository = ref.read(calendarEventRepositoryProvider);
+    final isOwnerEvent =
+        event.type == CalendarEventType.department &&
+        event.departmentId == departmentId;
+
+    final result = isOwnerEvent
+        ? await repository.createEventScale(event.id, request)
+        : await repository.createCollaboratorEventScale(
+            event.id,
+            departmentId,
+            request,
+          );
 
     return result.fold(
       (failure) {
@@ -302,7 +294,7 @@ class CreateEventScaleNotifier extends Notifier<AsyncValue<void>> {
       },
       (scale) {
         state = const AsyncData(null);
-        ref.invalidate(eventScalesProvider(eventId));
+        ref.invalidate(eventScalesProvider(event.id));
         ref.invalidate(eligibleDepartmentScaleEventsProvider);
         ref.invalidate(departmentScalesProvider);
         ref.invalidate(departmentScalesWithLineupsProvider);

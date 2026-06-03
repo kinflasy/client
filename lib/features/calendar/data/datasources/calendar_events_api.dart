@@ -29,6 +29,18 @@ class CalendarEventsApi {
     return _readList(response.data);
   }
 
+  Future<List<dynamic>> getDepartmentEventsWithCollabs(
+    String departmentId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/department/$departmentId/with-collabs',
+      queryParameters: _rangeQuery(start, end),
+    );
+    return _readList(response.data);
+  }
+
   Future<Map<String, dynamic>> createUnitEvent(
     String unitId,
     Map<String, dynamic> payload,
@@ -105,6 +117,18 @@ class CalendarEventsApi {
   ) async {
     final response = await _dio.post<dynamic>(
       '/v1/core/calendar-events/$eventId/scales',
+      data: payload,
+    );
+    return _readMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> createCollaboratorEventScale(
+    String eventId,
+    String departmentId,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await _dio.post<dynamic>(
+      '/v1/core/calendar-events/$eventId/collaborators/$departmentId/scales',
       data: payload,
     );
     return _readMap(response.data);

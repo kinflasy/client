@@ -159,7 +159,8 @@ void main() {
     final result = await container
         .read(createEventScaleProvider.notifier)
         .create(
-          eventId: 'event-1',
+          departmentId: 'dep-1',
+          event: _event(id: 'event-1'),
           request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
         );
 
@@ -190,7 +191,8 @@ void main() {
     final result = await container
         .read(createEventScaleProvider.notifier)
         .create(
-          eventId: 'event-1',
+          departmentId: 'dep-1',
+          event: _event(id: 'event-1'),
           request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
         );
 
@@ -199,6 +201,63 @@ void main() {
     expect(state.hasError, isTrue);
     expect(state.error, failure);
   });
+
+  test(
+    'create action uses owner scale endpoint for department owner event',
+    () async {
+      when(
+        () => repository.createEventScale('event-1', any()),
+      ).thenAnswer((_) async => const Right(_ownerScale));
+
+      final result = await container
+          .read(createEventScaleProvider.notifier)
+          .create(
+            departmentId: 'dep-1',
+            event: _event(id: 'event-1', departmentId: 'dep-1'),
+            request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
+          );
+
+      expect(result.isRight(), isTrue);
+      verify(() => repository.createEventScale('event-1', any())).called(1);
+      verifyNever(
+        () => repository.createCollaboratorEventScale(any(), any(), any()),
+      );
+    },
+  );
+
+  test(
+    'create action uses collaborator scale endpoint for collab event',
+    () async {
+      when(
+        () =>
+            repository.createCollaboratorEventScale('event-1', 'dep-1', any()),
+      ).thenAnswer((_) async => const Right(_collaboratorScale));
+
+      final result = await container
+          .read(createEventScaleProvider.notifier)
+          .create(
+            departmentId: 'dep-1',
+            event: _event(id: 'event-1', departmentId: 'dep-owner'),
+            request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
+          );
+
+      expect(result.isRight(), isTrue);
+      verify(
+        () => repository.createCollaboratorEventScale(
+          'event-1',
+          'dep-1',
+          any(
+            that: isA<CalendarEventScaleRequestModel>().having(
+              (request) => request.lineupId,
+              'lineupId',
+              'lineup-1',
+            ),
+          ),
+        ),
+      ).called(1);
+      verifyNever(() => repository.createEventScale(any(), any()));
+    },
+  );
 
   test('save assignments does not call backend when diff is empty', () async {
     final assignments = [_editableAssignment('a1', 'role-1', 'person-1')];
@@ -436,7 +495,8 @@ void main() {
     await container
         .read(createEventScaleProvider.notifier)
         .create(
-          eventId: 'event-1',
+          departmentId: 'dep-1',
+          event: _event(id: 'event-1'),
           request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
         );
     await container.read(eventScalesProvider('event-1').future);
@@ -1349,7 +1409,8 @@ void main() {
     await container
         .read(createEventScaleProvider.notifier)
         .create(
-          eventId: 'event-1',
+          departmentId: 'dep-1',
+          event: _event(id: 'event-1'),
           request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
         );
     await container.read(departmentScalesProvider(request).future);
@@ -1400,7 +1461,8 @@ void main() {
       await container
           .read(createEventScaleProvider.notifier)
           .create(
-            eventId: 'event-1',
+            departmentId: 'dep-1',
+            event: _event(id: 'event-1'),
             request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
           );
       await container.read(departmentScalesWithLineupsProvider(request).future);
@@ -1493,7 +1555,7 @@ void main() {
   );
 
   test(
-    'eligible provider calls department events with request interval',
+    'eligible provider calls department events with collabs request interval',
     () async {
       final start = DateTime(2026, 5, 29, 10);
       final end = DateTime(2026, 11, 29, 23, 59, 59);
@@ -1503,7 +1565,7 @@ void main() {
         end: end,
       );
       when(
-        () => repository.getDepartmentEvents('dep-1', start, end),
+        () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
       ).thenAnswer((_) async => const Right(<CalendarEventEntity>[]));
 
       final result = await _readFutureProvider(
@@ -1513,53 +1575,51 @@ void main() {
 
       expect(result, isEmpty);
       verify(
-        () => repository.getDepartmentEvents('dep-1', start, end),
+        () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
       ).called(1);
+      verifyNever(() => repository.getDepartmentEvents('dep-1', start, end));
     },
   );
 
-  test('eligible provider removes past events and events with scale', () async {
-    final start = DateTime(2026, 5, 29, 10);
-    final end = DateTime(2026, 11, 29, 23, 59, 59);
-    final past = _event(
-      id: 'event-past',
-      title: 'Evento passado',
-      startDateTime: DateTime(2026, 5, 29, 9, 59),
-    );
-    final scaled = _event(
-      id: 'event-scaled',
-      title: 'Evento com escala',
-      startDateTime: DateTime(2026, 5, 30, 10),
-    );
-    final eligible = _event(
-      id: 'event-free',
-      title: 'Evento sem escala',
-      startDateTime: DateTime(2026, 5, 31, 10),
-    );
-    final request = EligibleDepartmentScaleEventsRequest(
-      departmentId: 'dep-1',
-      start: start,
-      end: end,
-    );
+  test(
+    'eligible provider removes past events and keeps events with scale',
+    () async {
+      final start = DateTime(2026, 5, 29, 10);
+      final end = DateTime(2026, 11, 29, 23, 59, 59);
+      final past = _event(
+        id: 'event-past',
+        title: 'Evento passado',
+        startDateTime: DateTime(2026, 5, 29, 9, 59),
+      );
+      final scaled = _event(
+        id: 'event-scaled',
+        title: 'Evento com escala',
+        startDateTime: DateTime(2026, 5, 30, 10),
+      );
+      final eligible = _event(
+        id: 'event-free',
+        title: 'Evento sem escala',
+        startDateTime: DateTime(2026, 5, 31, 10),
+      );
+      final request = EligibleDepartmentScaleEventsRequest(
+        departmentId: 'dep-1',
+        start: start,
+        end: end,
+      );
 
-    when(
-      () => repository.getDepartmentEvents('dep-1', start, end),
-    ).thenAnswer((_) async => Right([past, scaled, eligible]));
-    when(
-      () => repository.getEventScales('event-scaled'),
-    ).thenAnswer((_) async => const Right([_ownerScale]));
-    when(
-      () => repository.getEventScales('event-free'),
-    ).thenAnswer((_) async => const Right(<CalendarEventScaleEntity>[]));
+      when(
+        () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
+      ).thenAnswer((_) async => Right([past, scaled, eligible]));
 
-    final result = await _readFutureProvider(
-      container,
-      eligibleDepartmentScaleEventsProvider(request),
-    );
+      final result = await _readFutureProvider(
+        container,
+        eligibleDepartmentScaleEventsProvider(request),
+      );
 
-    expect(result, [eligible]);
-    verifyNever(() => repository.getEventScales('event-past'));
-  });
+      expect(result, [scaled, eligible]);
+      verifyNever(() => repository.getEventScales(any()));
+    },
+  );
 
   test('eligible provider keeps event at exact start instant', () async {
     final start = DateTime(2026, 5, 29, 10);
@@ -1576,11 +1636,8 @@ void main() {
     );
 
     when(
-      () => repository.getDepartmentEvents('dep-1', start, end),
+      () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
     ).thenAnswer((_) async => Right([event]));
-    when(
-      () => repository.getEventScales('event-now'),
-    ).thenAnswer((_) async => const Right(<CalendarEventScaleEntity>[]));
 
     final result = await _readFutureProvider(
       container,
@@ -1588,6 +1645,7 @@ void main() {
     );
 
     expect(result, [event]);
+    verifyNever(() => repository.getEventScales(any()));
   });
 
   test('eligible provider sorts by start date and title', () async {
@@ -1615,13 +1673,8 @@ void main() {
     );
 
     when(
-      () => repository.getDepartmentEvents('dep-1', start, end),
+      () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
     ).thenAnswer((_) async => Right([later, sameStartB, sameStartA]));
-    for (final event in [later, sameStartB, sameStartA]) {
-      when(
-        () => repository.getEventScales(event.id),
-      ).thenAnswer((_) async => const Right(<CalendarEventScaleEntity>[]));
-    }
 
     final result = await _readFutureProvider(
       container,
@@ -1633,16 +1686,12 @@ void main() {
       'event-b',
       'event-later',
     ]);
+    verifyNever(() => repository.getEventScales(any()));
   });
 
-  test('eligible provider propagates event scale query failure', () async {
+  test('eligible provider propagates events with collabs failure', () async {
     final start = DateTime(2026, 5, 29, 10);
     final end = DateTime(2026, 11, 29, 23, 59, 59);
-    final event = _event(
-      id: 'event-1',
-      title: 'Evento',
-      startDateTime: DateTime(2026, 6),
-    );
     final request = EligibleDepartmentScaleEventsRequest(
       departmentId: 'dep-1',
       start: start,
@@ -1650,10 +1699,9 @@ void main() {
     );
 
     when(
-      () => repository.getDepartmentEvents('dep-1', start, end),
-    ).thenAnswer((_) async => Right([event]));
-    when(() => repository.getEventScales('event-1')).thenAnswer(
-      (_) async => const Left(NetworkFailure('Falha ao carregar escalas')),
+      () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
+    ).thenAnswer(
+      (_) async => const Left(NetworkFailure('Falha ao carregar eventos')),
     );
 
     await expectLater(
@@ -1663,6 +1711,7 @@ void main() {
       ),
       throwsA(isA<NetworkFailure>()),
     );
+    verifyNever(() => repository.getEventScales(any()));
   });
 }
 
@@ -1671,6 +1720,13 @@ const _ownerScale = CalendarEventScaleEntity(
   lineupId: 'lineup-1',
   type: CalendarEventScaleType.owner,
   calendarEventId: 'event-1',
+);
+
+const _collaboratorScale = CalendarEventScaleEntity(
+  id: 'scale-2',
+  lineupId: 'lineup-1',
+  type: CalendarEventScaleType.collaborator,
+  collaborationId: 'collab-1',
 );
 
 const _scaleItem = ScaleItemEntity(
@@ -1730,6 +1786,7 @@ CalendarEventEntity _event({
   required String id,
   String title = 'Evento',
   DateTime? startDateTime,
+  String departmentId = 'dep-1',
 }) {
   final start = startDateTime ?? DateTime(2026, 6);
   return CalendarEventEntity(
@@ -1738,7 +1795,7 @@ CalendarEventEntity _event({
     startDateTime: start,
     endDateTime: start.add(const Duration(hours: 2)),
     type: CalendarEventType.department,
-    departmentId: 'dep-1',
+    departmentId: departmentId,
   );
 }
 

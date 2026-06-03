@@ -21,6 +21,13 @@ abstract class CalendarEventRepository {
     DateTime end,
   );
 
+  Future<Either<Failure, List<CalendarEventEntity>>>
+  getDepartmentEventsWithCollabs(
+    String departmentId,
+    DateTime start,
+    DateTime end,
+  );
+
   Future<Either<Failure, CalendarEventEntity>> createUnitEvent(
     String unitId,
     CalendarEventRequestModel request,
@@ -58,6 +65,13 @@ abstract class CalendarEventRepository {
 
   Future<Either<Failure, CalendarEventScaleEntity>> createEventScale(
     String eventId,
+    CalendarEventScaleRequestModel request,
+  );
+
+  Future<Either<Failure, CalendarEventScaleEntity>>
+  createCollaboratorEventScale(
+    String eventId,
+    String departmentId,
     CalendarEventScaleRequestModel request,
   );
 

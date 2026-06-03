@@ -79,6 +79,8 @@ abstract class CalendarEventRepository {
     String scaleId,
   );
 
+  Future<Either<Failure, void>> deleteScale(String scaleId);
+
   Future<Either<Failure, List<ScaleItemEntity>>> getScaleItems(String scaleId);
 
   Future<Either<Failure, ScaleItemEntity>> addScaleItem({

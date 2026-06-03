@@ -266,6 +266,51 @@ void main() {
     expect(find.text('Adicionar pessoa'), findsOneWidget);
   });
 
+  testWidgets('usuario sem permissao nao ve acao de excluir escala', (
+    tester,
+  ) async {
+    await _pumpScreen(tester, detail: _detail());
+
+    expect(find.byTooltip('Ações da escala'), findsNothing);
+  });
+
+  testWidgets('usuario com canManageDept ve acao de excluir escala', (
+    tester,
+  ) async {
+    await _pumpScreen(tester, detail: _detail(), canManageScale: true);
+
+    await tester.tap(find.byTooltip('Ações da escala'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Excluir escala'), findsOneWidget);
+  });
+
+  testWidgets('excluir escala confirma e mostra erro quando falha', (
+    tester,
+  ) async {
+    final repository = _MockCalendarEventRepository();
+    when(
+      () => repository.deleteScale('scale-1'),
+    ).thenAnswer((_) async => const Left(NetworkFailure('Falha simulada.')));
+
+    await _pumpScreen(
+      tester,
+      detail: _detail(),
+      canManageScale: true,
+      repository: repository,
+    );
+
+    await tester.tap(find.byTooltip('Ações da escala'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir escala'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Falha simulada.'), findsOneWidget);
+    verify(() => repository.deleteScale('scale-1')).called(1);
+  });
+
   testWidgets('botao Adicionar pessoa fica desabilitado sem funcoes', (
     tester,
   ) async {

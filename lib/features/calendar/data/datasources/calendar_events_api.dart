@@ -141,6 +141,10 @@ class CalendarEventsApi {
     return _readMap(response.data);
   }
 
+  Future<void> deleteScale(String scaleId) async {
+    await _dio.delete<void>('/v1/core/calendar-events/scales/$scaleId');
+  }
+
   Future<List<dynamic>> getScaleItems(String scaleId) async {
     final response = await _dio.get<dynamic>(
       '/v1/core/calendar-events/scales/$scaleId/items',

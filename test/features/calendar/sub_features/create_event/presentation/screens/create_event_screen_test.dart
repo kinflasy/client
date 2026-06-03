@@ -755,6 +755,11 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, void>> deleteScale(String scaleId) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
   Future<Either<Failure, List<ScaleItemEntity>>> getScaleItems(
     String scaleId,
   ) async {

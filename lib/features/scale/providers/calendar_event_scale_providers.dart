@@ -263,6 +263,11 @@ final saveScaleAssignmentsProvider =
       SaveScaleAssignmentsNotifier.new,
     );
 
+final deleteDepartmentScaleProvider =
+    NotifierProvider<DeleteDepartmentScaleNotifier, AsyncValue<void>>(
+      DeleteDepartmentScaleNotifier.new,
+    );
+
 class CreateEventScaleNotifier extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
@@ -359,6 +364,39 @@ class SaveScaleAssignmentsNotifier extends Notifier<AsyncValue<void>> {
     ref.invalidate(departmentScalesWithLineupsProvider);
     ref.invalidate(departmentScalesProvider);
     return const Right(null);
+  }
+}
+
+class DeleteDepartmentScaleNotifier extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncData(null);
+
+  Future<Either<Failure, void>> delete({
+    required String departmentId,
+    required String scaleId,
+  }) async {
+    state = const AsyncLoading();
+
+    final result = await ref
+        .read(calendarEventRepositoryProvider)
+        .deleteScale(scaleId);
+
+    return result.fold(
+      (failure) {
+        state = AsyncError(failure, StackTrace.current);
+        return Left(failure);
+      },
+      (_) {
+        state = const AsyncData(null);
+        ref.invalidate(eventScalesProvider);
+        ref.invalidate(eligibleDepartmentScaleEventsProvider);
+        ref.invalidate(departmentScalesProvider);
+        ref.invalidate(departmentScalesWithLineupsProvider);
+        ref.invalidate(departmentScaleDetailProvider);
+        ref.invalidate(departmentScaleAssignmentDetailProvider);
+        return const Right(null);
+      },
+    );
   }
 }
 

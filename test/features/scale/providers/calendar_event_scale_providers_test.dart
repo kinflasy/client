@@ -474,6 +474,77 @@ void main() {
     );
   });
 
+  test('delete scale calls repository and returns success', () async {
+    when(
+      () => repository.deleteScale('scale-1'),
+    ).thenAnswer((_) async => const Right(null));
+
+    final result = await container
+        .read(deleteDepartmentScaleProvider.notifier)
+        .delete(departmentId: 'dep-1', scaleId: 'scale-1');
+
+    expect(result.isRight(), isTrue);
+    expect(
+      container.read(deleteDepartmentScaleProvider),
+      const AsyncData<void>(null),
+    );
+    verify(() => repository.deleteScale('scale-1')).called(1);
+  });
+
+  test('delete scale preserves failure state', () async {
+    const failure = NetworkFailure('Falha ao excluir escala.');
+    when(
+      () => repository.deleteScale('scale-1'),
+    ).thenAnswer((_) async => const Left(failure));
+
+    final result = await container
+        .read(deleteDepartmentScaleProvider.notifier)
+        .delete(departmentId: 'dep-1', scaleId: 'scale-1');
+
+    expect(result.isLeft(), isTrue);
+    final state = container.read(deleteDepartmentScaleProvider);
+    expect(state.hasError, isTrue);
+    expect(state.error, failure);
+  });
+
+  test(
+    'delete scale invalidates department scale list after success',
+    () async {
+      final request = _departmentScalesRequest();
+      var loadCount = 0;
+      when(
+        () => repository.getDepartmentScales(
+          request.departmentId,
+          request.start,
+          request.end,
+        ),
+      ).thenAnswer((_) {
+        loadCount++;
+        return Future.value(
+          const Right(<DepartmentCalendarEventScaleEntity>[]),
+        );
+      });
+      when(
+        () => repository.deleteScale('scale-1'),
+      ).thenAnswer((_) async => const Right(null));
+
+      final subscription = container.listen(
+        departmentScalesProvider(request),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      await container.read(departmentScalesProvider(request).future);
+      await container
+          .read(deleteDepartmentScaleProvider.notifier)
+          .delete(departmentId: 'dep-1', scaleId: 'scale-1');
+      await container.read(departmentScalesProvider(request).future);
+
+      expect(loadCount, 2);
+    },
+  );
+
   test('create action invalidates event scales after success', () async {
     var loadCount = 0;
     when(() => repository.getEventScales('event-1')).thenAnswer((_) {

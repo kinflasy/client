@@ -215,6 +215,14 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, void>> deleteScale(String scaleId) {
+    return _delete(
+      () => _api.deleteScale(scaleId),
+      fallbackMessage: 'Erro ao remover escala.',
+    );
+  }
+
+  @override
   Future<Either<Failure, List<ScaleItemEntity>>> getScaleItems(
     String scaleId,
   ) async {

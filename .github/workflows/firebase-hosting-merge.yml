@@ -19,12 +19,12 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter build web --release
-      - uses: FirebaseExtended/action-hosting-deploy@v0
         env:
           BASE_URL: ${{ env.BASE_URL}}
           OPENFGA_HOST: ${{ env.OPENFGA_HOST}}
           OPENFGA_STORE_ID: ${{ env.OPENFGA_STORE_ID}}
           OPENFGA_AUTHORIZATION_MODEL_ID: ${{ env.OPENFGA_AUTHORIZATION_MODEL_ID}}
+      - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KINFLASY_CLIENT }}

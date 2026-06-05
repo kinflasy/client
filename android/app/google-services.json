@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "593065615362",
+    "project_id": "staging-pontis",
+    "storage_bucket": "staging-pontis.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:593065615362:android:5cdb1e3233448499cd071b",
+        "android_client_info": {
+          "package_name": "com.example.client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDycsws6ww8hd6_bZWkp8yBaci_jPb4sUU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

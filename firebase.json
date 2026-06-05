@@ -6,5 +6,26 @@
       "**/.*",
       "**/node_modules/**"
     ]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "staging-pontis",
+          "appId": "1:593065615362:android:5cdb1e3233448499cd071b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "staging-pontis",
+          "configurations": {
+            "android": "1:593065615362:android:5cdb1e3233448499cd071b",
+            "ios": "1:593065615362:ios:dedf7cdac288deaacd071b",
+            "web": "1:593065615362:web:24b9a2f1a27ac29bcd071b"
+          }
+        }
+      }
+    }
   }
 }

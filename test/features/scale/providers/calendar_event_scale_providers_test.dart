@@ -19,6 +19,7 @@ import 'package:client/features/membership/data/models/person_profile_model.dart
 import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
+import 'package:client/features/scale/domain/entities/department_scale_card_summary_entity.dart';
 import 'package:client/features/scale/domain/entities/scale_assignment_person_entity.dart';
 import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
 import 'package:client/features/scale/domain/entities/editable_scale_assignment_entity.dart';
@@ -930,6 +931,363 @@ void main() {
     },
   );
 
+  test(
+    'department assignment summaries provider resolves people from participants',
+    () async {
+      final request = _departmentScalesRequest();
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [scale],
+        scaleItemsByScaleId: const {
+          'scale-1': [
+            ScaleItemEntity(
+              id: 'scale-item-1',
+              scaleId: 'scale-1',
+              roleId: 'role-1',
+              personId: 'person-1',
+            ),
+          ],
+        },
+        participants: const [
+          DepartmentParticipantEntity(
+            personId: 'person-1',
+            membershipId: 'membership-1',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Ana',
+            affiliation: 'MEMBER',
+            gender: 'FEMALE',
+          ),
+        ],
+      );
+
+      final List<DepartmentScaleCardSummaryEntity> result =
+          await _readFutureProvider(
+            container,
+            departmentScalesWithAssignmentSummariesProvider(request),
+          );
+
+      expect(result, hasLength(1));
+      expect(result.single.base.scale.scale.id, 'scale-1');
+      expect(result.single.peopleLoadFailed, isFalse);
+      expect(result.single.roleSummaries, hasLength(2));
+      expect(
+        result.single.roleSummaries.first.people.single.displayName,
+        'Ana',
+      );
+      expect(
+        result.single.roleSummaries.first.people.single.scaleItemId,
+        'scale-item-1',
+      );
+    },
+  );
+
+  test(
+    'department assignment summaries provider keeps role without people',
+    () async {
+      final request = _departmentScalesRequest();
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [scale],
+        scaleItemsByScaleId: const {
+          'scale-1': [
+            ScaleItemEntity(
+              id: 'scale-item-1',
+              scaleId: 'scale-1',
+              roleId: 'role-1',
+              personId: 'person-1',
+            ),
+          ],
+        },
+        participants: const [
+          DepartmentParticipantEntity(
+            personId: 'person-1',
+            membershipId: 'membership-1',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Ana',
+            affiliation: 'MEMBER',
+            gender: 'FEMALE',
+          ),
+        ],
+      );
+
+      final List<DepartmentScaleCardSummaryEntity> result =
+          await _readFutureProvider(
+            container,
+            departmentScalesWithAssignmentSummariesProvider(request),
+          );
+
+      final emptyRole = result.single.roleSummaries.last;
+      expect(emptyRole.item.roleId, 'role-2');
+      expect(emptyRole.people, isEmpty);
+      expect(emptyRole.hasOpenVacancy, isTrue);
+    },
+  );
+
+  test(
+    'department assignment summaries provider dedupes people in the same role',
+    () async {
+      final request = _departmentScalesRequest();
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      const lineup = LineupEntity(
+        id: 'lineup-1',
+        name: 'Louvor',
+        items: [
+          LineupItemEntity(
+            id: 'lineup-item-1',
+            lineupId: 'lineup-1',
+            roleId: 'role-1',
+            description: 'Vocal',
+          ),
+          LineupItemEntity(
+            id: 'lineup-item-2',
+            lineupId: 'lineup-1',
+            roleId: 'role-1',
+            description: 'Vocal',
+          ),
+        ],
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [scale],
+        lineup: lineup,
+        scaleItemsByScaleId: const {
+          'scale-1': [
+            ScaleItemEntity(
+              id: 'scale-item-1',
+              scaleId: 'scale-1',
+              roleId: 'role-1',
+              personId: 'person-1',
+            ),
+            ScaleItemEntity(
+              id: 'scale-item-2',
+              scaleId: 'scale-1',
+              roleId: 'role-1',
+              personId: 'person-2',
+            ),
+            ScaleItemEntity(
+              id: 'scale-item-3',
+              scaleId: 'scale-1',
+              roleId: 'role-1',
+              personId: 'person-1',
+            ),
+          ],
+        },
+        participants: const [
+          DepartmentParticipantEntity(
+            personId: 'person-1',
+            membershipId: 'membership-1',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Ana',
+            affiliation: 'MEMBER',
+            gender: 'FEMALE',
+          ),
+          DepartmentParticipantEntity(
+            personId: 'person-2',
+            membershipId: 'membership-2',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Joao',
+            affiliation: 'MEMBER',
+            gender: 'MALE',
+          ),
+        ],
+      );
+
+      final List<DepartmentScaleCardSummaryEntity> result =
+          await _readFutureProvider(
+            container,
+            departmentScalesWithAssignmentSummariesProvider(request),
+          );
+
+      final role = result.single.roleSummaries.single;
+      expect(role.capacity, 2);
+      expect(role.people.map((person) => person.displayName), ['Ana', 'Joao']);
+    },
+  );
+
+  test(
+    'department assignment summaries provider keeps list when people fail',
+    () async {
+      final request = _departmentScalesRequest();
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [scale],
+        participantsFailure: const NetworkFailure('Falha nos integrantes'),
+      );
+
+      final List<DepartmentScaleCardSummaryEntity> result =
+          await _readFutureProvider(
+            container,
+            departmentScalesWithAssignmentSummariesProvider(request),
+          );
+
+      expect(result, hasLength(1));
+      expect(result.single.peopleLoadFailed, isTrue);
+      expect(result.single.roleSummaries, hasLength(2));
+      for (final role in result.single.roleSummaries) {
+        expect(role.people, isEmpty);
+      }
+      verifyNever(() => repository.getScaleItems(any()));
+    },
+  );
+
+  test(
+    'department assignment summaries provider keeps list when scale items fail',
+    () async {
+      final request = _departmentScalesRequest();
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [scale],
+        scaleItemsFailureByScaleId: const {
+          'scale-1': NetworkFailure('Falha ao carregar itens'),
+        },
+      );
+
+      final List<DepartmentScaleCardSummaryEntity> result =
+          await _readFutureProvider(
+            container,
+            departmentScalesWithAssignmentSummariesProvider(request),
+          );
+
+      expect(result, hasLength(1));
+      expect(result.single.peopleLoadFailed, isTrue);
+      expect(result.single.roleSummaries, hasLength(2));
+      final people = result.single.roleSummaries
+          .expand<ScaleAssignmentPersonEntity>((role) => role.people)
+          .toList();
+      expect(people, isEmpty);
+    },
+  );
+
+  test(
+    'department assignment summaries provider loads participants once',
+    () async {
+      final request = _departmentScalesRequest();
+      final first = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      final second = _departmentScale(
+        scaleId: 'scale-2',
+        eventId: 'event-2',
+        title: 'Culto',
+        startDateTime: DateTime(2026, 6, 1),
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [first, second],
+        scaleItemsByScaleId: const {'scale-1': [], 'scale-2': []},
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScalesWithAssignmentSummariesProvider(request),
+      );
+
+      expect(result, hasLength(2));
+      verify(() => departmentRepository.getParticipants('dep-1')).called(1);
+    },
+  );
+
+  test(
+    'save assignments invalidates department assignment summaries on success',
+    () async {
+      final request = _departmentScalesRequest();
+      var itemsLoadCount = 0;
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+
+      when(
+        () => repository.getDepartmentScales(
+          request.departmentId,
+          request.start,
+          request.end,
+        ),
+      ).thenAnswer((_) async => Right([scale]));
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-1'),
+      ).thenAnswer((_) async => const Right(_assignmentLineup));
+      when(
+        () => departmentRepository.getParticipants('dep-1'),
+      ).thenAnswer((_) async => const Right(<DepartmentParticipantEntity>[]));
+      when(() => repository.getScaleItems('scale-1')).thenAnswer((_) {
+        itemsLoadCount++;
+        return Future.value(const Right(<ScaleItemEntity>[]));
+      });
+      when(
+        () => repository.addScaleItem(
+          scaleId: 'scale-1',
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer((_) async => const Right(_scaleItem));
+
+      final provider = departmentScalesWithAssignmentSummariesProvider(request);
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+
+      await container.read(provider.future);
+      await container
+          .read(saveScaleAssignmentsProvider.notifier)
+          .save(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+            originalAssignments: const [],
+            currentAssignments: [
+              _editableAssignment('a1', 'role-1', 'person-1'),
+            ],
+          );
+      await container.read(provider.future);
+
+      expect(itemsLoadCount, 2);
+    },
+  );
+
   test('department scale detail provider returns complete detail', () async {
     const lineup = LineupEntity(id: 'lineup-1', name: 'Louvor completo');
 
@@ -1825,6 +2183,46 @@ const _assignmentLineup = LineupEntity(
     ),
   ],
 );
+
+void _stubAssignmentSummaryBase(
+  _MockCalendarEventRepository repository,
+  _MockDepartmentRepository departmentRepository, {
+  required DepartmentScalesRequest request,
+  required List<DepartmentCalendarEventScaleEntity> scales,
+  LineupEntity lineup = _assignmentLineup,
+  Map<String, List<ScaleItemEntity>> scaleItemsByScaleId = const {},
+  Map<String, Failure> scaleItemsFailureByScaleId = const {},
+  List<DepartmentParticipantEntity> participants = const [],
+  Failure? participantsFailure,
+}) {
+  when(
+    () => repository.getDepartmentScales(
+      request.departmentId,
+      request.start,
+      request.end,
+    ),
+  ).thenAnswer((_) async => Right(scales));
+  when(
+    () => departmentRepository.getLineupWithItems(lineup.id),
+  ).thenAnswer((_) async => Right(lineup));
+  when(
+    () => departmentRepository.getParticipants(request.departmentId),
+  ).thenAnswer(
+    (_) async => participantsFailure != null
+        ? Left(participantsFailure)
+        : Right(participants),
+  );
+
+  for (final scale in scales) {
+    final scaleId = scale.scale.id;
+    final failure = scaleItemsFailureByScaleId[scaleId];
+    when(() => repository.getScaleItems(scaleId)).thenAnswer(
+      (_) async => failure != null
+          ? Left(failure)
+          : Right(scaleItemsByScaleId[scaleId] ?? const []),
+    );
+  }
+}
 
 void _stubAssignmentDetailBase(
   _MockCalendarEventRepository repository,

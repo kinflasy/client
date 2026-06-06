@@ -441,7 +441,7 @@ class _DepartmentScalesTabState extends ConsumerState<_DepartmentScalesTab> {
     if (!widget.isActive) return const SizedBox.shrink();
 
     final scalesAsync = ref.watch(
-      departmentScalesWithLineupsProvider(_scalesRequest),
+      departmentScalesWithAssignmentSummariesProvider(_scalesRequest),
     );
 
     return Column(
@@ -482,16 +482,16 @@ class _DepartmentScalesTabState extends ConsumerState<_DepartmentScalesTab> {
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
-                  final scaleWithLineup = scales[index];
+                  final scaleSummary = scales[index];
                   return DepartmentScaleCard(
-                    scale: scaleWithLineup,
+                    scale: scaleSummary,
                     onTap: () => context.pushNamed(
                       AppRoutes.departmentScaleDetailName,
                       pathParameters: {
                         'departmentId': widget.departmentId,
-                        'scaleId': scaleWithLineup.scale.scale.id,
+                        'scaleId': scaleSummary.base.scale.scale.id,
                       },
-                      extra: scaleWithLineup,
+                      extra: scaleSummary.base,
                     ),
                   );
                 },

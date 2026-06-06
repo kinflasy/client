@@ -1,12 +1,14 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/features/department/domain/entities/lineup_item_entity.dart';
-import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
+import 'package:client/features/scale/domain/entities/department_scale_card_summary_entity.dart';
+import 'package:client/features/scale/domain/entities/scale_assignment_person_entity.dart';
+import 'package:client/features/scale/domain/entities/scale_role_assignments_entity.dart';
 import 'package:flutter/material.dart';
 
 class DepartmentScaleCard extends StatefulWidget {
   const DepartmentScaleCard({super.key, required this.scale, this.onTap});
 
-  final DepartmentScaleWithLineupEntity scale;
+  final DepartmentScaleCardSummaryEntity scale;
   final VoidCallback? onTap;
 
   @override
@@ -18,7 +20,7 @@ class _DepartmentScaleCardState extends State<DepartmentScaleCard> {
 
   @override
   Widget build(BuildContext context) {
-    final event = widget.scale.scale.calendarEvent;
+    final event = widget.scale.base.scale.calendarEvent;
     final lineupSection = _buildLineupSection();
 
     return Material(
@@ -72,30 +74,34 @@ class _DepartmentScaleCardState extends State<DepartmentScaleCard> {
   }
 
   Widget? _buildLineupSection() {
-    if (widget.scale.hasLineupFailure) return null;
+    if (widget.scale.base.hasLineupFailure) return null;
 
-    final labels = _lineupItemLabels(
-      widget.scale.lineup?.items ?? const <LineupItemEntity>[],
-    );
+    final roleSummaries = widget.scale.peopleLoadFailed
+        ? _roleSummariesFromLineupItems(
+            widget.scale.base.lineup?.items ?? const <LineupItemEntity>[],
+          )
+        : widget.scale.roleSummaries;
 
-    if (labels.isEmpty) {
+    if (roleSummaries.isEmpty) {
       return const Text(
         'Nenhuma função definida',
         style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
       );
     }
 
-    final visibleLabels = _isExpanded ? labels : labels.take(3).toList();
-    final hiddenCount = labels.length - visibleLabels.length;
+    final visibleSummaries = _isExpanded
+        ? roleSummaries
+        : roleSummaries.take(3).toList();
+    final hiddenCount = roleSummaries.length - visibleSummaries.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var index = 0; index < visibleLabels.length; index++) ...[
-          _LineupFunctionRow(label: visibleLabels[index]),
-          if (index < visibleLabels.length - 1) const SizedBox(height: 6),
+        for (var index = 0; index < visibleSummaries.length; index++) ...[
+          _LineupFunctionRow(summary: visibleSummaries[index]),
+          if (index < visibleSummaries.length - 1) const SizedBox(height: 6),
         ],
-        if (labels.length > 3) ...[
+        if (roleSummaries.length > 3) ...[
           const SizedBox(height: 4),
           Align(
             alignment: Alignment.centerLeft,
@@ -123,25 +129,70 @@ class _DepartmentScaleCardState extends State<DepartmentScaleCard> {
 }
 
 class _LineupFunctionRow extends StatelessWidget {
-  const _LineupFunctionRow({required this.label});
+  const _LineupFunctionRow({required this.summary});
 
-  final String label;
+  final ScaleRoleAssignmentsEntity summary;
 
   @override
   Widget build(BuildContext context) {
+    final label = _lineupItemLabel(summary.item);
+    final names = summary.people
+        .map((person) => person.displayName.trim())
+        .where((name) => name.isNotEmpty)
+        .join(', ');
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const Icon(Icons.circle, size: 6, color: AppColors.textSecondary),
-        const SizedBox(width: 8),
-        Expanded(
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 72, maxWidth: 120),
           child: Text(
-            label,
+            label.isEmpty ? 'Função sem nome' : label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
           ),
         ),
+        if (names.isNotEmpty) ...[
+          const SizedBox(width: 12),
+          Expanded(child: _ScrollableNamesFade(text: names)),
+        ],
       ],
+    );
+  }
+}
+
+class _ScrollableNamesFade extends StatelessWidget {
+  const _ScrollableNamesFade({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      shaderCallback: (bounds) {
+        return const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Colors.black, Colors.black, Colors.transparent],
+          stops: [0, 0.86, 1],
+        ).createShader(bounds);
+      },
+      blendMode: BlendMode.dstIn,
+      child: SingleChildScrollView(
+        key: const Key('department-scale-card-names-scroll'),
+        scrollDirection: Axis.horizontal,
+        physics: const ClampingScrollPhysics(),
+        child: Text(
+          text,
+          maxLines: 1,
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+      ),
     );
   }
 }
@@ -152,23 +203,29 @@ String _lineupItemLabel(LineupItemEntity item) {
   return item.description.trim();
 }
 
-List<String> _lineupItemLabels(List<LineupItemEntity> items) {
-  final labelsByRoleId = <String, String>{};
-  final countsByRoleId = <String, int>{};
+List<ScaleRoleAssignmentsEntity> _roleSummariesFromLineupItems(
+  List<LineupItemEntity> items,
+) {
+  final itemsByRoleId = <String, LineupItemEntity>{};
+  final capacityByRoleId = <String, int>{};
 
   for (final item in items) {
     final label = _lineupItemLabel(item);
     if (label.isEmpty) continue;
 
-    labelsByRoleId.putIfAbsent(item.roleId, () => label);
-    countsByRoleId[item.roleId] = (countsByRoleId[item.roleId] ?? 0) + 1;
+    itemsByRoleId.putIfAbsent(item.roleId, () => item);
+    capacityByRoleId[item.roleId] = (capacityByRoleId[item.roleId] ?? 0) + 1;
   }
 
-  return labelsByRoleId.entries.map((entry) {
-    final count = countsByRoleId[entry.key] ?? 1;
-    if (count <= 1) return entry.value;
-    return '${entry.value} ($count vagas)';
-  }).toList();
+  return itemsByRoleId.entries
+      .map(
+        (entry) => ScaleRoleAssignmentsEntity(
+          item: entry.value,
+          people: const <ScaleAssignmentPersonEntity>[],
+          capacity: capacityByRoleId[entry.key] ?? 1,
+        ),
+      )
+      .toList();
 }
 
 String _formatScaleDate(DateTime dateTime) {

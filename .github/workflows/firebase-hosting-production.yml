@@ -1,0 +1,26 @@
+# This file deploys to Firebase Hosting Preview Channel for production
+
+name: Deploy to Firebase Hosting - Production
+on:
+  push:
+    branches:
+      - production
+jobs:
+  build_and_preview:
+    runs-on: ubuntu-latest
+    environment:
+      name: "pontis / production"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.6"
+          cache: true
+      - run: flutter pub get
+      - run: flutter build web --release -D BASE_URL=${{ vars.BASE_URL }} -D OPENFGA_HOST=${{ vars.OPENFGA_HOST }} -D OPENFGA_STORE_ID=${{ vars.OPENFGA_STORE_ID }} -D OPENFGA_AUTHORIZATION_MODEL_ID=${{ vars.OPENFGA_AUTHORIZATION_MODEL_ID }}
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PRODUCTION_PONTIS }}
+          projectId: production-pontis
+          channelId: live

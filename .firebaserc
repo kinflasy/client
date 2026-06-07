@@ -1,6 +1,7 @@
 {
   "projects": {
     "default": "kinflasy-client",
-    "staging": "staging-pontis"
+    "staging": "staging-pontis",
+    "production": "production-pontis"
   }
 }

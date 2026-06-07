@@ -9,7 +9,7 @@ jobs:
   build_and_preview:
     runs-on: ubuntu-latest
     environment:
-      name: "pontis / production"
+      name: "production"
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2

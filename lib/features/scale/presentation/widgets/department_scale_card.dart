@@ -23,49 +23,66 @@ class _DepartmentScaleCardState extends State<DepartmentScaleCard> {
     final event = widget.scale.base.scale.calendarEvent;
     final lineupSection = _buildLineupSection();
 
-    return Material(
-      color: AppColors.surfaceContainerHigh.withValues(alpha: 0.35),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: widget.onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Material(
+        color: AppColors.surfaceContainerHigh.withValues(alpha: 0.35),
+        child: InkWell(
+          onTap: widget.onTap,
+          child: Stack(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              const Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 3,
+                child: ColoredBox(color: AppColors.secondary),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 18, 14, 16),
+                child: Row(
                   children: [
-                    Text(
-                      _formatScaleDate(event.startDateTime),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _formatScaleDate(event.startDateTime).toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.textSecondary.withValues(alpha: 0.75),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            event.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          if (lineupSection != null) ...[
+                            const SizedBox(height: 12),
+                            lineupSection,
+                          ],
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      event.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                    const SizedBox(width: 12),
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textSecondary,
                     ),
-                    if (lineupSection != null) ...[
-                      const SizedBox(height: 12),
-                      lineupSection,
-                    ],
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -108,9 +125,10 @@ class _DepartmentScaleCardState extends State<DepartmentScaleCard> {
             child: TextButton(
               style: TextButton.styleFrom(
                 visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 0),
-                minimumSize: const Size(96, 40),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(92, 35),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,                
+                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
               ),
               onPressed: () {
                 setState(() {
@@ -145,7 +163,7 @@ class _LineupFunctionRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 72, maxWidth: 120),
+          constraints: const BoxConstraints(maxWidth: 120),
           child: Text(
             label.isEmpty ? 'Função sem nome' : label,
             maxLines: 1,
@@ -158,7 +176,7 @@ class _LineupFunctionRow extends StatelessWidget {
           ),
         ),
         if (names.isNotEmpty) ...[
-          const SizedBox(width: 12),
+          const SizedBox(width: 5),
           Expanded(child: _ScrollableNamesFade(text: names)),
         ],
       ],
@@ -250,5 +268,5 @@ String _formatScaleDate(DateTime dateTime) {
   final hour = dateTime.hour.toString().padLeft(2, '0');
   final minute = dateTime.minute.toString().padLeft(2, '0');
 
-  return '$weekday, ${dateTime.day} $month - $hour:$minute';
+  return '$weekday, ${dateTime.day} $month · $hour:$minute';
 }

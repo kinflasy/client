@@ -19,7 +19,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Dom, 19 jul - 09:00'), findsOneWidget);
+    expect(find.text('Dom, 19 jul · 09:00'), findsOneWidget);
     expect(find.text('Culto da manhã'), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right), findsOneWidget);
   });

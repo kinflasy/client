@@ -63,7 +63,7 @@ class MenuUserHeaderContent extends StatelessWidget {
             displayName,
             textAlign: TextAlign.center,
             style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w400,
               color: colorScheme.onSurface,
             ),
           ),

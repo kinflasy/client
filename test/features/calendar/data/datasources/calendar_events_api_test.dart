@@ -90,6 +90,41 @@ void main() {
     ]);
   });
 
+  test('gets visible events using range query', () async {
+    final start = DateTime(2026, 5, 30, 9);
+    final end = DateTime(2026, 11, 30, 23, 59, 59);
+    when(
+      () => dio.get<dynamic>(
+        '/v1/core/calendar-events/visible',
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/calendar-events/visible',
+        ),
+        data: [
+          {'id': 'event-1'},
+        ],
+      ),
+    );
+
+    final list = await api.getVisibleEvents(start, end);
+
+    expect(list, [
+      {'id': 'event-1'},
+    ]);
+    verify(
+      () => dio.get<dynamic>(
+        '/v1/core/calendar-events/visible',
+        queryParameters: {
+          'start': start.toIso8601String(),
+          'end': end.toIso8601String(),
+        },
+      ),
+    ).called(1);
+  });
+
   test('gets department events with collabs using range query', () async {
     final start = DateTime(2026, 5, 30, 9);
     final end = DateTime(2026, 11, 30, 23, 59, 59);

@@ -14,6 +14,16 @@ import 'package:client/features/user_profile/providers/user_profile_providers.da
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+class VisibleCalendarEventsRequest extends Equatable {
+  const VisibleCalendarEventsRequest({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  @override
+  List<Object?> get props => [start, end];
+}
+
 class UnitCalendarEventsRequest extends Equatable {
   const UnitCalendarEventsRequest({
     required this.unitId,
@@ -51,6 +61,18 @@ final calendarEventsApiProvider = Provider<CalendarEventsApi>(
 final calendarEventRepositoryProvider = Provider<CalendarEventRepository>(
   (ref) => CalendarEventRepositoryImpl(ref.watch(calendarEventsApiProvider)),
 );
+
+final visibleCalendarEventsProvider =
+    FutureProvider.family<
+      List<CalendarEventEntity>,
+      VisibleCalendarEventsRequest
+    >((ref, request) async {
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .getVisibleEvents(request.start, request.end);
+
+      return result.fold((failure) => throw failure, (events) => events);
+    });
 
 final unitCalendarEventsProvider =
     FutureProvider.family<List<CalendarEventEntity>, UnitCalendarEventsRequest>(

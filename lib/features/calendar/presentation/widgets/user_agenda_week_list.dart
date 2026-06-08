@@ -10,12 +10,14 @@ class UserAgendaWeekList extends StatefulWidget {
     required this.selectedDate,
     required this.today,
     this.focusTargetDate,
+    this.onEventTap,
   });
 
   final List<UserAgendaDayGroupEntity> groups;
   final DateTime selectedDate;
   final DateTime today;
   final DateTime? focusTargetDate;
+  final ValueChanged<String>? onEventTap;
 
   @override
   State<UserAgendaWeekList> createState() => _UserAgendaWeekListState();
@@ -79,6 +81,7 @@ class _UserAgendaWeekListState extends State<UserAgendaWeekList> {
                 groupsWithScheduleItems[index].date,
                 widget.selectedDate,
               ),
+              onEventTap: widget.onEventTap,
             ),
             if (index < groupsWithScheduleItems.length - 1)
               const SizedBox(height: 16),
@@ -132,11 +135,13 @@ class _WeekDayGroup extends StatelessWidget {
     required this.group,
     required this.today,
     required this.isSelected,
+    this.onEventTap,
   });
 
   final UserAgendaDayGroupEntity group;
   final DateTime today;
   final bool isSelected;
+  final ValueChanged<String>? onEventTap;
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +156,7 @@ class _WeekDayGroup extends StatelessWidget {
         _DayTitle(date: group.date, today: today, isSelected: isSelected),
         const SizedBox(height: 8),
         for (var index = 0; index < scheduleItems.length; index++) ...[
-          _AgendaItemCard(item: scheduleItems[index]),
+          _AgendaItemCard(item: scheduleItems[index], onEventTap: onEventTap),
           if (index < scheduleItems.length - 1) const SizedBox(height: 10),
         ],
       ],
@@ -275,15 +280,16 @@ class _BirthdayCard extends StatelessWidget {
 }
 
 class _AgendaItemCard extends StatelessWidget {
-  const _AgendaItemCard({required this.item});
+  const _AgendaItemCard({required this.item, this.onEventTap});
 
   final UserAgendaItemEntity item;
+  final ValueChanged<String>? onEventTap;
 
   @override
   Widget build(BuildContext context) {
     final item = this.item;
     if (item is UserAgendaEventItemEntity) {
-      return _EventCard(event: item);
+      return _EventCard(event: item, onEventTap: onEventTap);
     }
     if (item is UserAgendaPersonalScaleItemEntity) {
       return _PersonalScaleEventCard(scale: item);
@@ -293,9 +299,10 @@ class _AgendaItemCard extends StatelessWidget {
 }
 
 class _EventCard extends StatelessWidget {
-  const _EventCard({required this.event});
+  const _EventCard({required this.event, this.onEventTap});
 
   final UserAgendaEventItemEntity event;
+  final ValueChanged<String>? onEventTap;
 
   @override
   Widget build(BuildContext context) {
@@ -306,6 +313,7 @@ class _EventCard extends StatelessWidget {
           startsAt: event.startDateTime,
           title: event.title,
           subtitle: event.origin,
+          onTap: onEventTap == null ? null : () => onEventTap!(event.id),
         ),
         for (final scale in event.personalScales)
           _PersonalScaleCard(department: scale.department, roles: scale.roles),
@@ -340,61 +348,66 @@ class _BaseEventSurface extends StatelessWidget {
     required this.startsAt,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
 
   final DateTime startsAt;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final content = Padding(
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _formatTime(startsAt),
+            style: const TextStyle(
+              color: AppColors.primaryDark,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Material(
       color: AppColors.surface.withValues(alpha: 0.78),
       borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _formatTime(startsAt),
-              style: const TextStyle(
-                color: AppColors.primaryDark,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      clipBehavior: Clip.antiAlias,
+      child: onTap == null ? content : InkWell(onTap: onTap, child: content),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/calendar/providers/user_agenda_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -28,7 +29,9 @@ class CreateCalendarEventNotifier
       uploadImage: (event) => _uploadImage(event, cardImagePath),
       invalidateListings: () {
         ref.invalidate(unitCalendarEventsProvider);
+        ref.invalidate(visibleCalendarEventsProvider);
         ref.invalidate(visibleUnitCalendarEventsProvider);
+        ref.invalidate(userAgendaItemsProvider);
       },
     );
   }
@@ -45,7 +48,9 @@ class CreateCalendarEventNotifier
       uploadImage: (event) => _uploadImage(event, cardImagePath),
       invalidateListings: () {
         ref.invalidate(departmentCalendarEventsProvider);
+        ref.invalidate(visibleCalendarEventsProvider);
         ref.invalidate(visibleUnitCalendarEventsProvider);
+        ref.invalidate(userAgendaItemsProvider);
       },
     );
   }

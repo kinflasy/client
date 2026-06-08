@@ -11,6 +11,9 @@ class UserAgendaState extends Equatable {
     required this.weeklyGroups,
     required this.markersByDate,
     this.focusTargetDate,
+    this.isLoading = false,
+    this.errorMessage,
+    this.isUsingRealEvents = false,
   });
 
   final DateTime today;
@@ -21,6 +24,43 @@ class UserAgendaState extends Equatable {
   final DateTime? focusTargetDate;
   final List<UserAgendaDayGroupEntity> weeklyGroups;
   final Map<DateTime, UserAgendaDateMarkersEntity> markersByDate;
+  final bool isLoading;
+  final String? errorMessage;
+  final bool isUsingRealEvents;
+
+  UserAgendaState copyWith({
+    DateTime? today,
+    DateTime? focusedMonth,
+    DateTime? selectedDate,
+    DateTime? visibleWeekStart,
+    DateTime? visibleWeekEnd,
+    DateTime? focusTargetDate,
+    bool clearFocusTargetDate = false,
+    List<UserAgendaDayGroupEntity>? weeklyGroups,
+    Map<DateTime, UserAgendaDateMarkersEntity>? markersByDate,
+    bool? isLoading,
+    String? errorMessage,
+    bool clearErrorMessage = false,
+    bool? isUsingRealEvents,
+  }) {
+    return UserAgendaState(
+      today: today ?? this.today,
+      focusedMonth: focusedMonth ?? this.focusedMonth,
+      selectedDate: selectedDate ?? this.selectedDate,
+      visibleWeekStart: visibleWeekStart ?? this.visibleWeekStart,
+      visibleWeekEnd: visibleWeekEnd ?? this.visibleWeekEnd,
+      focusTargetDate: clearFocusTargetDate
+          ? null
+          : focusTargetDate ?? this.focusTargetDate,
+      weeklyGroups: weeklyGroups ?? this.weeklyGroups,
+      markersByDate: markersByDate ?? this.markersByDate,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearErrorMessage
+          ? null
+          : errorMessage ?? this.errorMessage,
+      isUsingRealEvents: isUsingRealEvents ?? this.isUsingRealEvents,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -32,6 +72,9 @@ class UserAgendaState extends Equatable {
     focusTargetDate,
     weeklyGroups,
     markersByDate,
+    isLoading,
+    errorMessage,
+    isUsingRealEvents,
   ];
 }
 

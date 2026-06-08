@@ -680,6 +680,14 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   List<EventCollaborationEntity> collaborators = const [];
 
   @override
+  Future<Either<Failure, List<CalendarEventEntity>>> getVisibleEvents(
+    DateTime start,
+    DateTime end,
+  ) async {
+    return const Left(ServerFailure('NÃ£o implementado no teste.'));
+  }
+
+  @override
   Future<Either<Failure, CalendarEventEntity>> createUnitEvent(
     String unitId,
     CalendarEventRequestModel request,

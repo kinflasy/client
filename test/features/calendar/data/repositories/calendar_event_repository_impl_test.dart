@@ -55,6 +55,37 @@ void main() {
       });
     });
 
+    test('returns visible events on success', () async {
+      final start = DateTime(2026, 5);
+      final end = DateTime(2026, 6);
+      when(() => api.getVisibleEvents(start, end)).thenAnswer(
+        (_) async => [
+          _eventJson(
+            id: 'event-1',
+            type: 'UNIT',
+            ownerKey: 'unitId',
+            ownerId: 'unit-1',
+          ),
+          _eventJson(
+            id: 'event-2',
+            type: 'DEPARTMENT',
+            ownerKey: 'departmentId',
+            ownerId: 'dep-1',
+          ),
+        ],
+      );
+
+      final result = await repository.getVisibleEvents(start, end);
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (events) {
+        expect(events.map((event) => event.id), ['event-1', 'event-2']);
+        expect(events.first.type, CalendarEventType.unit);
+        expect(events.last.type, CalendarEventType.department);
+      });
+      verify(() => api.getVisibleEvents(start, end)).called(1);
+    });
+
     test('returns department events with collabs on success', () async {
       final start = DateTime(2026, 5);
       final end = DateTime(2026, 6);

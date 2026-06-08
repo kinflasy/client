@@ -96,6 +96,56 @@ void main() {
     verify(() => repository.getUnitEvents('unit-1', start, end)).called(1);
   });
 
+  test('visible provider returns repository events in source order', () async {
+    final start = DateTime(2026, 5);
+    final end = DateTime(2026, 6);
+    final events = [
+      _event(
+        id: 'event-2',
+        title: 'Segundo',
+        type: CalendarEventType.department,
+        departmentId: 'dep-1',
+      ),
+      _event(
+        id: 'event-1',
+        title: 'Primeiro',
+        type: CalendarEventType.unit,
+        unitId: 'unit-1',
+      ),
+    ];
+    when(
+      () => repository.getVisibleEvents(start, end),
+    ).thenAnswer((_) async => Right(events));
+
+    final result = await _readFutureProvider(
+      container,
+      visibleCalendarEventsProvider(
+        VisibleCalendarEventsRequest(start: start, end: end),
+      ),
+    );
+
+    expect(result, events);
+    verify(() => repository.getVisibleEvents(start, end)).called(1);
+  });
+
+  test('visible provider surfaces repository failure', () async {
+    final start = DateTime(2026, 5);
+    final end = DateTime(2026, 6);
+    when(() => repository.getVisibleEvents(start, end)).thenAnswer(
+      (_) async => const Left(NetworkFailure('Falha ao carregar eventos')),
+    );
+
+    await expectLater(
+      _readFutureProvider(
+        container,
+        visibleCalendarEventsProvider(
+          VisibleCalendarEventsRequest(start: start, end: end),
+        ),
+      ),
+      throwsA(isA<NetworkFailure>()),
+    );
+  });
+
   test('department provider surfaces repository failure', () async {
     final start = DateTime(2026, 5);
     final end = DateTime(2026, 6);

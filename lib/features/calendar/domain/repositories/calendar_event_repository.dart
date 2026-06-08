@@ -9,6 +9,11 @@ import 'package:client/features/calendar/domain/entities/event_collaboration_ent
 import 'package:fpdart/fpdart.dart';
 
 abstract class CalendarEventRepository {
+  Future<Either<Failure, List<CalendarEventEntity>>> getVisibleEvents(
+    DateTime start,
+    DateTime end,
+  );
+
   Future<Either<Failure, List<CalendarEventEntity>>> getUnitEvents(
     String unitId,
     DateTime start,

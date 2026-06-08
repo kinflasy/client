@@ -21,6 +21,17 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
   final CalendarEventsApi _api;
 
   @override
+  Future<Either<Failure, List<CalendarEventEntity>>> getVisibleEvents(
+    DateTime start,
+    DateTime end,
+  ) {
+    return _getEvents(
+      () => _api.getVisibleEvents(start, end),
+      fallbackMessage: 'Erro ao carregar eventos visiveis.',
+    );
+  }
+
+  @override
   Future<Either<Failure, List<CalendarEventEntity>>> getUnitEvents(
     String unitId,
     DateTime start,

@@ -5,6 +5,14 @@ class CalendarEventsApi {
 
   final Dio _dio;
 
+  Future<List<dynamic>> getVisibleEvents(DateTime start, DateTime end) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/visible',
+      queryParameters: _rangeQuery(start, end),
+    );
+    return _readList(response.data);
+  }
+
   Future<List<dynamic>> getUnitEvents(
     String unitId,
     DateTime start,

@@ -1,3 +1,4 @@
+import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_state.dart';
 import 'package:client/features/calendar/domain/utils/user_agenda_date_utils.dart';
@@ -5,69 +6,203 @@ import 'package:client/features/calendar/providers/user_agenda_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final userAgendaViewModelProvider =
-    NotifierProvider<UserAgendaViewModel, UserAgendaState>(
+    AsyncNotifierProvider<UserAgendaViewModel, UserAgendaState>(
       UserAgendaViewModel.new,
     );
 
-class UserAgendaViewModel extends Notifier<UserAgendaState> {
+class UserAgendaViewModel extends AsyncNotifier<UserAgendaState> {
+  List<UserAgendaItemEntity> _items = const [];
+
   @override
-  UserAgendaState build() {
+  Future<UserAgendaState> build() async {
     final today = ref.watch(userAgendaTodayProvider);
-    final items = ref.watch(userAgendaLocalItemsProvider);
-    return _buildState(
-      today: today,
-      focusedMonth: firstDayOfMonth(today),
-      selectedDate: today,
-      focusTargetDate: null,
-      items: items,
-    );
+    final focusedMonth = firstDayOfMonth(today);
+
+    try {
+      return await _loadState(
+        today: today,
+        focusedMonth: focusedMonth,
+        selectedDate: today,
+        focusTargetDate: null,
+      );
+    } catch (error) {
+      _items = const [];
+      return _buildState(
+        today: today,
+        focusedMonth: focusedMonth,
+        selectedDate: today,
+        focusTargetDate: null,
+        items: _items,
+        errorMessage: _errorMessage(error),
+        isUsingRealEvents: true,
+      );
+    }
   }
 
-  void selectDate(DateTime date) {
+  Future<void> selectDate(DateTime date) async {
+    final current = state.value;
+    if (current == null) return;
+
     final selectedDate = normalizeDate(date);
-    state = _buildState(
-      today: state.today,
-      focusedMonth: firstDayOfMonth(selectedDate),
+    final focusedMonth = firstDayOfMonth(selectedDate);
+
+    if (focusedMonth == current.focusedMonth) {
+      state = AsyncData(
+        _buildState(
+          today: current.today,
+          focusedMonth: current.focusedMonth,
+          selectedDate: selectedDate,
+          focusTargetDate: selectedDate,
+          items: _items,
+          isUsingRealEvents: true,
+        ),
+      );
+      return;
+    }
+
+    await _loadSelectedMonth(
+      current: current,
+      focusedMonth: focusedMonth,
       selectedDate: selectedDate,
       focusTargetDate: selectedDate,
-      items: ref.read(userAgendaLocalItemsProvider),
     );
   }
 
-  void goToPreviousMonth() {
+  Future<void> goToPreviousMonth() async {
+    final current = state.value;
+    if (current == null) return;
+
     final targetMonth = DateTime(
-      state.focusedMonth.year,
-      state.focusedMonth.month - 1,
+      current.focusedMonth.year,
+      current.focusedMonth.month - 1,
     );
-    _selectMonthStart(targetMonth);
+    await _selectMonthStart(current, targetMonth);
   }
 
-  void goToNextMonth() {
+  Future<void> goToNextMonth() async {
+    final current = state.value;
+    if (current == null) return;
+
     final targetMonth = DateTime(
-      state.focusedMonth.year,
-      state.focusedMonth.month + 1,
+      current.focusedMonth.year,
+      current.focusedMonth.month + 1,
     );
-    _selectMonthStart(targetMonth);
+    await _selectMonthStart(current, targetMonth);
   }
 
-  void goToToday() {
-    state = _buildState(
-      today: state.today,
-      focusedMonth: firstDayOfMonth(state.today),
-      selectedDate: state.today,
+  Future<void> goToToday() async {
+    final current = state.value;
+    if (current == null) return;
+
+    final focusedMonth = firstDayOfMonth(current.today);
+    if (focusedMonth == current.focusedMonth) {
+      state = AsyncData(
+        _buildState(
+          today: current.today,
+          focusedMonth: focusedMonth,
+          selectedDate: current.today,
+          focusTargetDate: null,
+          items: _items,
+          isUsingRealEvents: true,
+        ),
+      );
+      return;
+    }
+
+    await _loadSelectedMonth(
+      current: current,
+      focusedMonth: focusedMonth,
+      selectedDate: current.today,
       focusTargetDate: null,
-      items: ref.read(userAgendaLocalItemsProvider),
     );
   }
 
-  void _selectMonthStart(DateTime month) {
+  Future<void> retry() async {
+    final current = state.value;
+    if (current == null) {
+      ref.invalidateSelf();
+      return;
+    }
+
+    await _loadSelectedMonth(
+      current: current,
+      focusedMonth: current.focusedMonth,
+      selectedDate: current.selectedDate,
+      focusTargetDate: null,
+    );
+  }
+
+  Future<void> _selectMonthStart(
+    UserAgendaState current,
+    DateTime month,
+  ) async {
     final selectedDate = firstDayOfMonth(month);
-    state = _buildState(
-      today: state.today,
+    await _loadSelectedMonth(
+      current: current,
       focusedMonth: selectedDate,
       selectedDate: selectedDate,
       focusTargetDate: null,
-      items: ref.read(userAgendaLocalItemsProvider),
+    );
+  }
+
+  Future<void> _loadSelectedMonth({
+    required UserAgendaState current,
+    required DateTime focusedMonth,
+    required DateTime selectedDate,
+    required DateTime? focusTargetDate,
+  }) async {
+    state = AsyncData(
+      _buildState(
+        today: current.today,
+        focusedMonth: focusedMonth,
+        selectedDate: selectedDate,
+        focusTargetDate: focusTargetDate,
+        items: _items,
+        isLoading: true,
+        isUsingRealEvents: true,
+      ),
+    );
+
+    try {
+      state = AsyncData(
+        await _loadState(
+          today: current.today,
+          focusedMonth: focusedMonth,
+          selectedDate: selectedDate,
+          focusTargetDate: focusTargetDate,
+        ),
+      );
+    } catch (error) {
+      state = AsyncData(
+        _buildState(
+          today: current.today,
+          focusedMonth: focusedMonth,
+          selectedDate: selectedDate,
+          focusTargetDate: focusTargetDate,
+          items: _items,
+          errorMessage: _errorMessage(error),
+          isUsingRealEvents: true,
+        ),
+      );
+    }
+  }
+
+  Future<UserAgendaState> _loadState({
+    required DateTime today,
+    required DateTime focusedMonth,
+    required DateTime selectedDate,
+    required DateTime? focusTargetDate,
+  }) async {
+    final request = UserAgendaItemsRequest.forFocusedMonth(focusedMonth);
+    _items = await ref.read(userAgendaItemsProvider(request).future);
+
+    return _buildState(
+      today: today,
+      focusedMonth: focusedMonth,
+      selectedDate: selectedDate,
+      focusTargetDate: focusTargetDate,
+      items: _items,
+      isUsingRealEvents: true,
     );
   }
 }
@@ -78,6 +213,9 @@ UserAgendaState _buildState({
   required DateTime selectedDate,
   required DateTime? focusTargetDate,
   required List<UserAgendaItemEntity> items,
+  bool isLoading = false,
+  String? errorMessage,
+  bool isUsingRealEvents = false,
 }) {
   final normalizedToday = normalizeDate(today);
   final normalizedSelectedDate = normalizeDate(selectedDate);
@@ -102,6 +240,9 @@ UserAgendaState _buildState({
       );
     }),
     markersByDate: _buildMarkersByDate(itemsByDate),
+    isLoading: isLoading,
+    errorMessage: errorMessage,
+    isUsingRealEvents: isUsingRealEvents,
   );
 }
 
@@ -149,4 +290,11 @@ int _compareAgendaItems(UserAgendaItemEntity a, UserAgendaItemEntity b) {
   if (typeComparison != 0) return typeComparison;
 
   return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+}
+
+String _errorMessage(Object error) {
+  if (error is Failure) return error.message;
+  final text = error.toString().trim();
+  if (text.isNotEmpty) return text;
+  return 'Erro ao carregar agenda.';
 }

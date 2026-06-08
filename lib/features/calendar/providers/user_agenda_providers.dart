@@ -1,10 +1,60 @@
+import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_item_entity.dart';
 import 'package:client/features/calendar/domain/utils/user_agenda_date_utils.dart';
+import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class UserAgendaItemsRequest extends Equatable {
+  factory UserAgendaItemsRequest({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return UserAgendaItemsRequest._(
+      start: normalizeDate(start),
+      end: normalizeDate(end),
+    );
+  }
+
+  factory UserAgendaItemsRequest.forFocusedMonth(DateTime focusedMonth) {
+    return UserAgendaItemsRequest(
+      start: firstVisibleDayOfMonth(focusedMonth),
+      end: lastVisibleDayOfMonth(focusedMonth),
+    );
+  }
+
+  const UserAgendaItemsRequest._({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  @override
+  List<Object?> get props => [start, end];
+}
 
 final userAgendaTodayProvider = Provider<DateTime>((ref) {
   return normalizeDate(DateTime.now());
 });
+
+final userAgendaItemsProvider =
+    FutureProvider.family<List<UserAgendaItemEntity>, UserAgendaItemsRequest>((
+      ref,
+      request,
+    ) async {
+      final events = await ref.watch(
+        visibleCalendarEventsProvider(
+          VisibleCalendarEventsRequest(start: request.start, end: request.end),
+        ).future,
+      );
+      final today = ref.watch(userAgendaTodayProvider);
+
+      return [
+            ...events.map(mapCalendarEventToUserAgendaItem),
+            ...buildLocalUserAgendaSupplementalItems(today),
+          ]
+          .where((item) => _isItemInRange(item, request.start, request.end))
+          .toList();
+    });
 
 final userAgendaLocalItemsProvider = Provider<List<UserAgendaItemEntity>>((
   ref,
@@ -12,6 +62,61 @@ final userAgendaLocalItemsProvider = Provider<List<UserAgendaItemEntity>>((
   final today = ref.watch(userAgendaTodayProvider);
   return buildLocalUserAgendaItems(today);
 });
+
+UserAgendaEventItemEntity mapCalendarEventToUserAgendaItem(
+  CalendarEventEntity event,
+) {
+  return UserAgendaEventItemEntity(
+    id: event.id,
+    title: event.title,
+    startDateTime: event.startDateTime,
+    endDateTime: event.endDateTime,
+    origin: switch (event.type) {
+      CalendarEventType.unit => 'Igreja',
+      CalendarEventType.department => 'Departamento',
+    },
+  );
+}
+
+List<UserAgendaItemEntity> buildLocalUserAgendaSupplementalItems(
+  DateTime today,
+) {
+  final normalizedToday = normalizeDate(today);
+  final scaleDate = normalizedToday.add(const Duration(days: 2));
+  final birthdayDate = normalizedToday.add(const Duration(days: 4));
+  final mixedDate = normalizedToday.add(const Duration(days: 6));
+
+  return [
+    UserAgendaPersonalScaleItemEntity(
+      id: 'demo-personal-scale-louvor',
+      title: 'Ensaio geral',
+      startDateTime: scaleDate.add(const Duration(hours: 18, minutes: 30)),
+      endDateTime: scaleDate.add(const Duration(hours: 20)),
+      eventId: 'demo-event-scale',
+      scaleId: 'demo-scale-louvor',
+      department: 'Louvor',
+      roles: const ['Vocal', 'ViolÃ£o'],
+    ),
+    UserAgendaBirthdayItemEntity(
+      id: 'demo-birthday-cecilia',
+      date: birthdayDate,
+      name: 'CecÃ­lia',
+      personId: 'demo-person-cecilia',
+    ),
+    UserAgendaBirthdayItemEntity(
+      id: 'demo-birthday-marcos',
+      date: birthdayDate,
+      name: 'Marcos',
+      personId: 'demo-person-marcos',
+    ),
+    UserAgendaBirthdayItemEntity(
+      id: 'demo-birthday-ana',
+      date: mixedDate,
+      name: 'Ana',
+      personId: 'demo-person-ana',
+    ),
+  ];
+}
 
 List<UserAgendaItemEntity> buildLocalUserAgendaItems(DateTime today) {
   final normalizedToday = normalizeDate(today);
@@ -83,4 +188,10 @@ List<UserAgendaItemEntity> buildLocalUserAgendaItems(DateTime today) {
       origin: 'Diaconia',
     ),
   ];
+}
+
+bool _isItemInRange(UserAgendaItemEntity item, DateTime start, DateTime end) {
+  return expandItemOccurrences(item).any((occurrence) {
+    return !occurrence.date.isBefore(start) && !occurrence.date.isAfter(end);
+  });
 }

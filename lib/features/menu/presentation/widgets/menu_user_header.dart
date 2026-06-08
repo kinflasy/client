@@ -47,10 +47,6 @@ class MenuUserHeaderContent extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
-      ),
       child: Column(
         children: [
           UserAvatar(
@@ -82,10 +78,6 @@ class MenuUserHeaderLoading extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
-      ),
       child: Column(
         children: [
           Container(

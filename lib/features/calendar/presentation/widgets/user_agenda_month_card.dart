@@ -12,6 +12,9 @@ class UserAgendaMonthCard extends StatelessWidget {
     required this.today,
     required this.markersByDate,
     required this.onDaySelected,
+    required this.onPreviousMonth,
+    required this.onNextMonth,
+    required this.onToday,
   });
 
   final DateTime focusedDate;
@@ -19,6 +22,9 @@ class UserAgendaMonthCard extends StatelessWidget {
   final DateTime today;
   final Map<DateTime, UserAgendaDayMarkers> markersByDate;
   final ValueChanged<DateTime> onDaySelected;
+  final VoidCallback onPreviousMonth;
+  final VoidCallback onNextMonth;
+  final VoidCallback onToday;
 
   @override
   Widget build(BuildContext context) {
@@ -41,12 +47,12 @@ class UserAgendaMonthCard extends StatelessWidget {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     _WeekdayLabel('Dom'),
                     _WeekdayLabel('Seg'),
                     _WeekdayLabel('Ter'),
@@ -63,13 +69,11 @@ class UserAgendaMonthCard extends StatelessWidget {
                   color: AppColors.surface.withValues(alpha: 0.3),
                 ),
                 const SizedBox(height: 14),
-                Text(
-                  _formatMonthYear(focusedDate),
-                  style: TextStyle(
-                    color: AppColors.textPrimary.withValues(alpha: 0.86),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                _MonthHeader(
+                  focusedDate: focusedDate,
+                  onPreviousMonth: onPreviousMonth,
+                  onNextMonth: onNextMonth,
+                  onToday: onToday,
                 ),
                 const SizedBox(height: 18),
                 for (var row = 0; row < 6; row++) ...[
@@ -108,6 +112,99 @@ class UserAgendaMonthCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MonthHeader extends StatelessWidget {
+  const _MonthHeader({
+    required this.focusedDate,
+    required this.onPreviousMonth,
+    required this.onNextMonth,
+    required this.onToday,
+  });
+
+  final DateTime focusedDate;
+  final VoidCallback onPreviousMonth;
+  final VoidCallback onNextMonth;
+  final VoidCallback onToday;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _MonthArrowButton(
+                key: const ValueKey('user-agenda-previous-month'),
+                icon: Icons.arrow_left_rounded,
+                tooltip: 'Mês anterior',
+                onPressed: onPreviousMonth,
+              ),
+              const SizedBox(width: 2),
+              Flexible(
+                child: Text(
+                  _formatMonthYear(focusedDate),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textPrimary.withValues(alpha: 0.88),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 2),
+              _MonthArrowButton(
+                key: const ValueKey('user-agenda-next-month'),
+                icon: Icons.arrow_right_rounded,
+                tooltip: 'Próximo mês',
+                onPressed: onNextMonth,
+              ),
+            ],
+          ),
+        ),
+        TextButton(
+          key: const ValueKey('user-agenda-today-button'),
+          onPressed: onToday,
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.primaryDark,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text('Hoje'),
+        ),
+      ],
+    );
+  }
+}
+
+class _MonthArrowButton extends StatelessWidget {
+  const _MonthArrowButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      icon: Icon(icon),
+      color: AppColors.textPrimary,
+      iconSize: 24,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 26, height: 32),
+      visualDensity: VisualDensity.compact,
     );
   }
 }

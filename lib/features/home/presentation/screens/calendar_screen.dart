@@ -1,42 +1,27 @@
 import 'package:client/core/config/theme/app_colors.dart';
-import 'package:client/features/calendar/presentation/widgets/user_agenda_day_list.dart';
-import 'package:client/features/calendar/presentation/widgets/user_agenda_demo_data.dart';
+import 'package:client/features/calendar/domain/entities/user_agenda_state.dart';
+import 'package:client/features/calendar/presentation/widgets/user_agenda_day_cell.dart';
 import 'package:client/features/calendar/presentation/widgets/user_agenda_header.dart';
 import 'package:client/features/calendar/presentation/widgets/user_agenda_month_card.dart';
+import 'package:client/features/calendar/presentation/widgets/user_agenda_week_list.dart';
+import 'package:client/features/calendar/providers/user_agenda_view_model_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CalendarScreen extends StatefulWidget {
+class CalendarScreen extends ConsumerWidget {
   const CalendarScreen({super.key});
 
   @override
-  State<CalendarScreen> createState() => _CalendarScreenState();
-}
-
-class _CalendarScreenState extends State<CalendarScreen> {
-  DateTime? _today;
-  UserAgendaDemoData? _agendaData;
-  DateTime? _selectedDate;
-
-  @override
-  void initState() {
-    super.initState();
-    _ensureCalendarState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    _ensureCalendarState();
-
-    final today = _today!;
-    final selectedDate = _selectedDate!;
-    final agendaData = _agendaData!;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final agendaState = ref.watch(userAgendaViewModelProvider);
+    final agendaNotifier = ref.read(userAgendaViewModelProvider.notifier);
 
     return DecoratedBox(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppColors.secondaryLight, AppColors.surface],
+          colors: [AppColors.secondaryExtraLight, AppColors.surface],
         ),
       ),
       child: SafeArea(
@@ -48,21 +33,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
               UserAgendaHeader(onFilterPressed: () {}),
               const SizedBox(height: 22),
               UserAgendaMonthCard(
-                focusedDate: today,
-                selectedDate: selectedDate,
-                today: today,
-                markersByDate: agendaData.markersByDate,
-                onDaySelected: (date) {
-                  setState(() {
-                    _selectedDate = DateUtils.dateOnly(date);
-                  });
-                },
+                focusedDate: agendaState.focusedMonth,
+                selectedDate: agendaState.selectedDate,
+                today: agendaState.today,
+                markersByDate: agendaState.dayCellMarkersByDate,
+                onPreviousMonth: agendaNotifier.goToPreviousMonth,
+                onNextMonth: agendaNotifier.goToNextMonth,
+                onToday: agendaNotifier.goToToday,
+                onDaySelected: agendaNotifier.selectDate,
               ),
               const SizedBox(height: 22),
-              UserAgendaDayList(
-                selectedDate: selectedDate,
-                today: today,
-                agendaDay: agendaData.dayFor(selectedDate),
+              UserAgendaWeekList(
+                groups: agendaState.weeklyGroups,
+                selectedDate: agendaState.selectedDate,
+                today: agendaState.today,
+                focusTargetDate: agendaState.focusTargetDate,
               ),
             ],
           ),
@@ -70,15 +55,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
     );
   }
+}
 
-  void _ensureCalendarState() {
-    if (_today != null && _selectedDate != null && _agendaData != null) {
-      return;
-    }
-
-    final today = DateUtils.dateOnly(DateTime.now());
-    _today = today;
-    _selectedDate = today;
-    _agendaData = UserAgendaDemoData.relativeTo(today);
+extension on UserAgendaState {
+  Map<DateTime, UserAgendaDayMarkers> get dayCellMarkersByDate {
+    return markersByDate.map((date, markers) {
+      return MapEntry(
+        date,
+        UserAgendaDayMarkers(
+          hasEvent: markers.hasEvent,
+          hasUserScale: markers.hasUserScale,
+          hasBirthday: markers.hasBirthday,
+        ),
+      );
+    });
   }
 }

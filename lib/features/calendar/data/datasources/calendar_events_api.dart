@@ -49,6 +49,13 @@ class CalendarEventsApi {
     return _readList(response.data);
   }
 
+  Future<List<dynamic>> getUnitBirthdays(String start, String end) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/church/units/birthdays/$start/$end',
+    );
+    return _readList(response.data);
+  }
+
   Future<Map<String, dynamic>> createUnitEvent(
     String unitId,
     Map<String, dynamic> payload,
@@ -226,6 +233,7 @@ class CalendarEventsApi {
         'data',
         'events',
         'scales',
+        'birthdays',
       ]) {
         final value = map[key];
         if (value is List) return value;

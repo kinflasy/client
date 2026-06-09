@@ -162,6 +162,53 @@ void main() {
     ).called(1);
   });
 
+  test('gets unit birthdays using MonthDay path params', () async {
+    when(
+      () => dio.get<dynamic>('/v1/core/church/units/birthdays/--06-01/--06-30'),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/church/units/birthdays/--06-01/--06-30',
+        ),
+        data: [
+          {'id': 'person-1', 'birthday': '--06-07'},
+        ],
+      ),
+    );
+
+    final list = await api.getUnitBirthdays('--06-01', '--06-30');
+
+    expect(list, [
+      {'id': 'person-1', 'birthday': '--06-07'},
+    ]);
+    verify(
+      () => dio.get<dynamic>('/v1/core/church/units/birthdays/--06-01/--06-30'),
+    ).called(1);
+  });
+
+  test('normalizes enveloped unit birthdays response', () async {
+    when(
+      () => dio.get<dynamic>('/v1/core/church/units/birthdays/--06-01/--06-30'),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/core/church/units/birthdays/--06-01/--06-30',
+        ),
+        data: {
+          'birthdays': [
+            {'id': 'person-1', 'birthday': '--06-07'},
+          ],
+        },
+      ),
+    );
+
+    final list = await api.getUnitBirthdays('--06-01', '--06-30');
+
+    expect(list, [
+      {'id': 'person-1', 'birthday': '--06-07'},
+    ]);
+  });
+
   test('sends card image upload as multipart file field', () async {
     when(
       () => dio.put<dynamic>(

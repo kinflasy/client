@@ -4,6 +4,7 @@ import 'package:client/core/domain/enums/affiliation.dart';
 import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_state.dart';
 import 'package:client/features/calendar/presentation/widgets/user_agenda_day_cell.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
@@ -126,8 +127,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.celebration_rounded), findsOneWidget);
-    expect(find.textContaining('Cec'), findsOneWidget);
-    expect(find.textContaining('Marcos'), findsOneWidget);
+    expect(find.textContaining('Maria'), findsOneWidget);
+    expect(find.textContaining('Lucas'), findsOneWidget);
+    expect(find.textContaining('Ana'), findsNothing);
     expect(find.text('Domingo, 7 jun'), findsNothing);
   });
 
@@ -270,7 +272,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.textContaining('Cec'));
+    await tester.tap(find.textContaining('Maria'));
     await tester.pumpAndSettle();
 
     expect(loadCount, 0);
@@ -334,6 +336,9 @@ class _CalendarScreenTestApp extends StatelessWidget {
           final loader = loadEvents;
           if (loader != null) return loader(request);
           return _defaultVisibleEvents(today);
+        }),
+        unitBirthdaysProvider.overrideWith((ref, request) async {
+          return _defaultBirthdays();
         }),
         calendarEventDetailProvider.overrideWith((ref, eventId) {
           return loadDetail?.call(eventId) ??
@@ -415,6 +420,23 @@ List<CalendarEventEntity> _defaultVisibleEvents(DateTime today) {
       endDateTime: multiDayStart.add(const Duration(days: 2, hours: 3)),
       type: CalendarEventType.department,
       departmentId: 'dep-1',
+    ),
+  ];
+}
+
+List<PersonBirthdayEntity> _defaultBirthdays() {
+  return const [
+    PersonBirthdayEntity(
+      id: 'person-maria',
+      name: 'Maria',
+      birthdayMonth: 6,
+      birthdayDay: 7,
+    ),
+    PersonBirthdayEntity(
+      id: 'person-lucas',
+      name: 'Lucas',
+      birthdayMonth: 6,
+      birthdayDay: 7,
     ),
   ];
 }

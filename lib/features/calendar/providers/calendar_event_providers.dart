@@ -6,6 +6,7 @@ import 'package:client/features/calendar/data/datasources/calendar_events_api.da
 import 'package:client/features/calendar/data/repositories/calendar_event_repository_impl.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
@@ -54,6 +55,16 @@ class DepartmentCalendarEventsRequest extends Equatable {
   List<Object?> get props => [departmentId, start, end];
 }
 
+class UnitBirthdaysRequest extends Equatable {
+  const UnitBirthdaysRequest({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  @override
+  List<Object?> get props => [start, end];
+}
+
 final calendarEventsApiProvider = Provider<CalendarEventsApi>(
   (ref) => CalendarEventsApi(ref.watch(dioClientProvider)),
 );
@@ -99,6 +110,18 @@ final departmentCalendarEventsProvider =
           );
 
       return result.fold((failure) => throw failure, (events) => events);
+    });
+
+final unitBirthdaysProvider =
+    FutureProvider.family<List<PersonBirthdayEntity>, UnitBirthdaysRequest>((
+      ref,
+      request,
+    ) async {
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .getUnitBirthdays(request.start, request.end);
+
+      return result.fold((failure) => throw failure, (birthdays) => birthdays);
     });
 
 final visibleUnitCalendarEventsProvider =

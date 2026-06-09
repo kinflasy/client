@@ -7,6 +7,7 @@ import 'package:client/features/calendar/domain/entities/calendar_event_entity.d
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/scale/domain/entities/scale_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
@@ -802,6 +803,14 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   @override
   Future<Either<Failure, List<CalendarEventEntity>>> getUnitEvents(
     String unitId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
+  Future<Either<Failure, List<PersonBirthdayEntity>>> getUnitBirthdays(
     DateTime start,
     DateTime end,
   ) async {

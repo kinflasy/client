@@ -128,6 +128,62 @@ void main() {
       ).called(1);
     });
 
+    test('gets unit birthdays and maps entities on success', () async {
+      final start = DateTime(2026, 6);
+      final end = DateTime(2026, 6, 30);
+      when(() => api.getUnitBirthdays('--06-01', '--06-30')).thenAnswer(
+        (_) async => const [
+          {'id': 'person-1', 'nickname': 'Maria', 'birthday': '--06-07'},
+        ],
+      );
+
+      final result = await repository.getUnitBirthdays(start, end);
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (birthdays) {
+        expect(birthdays, hasLength(1));
+        expect(birthdays.single.id, 'person-1');
+        expect(birthdays.single.name, 'Maria');
+        expect(birthdays.single.birthdayMonth, 6);
+        expect(birthdays.single.birthdayDay, 7);
+      });
+      verify(() => api.getUnitBirthdays('--06-01', '--06-30')).called(1);
+    });
+
+    test('maps unit birthdays DioException into NetworkFailure', () async {
+      when(
+        () => api.getUnitBirthdays('--06-01', '--06-30'),
+      ).thenThrow(_dioError(500, 'Falha ao carregar aniversariantes.'));
+
+      final result = await repository.getUnitBirthdays(
+        DateTime(2026, 6),
+        DateTime(2026, 6, 30),
+      );
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<NetworkFailure>());
+        expect(failure.message, 'Falha ao carregar aniversariantes.');
+      }, (_) => fail('expected failure'));
+    });
+
+    test('maps unit birthdays 403 into ValidationFailure', () async {
+      when(
+        () => api.getUnitBirthdays('--06-01', '--06-30'),
+      ).thenThrow(_dioError(403, 'Sem permissao para aniversariantes.'));
+
+      final result = await repository.getUnitBirthdays(
+        DateTime(2026, 6),
+        DateTime(2026, 6, 30),
+      );
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<ValidationFailure>());
+        expect(failure.message, 'Sem permissao para aniversariantes.');
+      }, (_) => fail('expected failure'));
+    });
+
     test('maps DioException into NetworkFailure', () async {
       final start = DateTime(2026, 5);
       final end = DateTime(2026, 6);

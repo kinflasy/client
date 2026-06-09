@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_state.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
@@ -7,20 +11,57 @@ import 'package:client/features/calendar/providers/user_agenda_view_model_provid
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+Future<T> _readFutureProvider<T>(
+  ProviderContainer container,
+  dynamic provider,
+) async {
+  final completer = Completer<T>();
+  final subscription = container.listen<AsyncValue<T>>(provider, (
+    previous,
+    next,
+  ) {
+    if (next.hasValue && !completer.isCompleted) {
+      completer.complete(next.requireValue);
+    } else if (next.hasError && !completer.isCompleted) {
+      completer.completeError(next.error!, next.stackTrace);
+    }
+  }, fireImmediately: true);
+
+  try {
+    return await completer.future;
+  } finally {
+    subscription.close();
+  }
+}
+
 void main() {
   late ProviderContainer container;
   late List<CalendarEventEntity> visibleEvents;
   late List<VisibleCalendarEventsRequest> visibleRequests;
+  late List<PersonBirthdayEntity> unitBirthdays;
+  late List<UnitBirthdaysRequest> birthdayRequests;
+  late Object? birthdayFailure;
 
   setUp(() {
     visibleEvents = _defaultVisibleEvents();
     visibleRequests = [];
+    unitBirthdays = const [];
+    birthdayRequests = [];
+    birthdayFailure = null;
     container = ProviderContainer(
       overrides: [
         userAgendaTodayProvider.overrideWithValue(DateTime(2026, 6, 3)),
         visibleCalendarEventsProvider.overrideWith((ref, request) async {
           visibleRequests.add(request);
           return visibleEvents;
+        }),
+        unitBirthdaysProvider.overrideWith((ref, request) {
+          birthdayRequests.add(request);
+          final failure = birthdayFailure;
+          if (failure != null) {
+            return Future<List<PersonBirthdayEntity>>.error(failure);
+          }
+          return unitBirthdays;
         }),
       ],
     );
@@ -273,6 +314,7 @@ void main() {
         visibleCalendarEventsProvider.overrideWith(
           (ref, request) async => [event],
         ),
+        unitBirthdaysProvider.overrideWith((ref, request) async => const []),
       ],
     );
 
@@ -291,7 +333,147 @@ void main() {
   });
 
   test(
-    'fonte real mantem aniversariantes e escala local suplementar',
+    'fonte real usa aniversariantes reais e mantem escala local suplementar',
+    () async {
+      unitBirthdays = const [
+        PersonBirthdayEntity(
+          id: 'person-maria',
+          name: 'Maria',
+          birthdayMonth: 6,
+          birthdayDay: 7,
+        ),
+      ];
+
+      final items = await container.read(
+        userAgendaItemsProvider(
+          UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+        ).future,
+      );
+
+      final birthdayItems = items.whereType<UserAgendaBirthdayItemEntity>();
+      expect(birthdayItems, hasLength(1));
+      expect(birthdayItems.single.id, 'birthday-person-maria-20260607');
+      expect(birthdayItems.single.name, 'Maria');
+      expect(birthdayItems.single.personId, 'person-maria');
+      expect(birthdayItems.single.startDateTime, DateTime(2026, 6, 7));
+      expect(
+        items.map((item) => item.id),
+        isNot(contains('demo-birthday-ana')),
+      );
+      expect(
+        items.map((item) => item.id),
+        isNot(contains('demo-birthday-cecilia')),
+      );
+      expect(
+        items.whereType<UserAgendaPersonalScaleItemEntity>(),
+        hasLength(1),
+      );
+      expect(birthdayRequests, [
+        UnitBirthdaysRequest(
+          start: DateTime(2026, 5, 31),
+          end: DateTime(2026, 7, 4),
+        ),
+      ]);
+    },
+  );
+
+  test('falha dos aniversariantes nao impede eventos reais', () async {
+    birthdayFailure = const NetworkFailure('Falha em aniversariantes');
+    visibleEvents = [
+      _calendarEvent(
+        id: 'real-event-1',
+        title: 'Evento real',
+        type: CalendarEventType.unit,
+        unitId: 'unit-1',
+        startDateTime: DateTime(2026, 6, 3, 19),
+        endDateTime: DateTime(2026, 6, 3, 21),
+      ),
+    ];
+
+    final items = await container.read(
+      userAgendaItemsProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
+
+    expect(items.map((item) => item.id), contains('real-event-1'));
+    expect(items.whereType<UserAgendaBirthdayItemEntity>(), isEmpty);
+    expect(items.whereType<UserAgendaPersonalScaleItemEntity>(), hasLength(1));
+  });
+
+  test('falha dos eventos reais ainda gera erro global', () async {
+    container.dispose();
+    container = ProviderContainer(
+      overrides: [
+        userAgendaTodayProvider.overrideWithValue(DateTime(2026, 6, 3)),
+        visibleCalendarEventsProvider.overrideWith(
+          (ref, request) => Future<List<CalendarEventEntity>>.error(
+            const NetworkFailure('Falha nos eventos'),
+          ),
+        ),
+        unitBirthdaysProvider.overrideWith(
+          (ref, request) async => const [
+            PersonBirthdayEntity(
+              id: 'person-maria',
+              name: 'Maria',
+              birthdayMonth: 6,
+              birthdayDay: 7,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    await expectLater(
+      _readFutureProvider(
+        container,
+        userAgendaItemsProvider(
+          UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+        ),
+      ),
+      throwsA(isA<NetworkFailure>()),
+    );
+  });
+
+  test('aniversariante fora do intervalo visivel nao entra na lista', () async {
+    unitBirthdays = const [
+      PersonBirthdayEntity(
+        id: 'person-out',
+        name: 'Fora',
+        birthdayMonth: 8,
+        birthdayDay: 10,
+      ),
+    ];
+
+    final items = await container.read(
+      userAgendaItemsProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
+
+    expect(items.whereType<UserAgendaBirthdayItemEntity>(), isEmpty);
+  });
+
+  test(
+    'aniversariante real cria marcador de aniversario no view model',
+    () async {
+      unitBirthdays = const [
+        PersonBirthdayEntity(
+          id: 'person-maria',
+          name: 'Maria',
+          birthdayMonth: 6,
+          birthdayDay: 7,
+        ),
+      ];
+
+      final state = await readState();
+
+      expect(state.markersByDate[DateTime(2026, 6, 7)]?.hasBirthday, isTrue);
+    },
+  );
+
+  test(
+    'fonte real sem aniversariantes mantem escala local suplementar',
     () async {
       container.dispose();
       container = ProviderContainer(
@@ -300,6 +482,7 @@ void main() {
           visibleCalendarEventsProvider.overrideWith(
             (ref, request) async => const [],
           ),
+          unitBirthdaysProvider.overrideWith((ref, request) async => const []),
         ],
       );
 
@@ -309,7 +492,7 @@ void main() {
         ).future,
       );
 
-      expect(items.whereType<UserAgendaBirthdayItemEntity>(), hasLength(3));
+      expect(items.whereType<UserAgendaBirthdayItemEntity>(), isEmpty);
       expect(
         items.whereType<UserAgendaPersonalScaleItemEntity>(),
         hasLength(1),

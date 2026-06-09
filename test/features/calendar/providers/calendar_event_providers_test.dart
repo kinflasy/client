@@ -6,6 +6,7 @@ import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
@@ -141,6 +142,49 @@ void main() {
         visibleCalendarEventsProvider(
           VisibleCalendarEventsRequest(start: start, end: end),
         ),
+      ),
+      throwsA(isA<NetworkFailure>()),
+    );
+  });
+
+  test(
+    'unit birthdays provider reads repository and returns birthdays',
+    () async {
+      final start = DateTime(2026, 6);
+      final end = DateTime(2026, 6, 30);
+      const birthdays = [
+        PersonBirthdayEntity(
+          id: 'person-1',
+          name: 'Maria',
+          birthdayMonth: 6,
+          birthdayDay: 7,
+        ),
+      ];
+      when(
+        () => repository.getUnitBirthdays(start, end),
+      ).thenAnswer((_) async => const Right(birthdays));
+
+      final result = await _readFutureProvider(
+        container,
+        unitBirthdaysProvider(UnitBirthdaysRequest(start: start, end: end)),
+      );
+
+      expect(result, birthdays);
+      verify(() => repository.getUnitBirthdays(start, end)).called(1);
+    },
+  );
+
+  test('unit birthdays provider surfaces repository failure', () async {
+    final start = DateTime(2026, 6);
+    final end = DateTime(2026, 6, 30);
+    when(() => repository.getUnitBirthdays(start, end)).thenAnswer(
+      (_) async => const Left(NetworkFailure('Falha ao carregar aniversarios')),
+    );
+
+    await expectLater(
+      _readFutureProvider(
+        container,
+        unitBirthdaysProvider(UnitBirthdaysRequest(start: start, end: end)),
       ),
       throwsA(isA<NetworkFailure>()),
     );

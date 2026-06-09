@@ -1,5 +1,6 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/scale/data/models/scale_item_request_model.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
@@ -29,6 +30,11 @@ abstract class CalendarEventRepository {
   Future<Either<Failure, List<CalendarEventEntity>>>
   getDepartmentEventsWithCollabs(
     String departmentId,
+    DateTime start,
+    DateTime end,
+  );
+
+  Future<Either<Failure, List<PersonBirthdayEntity>>> getUnitBirthdays(
     DateTime start,
     DateTime end,
   );

@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_item_entity.dart';
+import 'package:client/features/calendar/domain/utils/month_day_utils.dart';
 import 'package:client/features/calendar/domain/utils/user_agenda_date_utils.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:equatable/equatable.dart';
@@ -41,17 +45,19 @@ final userAgendaItemsProvider =
       ref,
       request,
     ) async {
-      final events = await ref.watch(
-        visibleCalendarEventsProvider(
-          VisibleCalendarEventsRequest(start: request.start, end: request.end),
-        ).future,
-      );
+      final events = await _loadVisibleEvents(ref, request);
       final today = ref.watch(userAgendaTodayProvider);
+      final birthdays = await _loadBirthdaysOrEmpty(ref, request);
 
       return [
             ...events.map(mapCalendarEventToUserAgendaItem),
+            ...birthdays.map(
+              (birthday) =>
+                  mapPersonBirthdayToUserAgendaItem(birthday, request: request),
+            ),
             ...buildLocalUserAgendaSupplementalItems(today),
           ]
+          .whereType<UserAgendaItemEntity>()
           .where((item) => _isItemInRange(item, request.start, request.end))
           .toList();
     });
@@ -78,13 +84,33 @@ UserAgendaEventItemEntity mapCalendarEventToUserAgendaItem(
   );
 }
 
+UserAgendaBirthdayItemEntity? mapPersonBirthdayToUserAgendaItem(
+  PersonBirthdayEntity birthday, {
+  required UserAgendaItemsRequest request,
+}) {
+  final date = materializeMonthDayInRange(
+    month: birthday.birthdayMonth,
+    day: birthday.birthdayDay,
+    start: request.start,
+    end: request.end,
+  );
+  if (date == null) return null;
+
+  final dateKey =
+      '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+  return UserAgendaBirthdayItemEntity(
+    id: 'birthday-${birthday.id}-$dateKey',
+    date: date,
+    name: birthday.name,
+    personId: birthday.id,
+  );
+}
+
 List<UserAgendaItemEntity> buildLocalUserAgendaSupplementalItems(
   DateTime today,
 ) {
   final normalizedToday = normalizeDate(today);
   final scaleDate = normalizedToday.add(const Duration(days: 2));
-  final birthdayDate = normalizedToday.add(const Duration(days: 4));
-  final mixedDate = normalizedToday.add(const Duration(days: 6));
 
   return [
     UserAgendaPersonalScaleItemEntity(
@@ -95,25 +121,7 @@ List<UserAgendaItemEntity> buildLocalUserAgendaSupplementalItems(
       eventId: 'demo-event-scale',
       scaleId: 'demo-scale-louvor',
       department: 'Louvor',
-      roles: const ['Vocal', 'ViolÃ£o'],
-    ),
-    UserAgendaBirthdayItemEntity(
-      id: 'demo-birthday-cecilia',
-      date: birthdayDate,
-      name: 'CecÃ­lia',
-      personId: 'demo-person-cecilia',
-    ),
-    UserAgendaBirthdayItemEntity(
-      id: 'demo-birthday-marcos',
-      date: birthdayDate,
-      name: 'Marcos',
-      personId: 'demo-person-marcos',
-    ),
-    UserAgendaBirthdayItemEntity(
-      id: 'demo-birthday-ana',
-      date: mixedDate,
-      name: 'Ana',
-      personId: 'demo-person-ana',
+      roles: const ['Vocal', 'Violão'],
     ),
   ];
 }
@@ -194,4 +202,50 @@ bool _isItemInRange(UserAgendaItemEntity item, DateTime start, DateTime end) {
   return expandItemOccurrences(item).any((occurrence) {
     return !occurrence.date.isBefore(start) && !occurrence.date.isAfter(end);
   });
+}
+
+Future<List<PersonBirthdayEntity>> _loadBirthdaysOrEmpty(
+  Ref ref,
+  UserAgendaItemsRequest request,
+) async {
+  final completer = Completer<List<PersonBirthdayEntity>>();
+  final subscription = ref.listen<AsyncValue<List<PersonBirthdayEntity>>>(
+    unitBirthdaysProvider(
+      UnitBirthdaysRequest(start: request.start, end: request.end),
+    ),
+    (_, next) {
+      if (completer.isCompleted) return;
+      if (next.hasValue) {
+        completer.complete(next.requireValue);
+      } else if (next.hasError) {
+        completer.complete(const []);
+      }
+    },
+    fireImmediately: true,
+  );
+  ref.onDispose(subscription.close);
+  return completer.future;
+}
+
+Future<List<CalendarEventEntity>> _loadVisibleEvents(
+  Ref ref,
+  UserAgendaItemsRequest request,
+) {
+  final completer = Completer<List<CalendarEventEntity>>();
+  final subscription = ref.listen<AsyncValue<List<CalendarEventEntity>>>(
+    visibleCalendarEventsProvider(
+      VisibleCalendarEventsRequest(start: request.start, end: request.end),
+    ),
+    (_, next) {
+      if (completer.isCompleted) return;
+      if (next.hasValue) {
+        completer.complete(next.requireValue);
+      } else if (next.hasError) {
+        completer.completeError(next.error!, next.stackTrace);
+      }
+    },
+    fireImmediately: true,
+  );
+  ref.onDispose(subscription.close);
+  return completer.future;
 }

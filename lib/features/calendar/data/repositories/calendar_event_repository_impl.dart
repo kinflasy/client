@@ -2,6 +2,7 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/datasources/calendar_events_api.dart';
 import 'package:client/features/calendar/data/models/calendar_event_read_model.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
+import 'package:client/features/calendar/data/models/person_birthday_read_model.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_read_model.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/scale/data/models/scale_item_read_model.dart';
@@ -11,7 +12,9 @@ import 'package:client/features/calendar/domain/entities/calendar_event_entity.d
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/scale/domain/entities/scale_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
+import 'package:client/features/calendar/domain/utils/month_day_utils.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -66,6 +69,30 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
       () => _api.getDepartmentEventsWithCollabs(departmentId, start, end),
       fallbackMessage: 'Erro ao carregar eventos do departamento.',
     );
+  }
+
+  @override
+  Future<Either<Failure, List<PersonBirthdayEntity>>> getUnitBirthdays(
+    DateTime start,
+    DateTime end,
+  ) async {
+    try {
+      final jsonList = await _api.getUnitBirthdays(
+        formatMonthDay(start),
+        formatMonthDay(end),
+      );
+      final birthdays = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(PersonBirthdayReadModel.fromJson)
+          .map((model) => model.toEntity())
+          .toList();
+      return Right(birthdays);
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao carregar aniversariantes.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
   }
 
   @override

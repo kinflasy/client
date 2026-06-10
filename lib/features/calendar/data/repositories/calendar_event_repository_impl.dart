@@ -281,6 +281,27 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>> getMyScales(
+    DateTime start,
+    DateTime end,
+  ) async {
+    try {
+      final jsonList = await _api.getMyScales(start, end);
+      final scales = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(DepartmentCalendarEventScaleReadModel.fromJson)
+          .map((model) => model.toEntity())
+          .toList();
+      return Right(scales);
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao carregar minhas escalas.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, ScaleItemEntity>> addScaleItem({
     required String scaleId,
     required ScaleItemRequestModel request,

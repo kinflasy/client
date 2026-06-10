@@ -1,5 +1,6 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_state.dart';
 import 'package:client/features/calendar/presentation/widgets/event_detail_bottom_sheet.dart';
 import 'package:client/features/calendar/presentation/widgets/user_agenda_day_cell.dart';
@@ -9,6 +10,7 @@ import 'package:client/features/calendar/presentation/widgets/user_agenda_week_l
 import 'package:client/features/calendar/providers/user_agenda_view_model_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class CalendarScreen extends ConsumerWidget {
   const CalendarScreen({super.key});
@@ -71,6 +73,17 @@ class CalendarScreen extends ConsumerWidget {
                   focusTargetDate: agendaState.focusTargetDate,
                   onEventTap: (eventId) =>
                       showEventDetailBottomSheet(context, eventId: eventId),
+                  onPersonalScaleTap: (scale) {
+                    final departmentId = scale.departmentId?.trim() ?? '';
+                    if (departmentId.isEmpty) return;
+                    context.pushNamed(
+                      AppRoutes.departmentScaleDetailName,
+                      pathParameters: {
+                        'departmentId': departmentId,
+                        'scaleId': scale.scaleId,
+                      },
+                    );
+                  },
                 ),
               ],
             ],

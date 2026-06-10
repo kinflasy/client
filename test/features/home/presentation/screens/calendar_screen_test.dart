@@ -2,19 +2,25 @@ import 'dart:async';
 
 import 'package:client/core/domain/enums/affiliation.dart';
 import 'package:client/core/domain/session_permissions.dart';
+import 'package:client/core/router/app_routes.dart';
+import 'package:client/features/auth/domain/entities/logged_user_profile_entity.dart';
+import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
 import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
+import 'package:client/features/calendar/domain/entities/user_agenda_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_state.dart';
 import 'package:client/features/calendar/presentation/widgets/user_agenda_day_cell.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/calendar/providers/user_agenda_providers.dart';
 import 'package:client/features/calendar/providers/user_agenda_view_model_provider.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:client/features/home/presentation/screens/calendar_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 void main() {
   testWidgets('mostra lista semanal com Essa semana, nao lista diaria', (
@@ -59,7 +65,6 @@ void main() {
 
     expect(find.textContaining('Culto'), findsOneWidget);
     expect(find.textContaining('Confer'), findsWidgets);
-    expect(find.text('Ensaio geral'), findsOneWidget);
   });
 
   testWidgets('tocar em dia com item seleciona o dia e mantem lista semanal', (
@@ -90,7 +95,7 @@ void main() {
       isTrue,
     );
     expect(find.text('Essa semana'), findsOneWidget);
-    expect(find.text('Ensaio geral'), findsOneWidget);
+    expect(find.textContaining('Confer'), findsWidgets);
   });
 
   testWidgets('tocar em dia sem item nao troca para vazio diario', (
@@ -156,7 +161,22 @@ void main() {
     final scaleDate = DateUtils.dateOnly(today.add(const Duration(days: 2)));
     final birthdayDate = DateUtils.dateOnly(today.add(const Duration(days: 4)));
 
-    await tester.pumpWidget(_CalendarScreenTestApp(today: today));
+    await tester.pumpWidget(
+      _CalendarScreenTestApp(
+        today: today,
+        agendaState: _agendaStateWithPersonalScales(
+          today: today,
+          personalScales: const [
+            UserAgendaPersonalScaleSummaryEntity(
+              scaleId: 'scale-1',
+              departmentId: 'dep-1',
+              department: 'Louvor',
+              roles: ['Vocal'],
+            ),
+          ],
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final scaleCell = tester.widget<UserAgendaDayCell>(
@@ -287,6 +307,16 @@ void main() {
     await tester.pumpWidget(
       _CalendarScreenTestApp(
         today: DateTime(2026, 6, 3),
+        agendaState: _agendaStateWithPersonalScales(
+          today: DateTime(2026, 6, 3),
+          personalScales: const [
+            UserAgendaPersonalScaleSummaryEntity(
+              scaleId: 'scale-1',
+              department: 'Louvor',
+              roles: ['Vocal'],
+            ),
+          ],
+        ),
         loadDetail: (eventId) async {
           loadCount++;
           return _eventDetail(eventId);
@@ -295,12 +325,150 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Ensaio geral'));
-    await tester.tap(find.text('Ensaio geral'));
+    await tester.ensureVisible(find.text('Louvor - Vocal'));
+    await tester.tap(find.text('Louvor - Vocal'));
     await tester.pumpAndSettle();
 
     expect(loadCount, 0);
     expect(find.text('Detalhe do evento real'), findsNothing);
+  });
+
+  testWidgets('mini card real aparece abaixo do card de evento', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _CalendarScreenTestApp(
+        today: DateTime(2026, 6, 3),
+        agendaState: _agendaStateWithPersonalScales(
+          today: DateTime(2026, 6, 3),
+          personalScales: const [
+            UserAgendaPersonalScaleSummaryEntity(
+              scaleId: 'scale-1',
+              departmentId: 'dep-1',
+              department: 'Louvor',
+              roles: ['Vocal'],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final eventFinder = find.text('Culto com escala');
+    final scaleFinder = find.text('Louvor - Vocal');
+
+    expect(eventFinder, findsOneWidget);
+    expect(scaleFinder, findsOneWidget);
+    expect(
+      tester.getTopLeft(scaleFinder).dy,
+      greaterThan(tester.getTopLeft(eventFinder).dy),
+    );
+  });
+
+  testWidgets('mini cards reais renderizam um card por departamento', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _CalendarScreenTestApp(
+        today: DateTime(2026, 6, 3),
+        agendaState: _agendaStateWithPersonalScales(
+          today: DateTime(2026, 6, 3),
+          personalScales: const [
+            UserAgendaPersonalScaleSummaryEntity(
+              scaleId: 'scale-1',
+              departmentId: 'dep-1',
+              department: 'Louvor',
+              roles: ['Vocal'],
+            ),
+            UserAgendaPersonalScaleSummaryEntity(
+              scaleId: 'scale-2',
+              departmentId: 'dep-2',
+              department: 'Mídia',
+              roles: ['Câmeras'],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Louvor - Vocal'), findsOneWidget);
+    expect(find.text('Mídia - Câmeras'), findsOneWidget);
+  });
+
+  testWidgets('mini card real combina papeis no texto', (tester) async {
+    await tester.pumpWidget(
+      _CalendarScreenTestApp(
+        today: DateTime(2026, 6, 3),
+        agendaState: _agendaStateWithPersonalScales(
+          today: DateTime(2026, 6, 3),
+          personalScales: const [
+            UserAgendaPersonalScaleSummaryEntity(
+              scaleId: 'scale-1',
+              departmentId: 'dep-1',
+              department: 'Louvor',
+              roles: ['Vocal', 'Violão'],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Louvor - Vocal, Violão'), findsOneWidget);
+  });
+
+  testWidgets('mini card real sem funcao mostra somente departamento', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _CalendarScreenTestApp(
+        today: DateTime(2026, 6, 3),
+        agendaState: _agendaStateWithPersonalScales(
+          today: DateTime(2026, 6, 3),
+          personalScales: const [
+            UserAgendaPersonalScaleSummaryEntity(
+              scaleId: 'scale-1',
+              departmentId: 'dep-1',
+              department: 'Louvor',
+              roles: [],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Louvor'), findsOneWidget);
+    expect(find.textContaining('Função não encontrada'), findsNothing);
+    expect(find.text('Louvor - '), findsNothing);
+  });
+
+  testWidgets('tocar no mini card abre detalhe da escala', (tester) async {
+    await tester.pumpWidget(
+      _CalendarScreenTestApp(
+        today: DateTime(2026, 6, 3),
+        useRouter: true,
+        agendaState: _agendaStateWithPersonalScales(
+          today: DateTime(2026, 6, 3),
+          personalScales: const [
+            UserAgendaPersonalScaleSummaryEntity(
+              scaleId: 'scale-1',
+              departmentId: 'dep-1',
+              department: 'Louvor',
+              roles: ['Vocal'],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Louvor - Vocal'));
+    await tester.tap(find.text('Louvor - Vocal'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detalhe da escala dep-1/scale-1'), findsOneWidget);
   });
 }
 
@@ -309,11 +477,15 @@ class _CalendarScreenTestApp extends StatelessWidget {
     required this.today,
     this.loadEvents,
     this.loadDetail,
+    this.agendaState,
+    this.useRouter = false,
     this.startWithError = false,
   });
 
   final DateTime today;
   final bool startWithError;
+  final bool useRouter;
+  final UserAgendaState? agendaState;
   final Future<List<CalendarEventEntity>> Function(
     VisibleCalendarEventsRequest request,
   )?
@@ -322,9 +494,34 @@ class _CalendarScreenTestApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const Scaffold(body: CalendarScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.departmentScaleDetail,
+          name: AppRoutes.departmentScaleDetailName,
+          builder: (context, state) {
+            final departmentId = state.pathParameters['departmentId']!;
+            final scaleId = state.pathParameters['scaleId']!;
+            return Scaffold(
+              body: Text('Detalhe da escala $departmentId/$scaleId'),
+            );
+          },
+        ),
+      ],
+    );
+
     return ProviderScope(
       overrides: [
         userAgendaTodayProvider.overrideWithValue(today),
+        if (agendaState != null)
+          userAgendaViewModelProvider.overrideWithBuild((ref, notifier) async {
+            return agendaState!;
+          }),
         if (startWithError)
           userAgendaViewModelProvider.overrideWithBuild((ref, notifier) async {
             return _emptyAgendaState(
@@ -339,6 +536,16 @@ class _CalendarScreenTestApp extends StatelessWidget {
         }),
         unitBirthdaysProvider.overrideWith((ref, request) async {
           return _defaultBirthdays();
+        }),
+        myCalendarScalesProvider.overrideWith((ref, request) async {
+          return const <DepartmentCalendarEventScaleEntity>[];
+        }),
+        editLoggedUserInitialDataProvider.overrideWith((ref) async {
+          return const LoggedUserProfileEntity(
+            id: 'person-1',
+            fullName: 'Pessoa Logada',
+            gender: 'M',
+          );
         }),
         calendarEventDetailProvider.overrideWith((ref, eventId) {
           return loadDetail?.call(eventId) ??
@@ -358,7 +565,9 @@ class _CalendarScreenTestApp extends StatelessWidget {
           ),
         ),
       ],
-      child: const MaterialApp(home: Scaffold(body: CalendarScreen())),
+      child: useRouter
+          ? MaterialApp.router(routerConfig: router)
+          : const MaterialApp(home: Scaffold(body: CalendarScreen())),
     );
   }
 }
@@ -396,6 +605,51 @@ UserAgendaState _emptyAgendaState(DateTime today, {String? errorMessage}) {
     }),
     markersByDate: const {},
     errorMessage: errorMessage,
+    isUsingRealEvents: true,
+  );
+}
+
+UserAgendaState _agendaStateWithPersonalScales({
+  required DateTime today,
+  required List<UserAgendaPersonalScaleSummaryEntity> personalScales,
+}) {
+  final normalizedToday = DateUtils.dateOnly(today);
+  final scaleDate = DateTime(2026, 6, 5);
+  final visibleWeekStart = DateTime(2026, 5, 31);
+
+  final event = UserAgendaEventItemEntity(
+    id: 'event-scale',
+    title: 'Culto com escala',
+    startDateTime: scaleDate.add(const Duration(hours: 18)),
+    endDateTime: scaleDate.add(const Duration(hours: 20)),
+    origin: 'Igreja',
+    personalScales: personalScales,
+  );
+
+  return UserAgendaState(
+    today: normalizedToday,
+    focusedMonth: DateTime(normalizedToday.year, normalizedToday.month),
+    selectedDate: normalizedToday,
+    visibleWeekStart: visibleWeekStart,
+    visibleWeekEnd: visibleWeekStart.add(
+      const Duration(days: DateTime.daysPerWeek - 1),
+    ),
+    weeklyGroups: List.generate(DateTime.daysPerWeek, (index) {
+      final date = visibleWeekStart.add(Duration(days: index));
+      return UserAgendaDayGroupEntity(
+        date: date,
+        items: DateUtils.isSameDay(date, scaleDate) ? [event] : const [],
+      );
+    }),
+    markersByDate: {
+      scaleDate: const UserAgendaDateMarkersEntity(
+        hasEvent: true,
+        hasUserScale: true,
+      ),
+      DateTime(2026, 6, 7): const UserAgendaDateMarkersEntity(
+        hasBirthday: true,
+      ),
+    },
     isUsingRealEvents: true,
   );
 }

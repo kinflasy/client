@@ -776,6 +776,14 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>> getMyScales(
+    DateTime start,
+    DateTime end,
+  ) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
   Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>>
   getDepartmentScales(String departmentId, DateTime start, DateTime end) async {
     return const Left(ServerFailure('Não implementado no teste.'));

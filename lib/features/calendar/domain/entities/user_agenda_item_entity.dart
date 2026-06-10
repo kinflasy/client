@@ -84,12 +84,14 @@ class UserAgendaPersonalScaleItemEntity extends UserAgendaItemEntity {
     required super.endDateTime,
     required this.eventId,
     required this.scaleId,
+    this.departmentId,
     required this.department,
     required this.roles,
   }) : super(type: UserAgendaItemType.personalScale);
 
   final String eventId;
   final String scaleId;
+  final String? departmentId;
   final String department;
   final List<String> roles;
 
@@ -102,6 +104,7 @@ class UserAgendaPersonalScaleItemEntity extends UserAgendaItemEntity {
     endDateTime,
     eventId,
     scaleId,
+    departmentId,
     department,
     roles,
   ];
@@ -110,14 +113,54 @@ class UserAgendaPersonalScaleItemEntity extends UserAgendaItemEntity {
 class UserAgendaPersonalScaleSummaryEntity extends Equatable {
   const UserAgendaPersonalScaleSummaryEntity({
     required this.scaleId,
+    this.departmentId,
     required this.department,
     required this.roles,
   });
 
   final String scaleId;
+  final String? departmentId;
   final String department;
   final List<String> roles;
 
   @override
-  List<Object?> get props => [scaleId, department, roles];
+  List<Object?> get props => [scaleId, departmentId, department, roles];
+}
+
+class UserAgendaPersonalScaleGroupEntity extends Equatable {
+  const UserAgendaPersonalScaleGroupEntity({
+    required this.eventId,
+    required this.scaleId,
+    this.departmentId,
+    required this.department,
+    required this.roles,
+  });
+
+  final String eventId;
+  final String scaleId;
+  final String? departmentId;
+  final String department;
+  final List<String> roles;
+
+  @override
+  List<Object?> get props => [
+    eventId,
+    scaleId,
+    departmentId,
+    department,
+    roles,
+  ];
+}
+
+class UserAgendaPersonalScalesEntity extends Equatable {
+  const UserAgendaPersonalScalesEntity({
+    required this.attachedScales,
+    required this.standaloneItems,
+  });
+
+  final List<UserAgendaPersonalScaleGroupEntity> attachedScales;
+  final List<UserAgendaPersonalScaleItemEntity> standaloneItems;
+
+  @override
+  List<Object?> get props => [attachedScales, standaloneItems];
 }

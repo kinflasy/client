@@ -11,6 +11,7 @@ class UserAgendaWeekList extends StatefulWidget {
     required this.today,
     this.focusTargetDate,
     this.onEventTap,
+    this.onPersonalScaleTap,
   });
 
   final List<UserAgendaDayGroupEntity> groups;
@@ -18,6 +19,8 @@ class UserAgendaWeekList extends StatefulWidget {
   final DateTime today;
   final DateTime? focusTargetDate;
   final ValueChanged<String>? onEventTap;
+  final ValueChanged<UserAgendaPersonalScaleNavigationEntity>?
+  onPersonalScaleTap;
 
   @override
   State<UserAgendaWeekList> createState() => _UserAgendaWeekListState();
@@ -82,6 +85,7 @@ class _UserAgendaWeekListState extends State<UserAgendaWeekList> {
                 widget.selectedDate,
               ),
               onEventTap: widget.onEventTap,
+              onPersonalScaleTap: widget.onPersonalScaleTap,
             ),
             if (index < groupsWithScheduleItems.length - 1)
               const SizedBox(height: 16),
@@ -136,12 +140,15 @@ class _WeekDayGroup extends StatelessWidget {
     required this.today,
     required this.isSelected,
     this.onEventTap,
+    this.onPersonalScaleTap,
   });
 
   final UserAgendaDayGroupEntity group;
   final DateTime today;
   final bool isSelected;
   final ValueChanged<String>? onEventTap;
+  final ValueChanged<UserAgendaPersonalScaleNavigationEntity>?
+  onPersonalScaleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +163,11 @@ class _WeekDayGroup extends StatelessWidget {
         _DayTitle(date: group.date, today: today, isSelected: isSelected),
         const SizedBox(height: 8),
         for (var index = 0; index < scheduleItems.length; index++) ...[
-          _AgendaItemCard(item: scheduleItems[index], onEventTap: onEventTap),
+          _AgendaItemCard(
+            item: scheduleItems[index],
+            onEventTap: onEventTap,
+            onPersonalScaleTap: onPersonalScaleTap,
+          ),
           if (index < scheduleItems.length - 1) const SizedBox(height: 10),
         ],
       ],
@@ -280,29 +291,48 @@ class _BirthdayCard extends StatelessWidget {
 }
 
 class _AgendaItemCard extends StatelessWidget {
-  const _AgendaItemCard({required this.item, this.onEventTap});
+  const _AgendaItemCard({
+    required this.item,
+    this.onEventTap,
+    this.onPersonalScaleTap,
+  });
 
   final UserAgendaItemEntity item;
   final ValueChanged<String>? onEventTap;
+  final ValueChanged<UserAgendaPersonalScaleNavigationEntity>?
+  onPersonalScaleTap;
 
   @override
   Widget build(BuildContext context) {
     final item = this.item;
     if (item is UserAgendaEventItemEntity) {
-      return _EventCard(event: item, onEventTap: onEventTap);
+      return _EventCard(
+        event: item,
+        onEventTap: onEventTap,
+        onPersonalScaleTap: onPersonalScaleTap,
+      );
     }
     if (item is UserAgendaPersonalScaleItemEntity) {
-      return _PersonalScaleEventCard(scale: item);
+      return _PersonalScaleEventCard(
+        scale: item,
+        onPersonalScaleTap: onPersonalScaleTap,
+      );
     }
     return const SizedBox.shrink();
   }
 }
 
 class _EventCard extends StatelessWidget {
-  const _EventCard({required this.event, this.onEventTap});
+  const _EventCard({
+    required this.event,
+    this.onEventTap,
+    this.onPersonalScaleTap,
+  });
 
   final UserAgendaEventItemEntity event;
   final ValueChanged<String>? onEventTap;
+  final ValueChanged<UserAgendaPersonalScaleNavigationEntity>?
+  onPersonalScaleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -316,16 +346,28 @@ class _EventCard extends StatelessWidget {
           onTap: onEventTap == null ? null : () => onEventTap!(event.id),
         ),
         for (final scale in event.personalScales)
-          _PersonalScaleCard(department: scale.department, roles: scale.roles),
+          _PersonalScaleCard(
+            department: scale.department,
+            roles: scale.roles,
+            onTap: _personalScaleTapCallback(
+              onPersonalScaleTap,
+              UserAgendaPersonalScaleNavigationEntity(
+                scaleId: scale.scaleId,
+                departmentId: scale.departmentId,
+              ),
+            ),
+          ),
       ],
     );
   }
 }
 
 class _PersonalScaleEventCard extends StatelessWidget {
-  const _PersonalScaleEventCard({required this.scale});
+  const _PersonalScaleEventCard({required this.scale, this.onPersonalScaleTap});
 
   final UserAgendaPersonalScaleItemEntity scale;
+  final ValueChanged<UserAgendaPersonalScaleNavigationEntity>?
+  onPersonalScaleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -337,7 +379,17 @@ class _PersonalScaleEventCard extends StatelessWidget {
           title: scale.title,
           subtitle: scale.department,
         ),
-        _PersonalScaleCard(department: scale.department, roles: scale.roles),
+        _PersonalScaleCard(
+          department: scale.department,
+          roles: scale.roles,
+          onTap: _personalScaleTapCallback(
+            onPersonalScaleTap,
+            UserAgendaPersonalScaleNavigationEntity(
+              scaleId: scale.scaleId,
+              departmentId: scale.departmentId,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -413,36 +465,75 @@ class _BaseEventSurface extends StatelessWidget {
 }
 
 class _PersonalScaleCard extends StatelessWidget {
-  const _PersonalScaleCard({required this.department, required this.roles});
+  const _PersonalScaleCard({
+    required this.department,
+    required this.roles,
+    this.onTap,
+  });
 
   final String department;
   final List<String> roles;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 12),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.tertiary.withValues(alpha: 0.16),
-          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Text(
-            '$department - ${roles.join(', ')}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+    final rolesText = roles.join(', ');
+    final label = rolesText.isEmpty ? department : '$department - $rolesText';
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 12),
+      child: Material(
+        color: AppColors.tertiary.withValues(alpha: 0.16),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
+        clipBehavior: Clip.antiAlias,
+        child: onTap == null ? content : InkWell(onTap: onTap, child: content),
+      ),
+    );
   }
+}
+
+class UserAgendaPersonalScaleNavigationEntity {
+  const UserAgendaPersonalScaleNavigationEntity({
+    required this.scaleId,
+    required this.departmentId,
+  });
+
+  final String scaleId;
+  final String? departmentId;
+}
+
+VoidCallback? _personalScaleTapCallback(
+  ValueChanged<UserAgendaPersonalScaleNavigationEntity>? onPersonalScaleTap,
+  UserAgendaPersonalScaleNavigationEntity navigation,
+) {
+  final departmentId = navigation.departmentId?.trim() ?? '';
+  if (onPersonalScaleTap == null ||
+      navigation.scaleId.trim().isEmpty ||
+      departmentId.isEmpty) {
+    return null;
+  }
+
+  return () {
+    onPersonalScaleTap(
+      UserAgendaPersonalScaleNavigationEntity(
+        scaleId: navigation.scaleId,
+        departmentId: departmentId,
+      ),
+    );
+  };
 }
 
 class _EmptyWeekMessage extends StatelessWidget {

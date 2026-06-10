@@ -151,5 +151,58 @@ void main() {
       expect(departmentModel.type, CalendarEventType.department);
       expect(unitModel.type, CalendarEventType.unit);
     });
+
+    test('infers owner type when visible endpoint sends loose type', () {
+      final departmentIdModel = CalendarEventReadModel.fromJson({
+        'id': 'event-7',
+        'title': 'Evento',
+        'startDateTime': '2026-05-12T19:00:00',
+        'endDateTime': '2026-05-12T21:00:00',
+        'type': 'string',
+        'departmentId': 'department-1',
+        'visibilityRules': [
+          {'type': 'string'},
+          {
+            'type': 'DEPARTMENT',
+            'departmentId': 'department-1',
+            'integrationType': 'OBSERVER',
+          },
+        ],
+      });
+      final nestedDepartmentModel = CalendarEventReadModel.fromJson({
+        'id': 'event-8',
+        'title': 'Evento',
+        'startDateTime': '2026-05-12T19:00:00',
+        'endDateTime': '2026-05-12T21:00:00',
+        'type': 'string',
+        'department': {'id': 'department-2', 'name': 'Louvor'},
+      });
+      final unitIdModel = CalendarEventReadModel.fromJson({
+        'id': 'event-9',
+        'title': 'Evento',
+        'startDateTime': '2026-05-12T19:00:00',
+        'endDateTime': '2026-05-12T21:00:00',
+        'type': 'string',
+        'unitId': 'unit-1',
+      });
+      final nestedUnitModel = CalendarEventReadModel.fromJson({
+        'id': 'event-10',
+        'title': 'Evento',
+        'startDateTime': '2026-05-12T19:00:00',
+        'endDateTime': '2026-05-12T21:00:00',
+        'type': 'string',
+        'unit': {'id': 'unit-2', 'name': 'Central'},
+      });
+
+      expect(departmentIdModel.type, CalendarEventType.department);
+      expect(departmentIdModel.departmentId, 'department-1');
+      expect(departmentIdModel.visibilityRules, hasLength(1));
+      expect(nestedDepartmentModel.type, CalendarEventType.department);
+      expect(nestedDepartmentModel.departmentId, 'department-2');
+      expect(unitIdModel.type, CalendarEventType.unit);
+      expect(unitIdModel.unitId, 'unit-1');
+      expect(nestedUnitModel.type, CalendarEventType.unit);
+      expect(nestedUnitModel.unitId, 'unit-2');
+    });
   });
 }

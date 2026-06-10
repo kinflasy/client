@@ -13,6 +13,7 @@ import 'package:client/features/calendar/providers/calendar_event_providers.dart
 import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -185,6 +186,57 @@ void main() {
       _readFutureProvider(
         container,
         unitBirthdaysProvider(UnitBirthdaysRequest(start: start, end: end)),
+      ),
+      throwsA(isA<NetworkFailure>()),
+    );
+  });
+
+  test('my scales provider reads repository and returns scales', () async {
+    final start = DateTime(2026, 6);
+    final end = DateTime(2026, 6, 30);
+    final scales = [
+      DepartmentCalendarEventScaleEntity(
+        scale: const CalendarEventScaleEntity(
+          id: 'scale-1',
+          lineupId: 'lineup-1',
+          type: CalendarEventScaleType.owner,
+          calendarEventId: 'event-1',
+        ),
+        calendarEvent: _event(
+          id: 'event-1',
+          title: 'Culto',
+          type: CalendarEventType.department,
+          departmentId: 'dep-1',
+        ),
+      ),
+    ];
+    when(
+      () => repository.getMyScales(start, end),
+    ).thenAnswer((_) async => Right(scales));
+
+    final result = await _readFutureProvider(
+      container,
+      myCalendarScalesProvider(MyCalendarScalesRequest(start: start, end: end)),
+    );
+
+    expect(result, scales);
+    verify(() => repository.getMyScales(start, end)).called(1);
+  });
+
+  test('my scales provider surfaces repository failure', () async {
+    final start = DateTime(2026, 6);
+    final end = DateTime(2026, 6, 30);
+    when(() => repository.getMyScales(start, end)).thenAnswer(
+      (_) async =>
+          const Left(NetworkFailure('Falha ao carregar minhas escalas')),
+    );
+
+    await expectLater(
+      _readFutureProvider(
+        container,
+        myCalendarScalesProvider(
+          MyCalendarScalesRequest(start: start, end: end),
+        ),
       ),
       throwsA(isA<NetworkFailure>()),
     );

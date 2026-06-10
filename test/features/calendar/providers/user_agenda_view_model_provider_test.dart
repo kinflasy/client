@@ -1,15 +1,33 @@
 import 'dart:async';
 
 import 'package:client/core/errors/failure.dart';
+import 'package:client/features/auth/domain/entities/logged_user_profile_entity.dart';
+import 'package:client/features/auth/providers/edit_logged_user_providers.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/user_agenda_state.dart';
+import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/calendar/providers/user_agenda_providers.dart';
 import 'package:client/features/calendar/providers/user_agenda_view_model_provider.dart';
+import 'package:client/features/department/domain/entities/department_detail_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_entity.dart';
+import 'package:client/features/department/domain/entities/lineup_item_entity.dart';
+import 'package:client/features/department/domain/entities/role_entity.dart';
+import 'package:client/features/department/domain/repositories/department_repository.dart';
+import 'package:client/features/department/providers/department_providers.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/scale_item_entity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockDepartmentRepository extends Mock implements DepartmentRepository {}
+
+class _MockCalendarEventRepository extends Mock
+    implements CalendarEventRepository {}
 
 Future<T> _readFutureProvider<T>(
   ProviderContainer container,
@@ -32,6 +50,91 @@ Future<T> _readFutureProvider<T>(
   } finally {
     subscription.close();
   }
+}
+
+ProviderContainer _buildPersonalScalesContainer({
+  required List<CalendarEventEntity> visibleEvents,
+  required List<DepartmentCalendarEventScaleEntity> myScales,
+  required CalendarEventRepository calendarEventRepository,
+  required DepartmentRepository departmentRepository,
+  LoggedUserProfileEntity? loggedUserProfile,
+}) {
+  return ProviderContainer(
+    overrides: [
+      userAgendaTodayProvider.overrideWithValue(DateTime(2026, 6, 3)),
+      visibleCalendarEventsProvider.overrideWith((ref, request) async {
+        return visibleEvents;
+      }),
+      myCalendarScalesProvider.overrideWith((ref, request) async {
+        return myScales;
+      }),
+      editLoggedUserInitialDataProvider.overrideWith((ref) async {
+        return loggedUserProfile ??
+            const LoggedUserProfileEntity(
+              id: 'person-1',
+              fullName: 'Pessoa Logada',
+              gender: 'M',
+            );
+      }),
+      calendarEventRepositoryProvider.overrideWithValue(
+        calendarEventRepository,
+      ),
+      departmentRepositoryProvider.overrideWithValue(departmentRepository),
+    ],
+  );
+}
+
+DepartmentCalendarEventScaleEntity _personalScaleEvent({
+  required String scaleId,
+  required String lineupId,
+  required String eventId,
+  required String departmentId,
+  required String title,
+  DateTime? startDateTime,
+  DateTime? endDateTime,
+}) {
+  return DepartmentCalendarEventScaleEntity(
+    scale: CalendarEventScaleEntity(
+      id: scaleId,
+      lineupId: lineupId,
+      type: CalendarEventScaleType.owner,
+      calendarEventId: eventId,
+    ),
+    calendarEvent: CalendarEventEntity(
+      id: eventId,
+      title: title,
+      startDateTime: startDateTime ?? DateTime(2026, 6, 7, 18),
+      endDateTime: endDateTime ?? DateTime(2026, 6, 7, 20),
+      type: CalendarEventType.department,
+      departmentId: departmentId,
+    ),
+  );
+}
+
+LineupEntity _lineupWithRoles({
+  required String lineupId,
+  required String name,
+  required List<LineupItemEntity> items,
+}) {
+  return LineupEntity(id: lineupId, name: name, items: items);
+}
+
+LineupItemEntity _lineupItem({
+  required String id,
+  required String lineupId,
+  required String roleId,
+  required String description,
+  String? roleName,
+}) {
+  return LineupItemEntity(
+    id: id,
+    lineupId: lineupId,
+    roleId: roleId,
+    description: description,
+    role: roleName == null
+        ? null
+        : RoleEntity(id: roleId, name: roleName, slug: roleName.toLowerCase()),
+  );
 }
 
 void main() {
@@ -332,50 +435,41 @@ void main() {
     expect(items.map((item) => item.id), isNot(contains('demo-event-scale')));
   });
 
-  test(
-    'fonte real usa aniversariantes reais e mantem escala local suplementar',
-    () async {
-      unitBirthdays = const [
-        PersonBirthdayEntity(
-          id: 'person-maria',
-          name: 'Maria',
-          birthdayMonth: 6,
-          birthdayDay: 7,
-        ),
-      ];
+  test('fonte real usa aniversariantes reais sem escala demo local', () async {
+    unitBirthdays = const [
+      PersonBirthdayEntity(
+        id: 'person-maria',
+        name: 'Maria',
+        birthdayMonth: 6,
+        birthdayDay: 7,
+      ),
+    ];
 
-      final items = await container.read(
-        userAgendaItemsProvider(
-          UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
-        ).future,
-      );
+    final items = await container.read(
+      userAgendaItemsProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
 
-      final birthdayItems = items.whereType<UserAgendaBirthdayItemEntity>();
-      expect(birthdayItems, hasLength(1));
-      expect(birthdayItems.single.id, 'birthday-person-maria-20260607');
-      expect(birthdayItems.single.name, 'Maria');
-      expect(birthdayItems.single.personId, 'person-maria');
-      expect(birthdayItems.single.startDateTime, DateTime(2026, 6, 7));
-      expect(
-        items.map((item) => item.id),
-        isNot(contains('demo-birthday-ana')),
-      );
-      expect(
-        items.map((item) => item.id),
-        isNot(contains('demo-birthday-cecilia')),
-      );
-      expect(
-        items.whereType<UserAgendaPersonalScaleItemEntity>(),
-        hasLength(1),
-      );
-      expect(birthdayRequests, [
-        UnitBirthdaysRequest(
-          start: DateTime(2026, 5, 31),
-          end: DateTime(2026, 7, 4),
-        ),
-      ]);
-    },
-  );
+    final birthdayItems = items.whereType<UserAgendaBirthdayItemEntity>();
+    expect(birthdayItems, hasLength(1));
+    expect(birthdayItems.single.id, 'birthday-person-maria-20260607');
+    expect(birthdayItems.single.name, 'Maria');
+    expect(birthdayItems.single.personId, 'person-maria');
+    expect(birthdayItems.single.startDateTime, DateTime(2026, 6, 7));
+    expect(items.map((item) => item.id), isNot(contains('demo-birthday-ana')));
+    expect(
+      items.map((item) => item.id),
+      isNot(contains('demo-birthday-cecilia')),
+    );
+    expect(items.whereType<UserAgendaPersonalScaleItemEntity>(), isEmpty);
+    expect(birthdayRequests, [
+      UnitBirthdaysRequest(
+        start: DateTime(2026, 5, 31),
+        end: DateTime(2026, 7, 4),
+      ),
+    ]);
+  });
 
   test('falha dos aniversariantes nao impede eventos reais', () async {
     birthdayFailure = const NetworkFailure('Falha em aniversariantes');
@@ -398,7 +492,7 @@ void main() {
 
     expect(items.map((item) => item.id), contains('real-event-1'));
     expect(items.whereType<UserAgendaBirthdayItemEntity>(), isEmpty);
-    expect(items.whereType<UserAgendaPersonalScaleItemEntity>(), hasLength(1));
+    expect(items.whereType<UserAgendaPersonalScaleItemEntity>(), isEmpty);
   });
 
   test('falha dos eventos reais ainda gera erro global', () async {
@@ -472,33 +566,908 @@ void main() {
     },
   );
 
-  test(
-    'fonte real sem aniversariantes mantem escala local suplementar',
-    () async {
-      container.dispose();
-      container = ProviderContainer(
-        overrides: [
-          userAgendaTodayProvider.overrideWithValue(DateTime(2026, 6, 3)),
-          visibleCalendarEventsProvider.overrideWith(
-            (ref, request) async => const [],
-          ),
-          unitBirthdaysProvider.overrideWith((ref, request) async => const []),
-        ],
-      );
+  test('fonte real sem aniversariantes nao inclui escala demo local', () async {
+    container.dispose();
+    container = ProviderContainer(
+      overrides: [
+        userAgendaTodayProvider.overrideWithValue(DateTime(2026, 6, 3)),
+        visibleCalendarEventsProvider.overrideWith(
+          (ref, request) async => const [],
+        ),
+        unitBirthdaysProvider.overrideWith((ref, request) async => const []),
+      ],
+    );
 
-      final items = await container.read(
-        userAgendaItemsProvider(
-          UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
-        ).future,
-      );
+    final items = await container.read(
+      userAgendaItemsProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
 
-      expect(items.whereType<UserAgendaBirthdayItemEntity>(), isEmpty);
-      expect(
-        items.whereType<UserAgendaPersonalScaleItemEntity>(),
-        hasLength(1),
-      );
-    },
-  );
+    expect(items.whereType<UserAgendaBirthdayItemEntity>(), isEmpty);
+    expect(items.whereType<UserAgendaPersonalScaleItemEntity>(), isEmpty);
+  });
+
+  test('escala real aparece como mini card colado ao evento', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final request = UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6));
+    final myScales = [
+      _personalScaleEvent(
+        scaleId: 'scale-1',
+        lineupId: 'lineup-1',
+        eventId: 'event-1',
+        departmentId: 'dep-1',
+        title: 'Culto de domingo',
+      ),
+    ];
+
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: [
+        _calendarEvent(
+          id: 'event-1',
+          title: 'Culto de domingo',
+          type: CalendarEventType.department,
+          departmentId: 'dep-1',
+        ),
+      ],
+      myScales: myScales,
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(
+          lineupId: 'lineup-1',
+          name: 'Louvor',
+          items: [
+            _lineupItem(
+              id: 'lineup-item-1',
+              lineupId: 'lineup-1',
+              roleId: 'role-vocal',
+              description: 'Vocal',
+              roleName: 'Vocal',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final items = await localContainer.read(
+      userAgendaItemsProvider(request).future,
+    );
+    final event = items.whereType<UserAgendaEventItemEntity>().single;
+
+    expect(event.personalScales, hasLength(1));
+    expect(event.personalScales.single.department, 'Louvor');
+    expect(event.personalScales.single.roles, ['Vocal']);
+  });
+
+  test('escala real sem evento visivel vira card proprio', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final request = UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6));
+    final myScales = [
+      _personalScaleEvent(
+        scaleId: 'scale-1',
+        lineupId: 'lineup-1',
+        eventId: 'event-1',
+        departmentId: 'dep-1',
+        title: 'Culto de domingo',
+      ),
+    ];
+
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: const [],
+      myScales: myScales,
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(
+          lineupId: 'lineup-1',
+          name: 'Louvor',
+          items: [
+            _lineupItem(
+              id: 'lineup-item-1',
+              lineupId: 'lineup-1',
+              roleId: 'role-vocal',
+              description: 'Vocal',
+              roleName: 'Vocal',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final items = await localContainer.read(
+      userAgendaItemsProvider(request).future,
+    );
+    final standalone = items
+        .whereType<UserAgendaPersonalScaleItemEntity>()
+        .single;
+
+    expect(standalone.scaleId, 'scale-1');
+    expect(standalone.department, 'Louvor');
+    expect(standalone.roles, ['Vocal']);
+  });
+
+  test('falha total de minhas escalas nao impede eventos reais', () async {
+    final request = UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6));
+    container.dispose();
+    container = ProviderContainer(
+      overrides: [
+        userAgendaTodayProvider.overrideWithValue(DateTime(2026, 6, 3)),
+        visibleCalendarEventsProvider.overrideWith(
+          (ref, request) async => [
+            _calendarEvent(
+              id: 'real-event-1',
+              title: 'Evento real',
+              type: CalendarEventType.unit,
+              unitId: 'unit-1',
+            ),
+          ],
+        ),
+        unitBirthdaysProvider.overrideWith((ref, request) async => const []),
+        myCalendarScalesProvider.overrideWith(
+          (ref, request) =>
+              Future<List<DepartmentCalendarEventScaleEntity>>.error(
+                const NetworkFailure('Falha em minhas escalas'),
+              ),
+        ),
+      ],
+    );
+
+    final items = await container.read(userAgendaItemsProvider(request).future);
+
+    expect(
+      items.whereType<UserAgendaEventItemEntity>().map((item) => item.id),
+      ['real-event-1'],
+    );
+    expect(items.whereType<UserAgendaPersonalScaleItemEntity>(), isEmpty);
+  });
+
+  test('dia com escala real gera marcador hasUserScale', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: [
+        _calendarEvent(
+          id: 'event-1',
+          title: 'Culto de domingo',
+          type: CalendarEventType.department,
+          departmentId: 'dep-1',
+          startDateTime: DateTime(2026, 6, 7, 18),
+          endDateTime: DateTime(2026, 6, 7, 20),
+        ),
+      ],
+      myScales: [
+        _personalScaleEvent(
+          scaleId: 'scale-1',
+          lineupId: 'lineup-1',
+          eventId: 'event-1',
+          departmentId: 'dep-1',
+          title: 'Culto de domingo',
+          startDateTime: DateTime(2026, 6, 7, 18),
+          endDateTime: DateTime(2026, 6, 7, 20),
+        ),
+      ],
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(
+          lineupId: 'lineup-1',
+          name: 'Louvor',
+          items: [
+            _lineupItem(
+              id: 'lineup-item-1',
+              lineupId: 'lineup-1',
+              roleId: 'role-vocal',
+              description: 'Vocal',
+              roleName: 'Vocal',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final state = await localContainer.read(userAgendaViewModelProvider.future);
+    final marker = state.markersByDate[DateTime(2026, 6, 7)];
+
+    expect(marker?.hasEvent, isTrue);
+    expect(marker?.hasUserScale, isTrue);
+  });
+
+  test('Meus eventos inclui evento com personalScales', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: [
+        _calendarEvent(
+          id: 'event-1',
+          title: 'Culto de domingo',
+          type: CalendarEventType.department,
+          departmentId: 'dep-1',
+          startDateTime: DateTime(2026, 6, 3, 18),
+          endDateTime: DateTime(2026, 6, 3, 20),
+        ),
+      ],
+      myScales: [
+        _personalScaleEvent(
+          scaleId: 'scale-1',
+          lineupId: 'lineup-1',
+          eventId: 'event-1',
+          departmentId: 'dep-1',
+          title: 'Culto de domingo',
+          startDateTime: DateTime(2026, 6, 3, 18),
+          endDateTime: DateTime(2026, 6, 3, 20),
+        ),
+      ],
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(
+          lineupId: 'lineup-1',
+          name: 'Louvor',
+          items: [
+            _lineupItem(
+              id: 'lineup-item-1',
+              lineupId: 'lineup-1',
+              roleId: 'role-vocal',
+              description: 'Vocal',
+              roleName: 'Vocal',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final state = await localContainer.read(userAgendaViewModelProvider.future);
+    final userEvents = state.weeklyGroups
+        .expand((group) => group.items)
+        .where((item) => item.isUserEvent)
+        .toList();
+
+    expect(userEvents.map((item) => item.id), contains('event-1'));
+    expect(userEvents.single, isA<UserAgendaEventItemEntity>());
+  });
+
+  test('Meus eventos inclui escala pessoal como item proprio', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: const [],
+      myScales: [
+        _personalScaleEvent(
+          scaleId: 'scale-1',
+          lineupId: 'lineup-1',
+          eventId: 'event-1',
+          departmentId: 'dep-1',
+          title: 'Culto de domingo',
+          startDateTime: DateTime(2026, 6, 3, 18),
+          endDateTime: DateTime(2026, 6, 3, 20),
+        ),
+      ],
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(
+          lineupId: 'lineup-1',
+          name: 'Louvor',
+          items: [
+            _lineupItem(
+              id: 'lineup-item-1',
+              lineupId: 'lineup-1',
+              roleId: 'role-vocal',
+              description: 'Vocal',
+              roleName: 'Vocal',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final state = await localContainer.read(userAgendaViewModelProvider.future);
+    final userEvents = state.weeklyGroups
+        .expand((group) => group.items)
+        .where((item) => item.isUserEvent)
+        .toList();
+
+    expect(
+      userEvents.map((item) => item.id),
+      contains('personal-scale-scale-1'),
+    );
+    expect(userEvents.single, isA<UserAgendaPersonalScaleItemEntity>());
+  });
+
+  test('agrupa dois papeis do mesmo departamento em um mini card', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final visibleEvents = [
+      _calendarEvent(
+        id: 'event-1',
+        title: 'Culto de domingo',
+        type: CalendarEventType.department,
+        departmentId: 'dep-1',
+      ),
+    ];
+    final myScales = [
+      _personalScaleEvent(
+        scaleId: 'scale-1',
+        lineupId: 'lineup-1',
+        eventId: 'event-1',
+        departmentId: 'dep-1',
+        title: 'Culto de domingo',
+      ),
+    ];
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+        ScaleItemEntity(
+          id: 'item-2',
+          scaleId: 'scale-1',
+          roleId: 'role-violao',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(
+          lineupId: 'lineup-1',
+          name: 'Louvor',
+          items: [
+            _lineupItem(
+              id: 'lineup-item-1',
+              lineupId: 'lineup-1',
+              roleId: 'role-vocal',
+              description: 'Vocal',
+              roleName: 'Vocal',
+            ),
+            _lineupItem(
+              id: 'lineup-item-2',
+              lineupId: 'lineup-1',
+              roleId: 'role-violao',
+              description: 'Violão',
+              roleName: 'Violão',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: visibleEvents,
+      myScales: myScales,
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    final result = await localContainer.read(
+      userAgendaPersonalScalesProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
+
+    expect(result.attachedScales, hasLength(1));
+    expect(result.attachedScales.single.department, 'Louvor');
+    expect(
+      result.attachedScales.single.roles,
+      containsAll(['Vocal', 'Violão']),
+    );
+  });
+
+  test('cria um mini card por departamento no mesmo evento', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final visibleEvents = [
+      _calendarEvent(
+        id: 'event-1',
+        title: 'Culto de domingo',
+        type: CalendarEventType.department,
+        departmentId: 'dep-1',
+      ),
+    ];
+    final myScales = [
+      _personalScaleEvent(
+        scaleId: 'scale-1',
+        lineupId: 'lineup-1',
+        eventId: 'event-1',
+        departmentId: 'dep-1',
+        title: 'Culto de domingo',
+      ),
+      _personalScaleEvent(
+        scaleId: 'scale-2',
+        lineupId: 'lineup-2',
+        eventId: 'event-1',
+        departmentId: 'dep-2',
+        title: 'Culto de domingo',
+      ),
+    ];
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => calendarRepository.getScaleItems('scale-2')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-2',
+          scaleId: 'scale-2',
+          roleId: 'role-midias',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-2')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-2', name: 'Mídia')),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(
+          lineupId: 'lineup-1',
+          name: 'Louvor',
+          items: [
+            _lineupItem(
+              id: 'lineup-item-1',
+              lineupId: 'lineup-1',
+              roleId: 'role-vocal',
+              description: 'Vocal',
+              roleName: 'Vocal',
+            ),
+          ],
+        ),
+      ),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-2')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(
+          lineupId: 'lineup-2',
+          name: 'Mídia',
+          items: [
+            _lineupItem(
+              id: 'lineup-item-2',
+              lineupId: 'lineup-2',
+              roleId: 'role-midias',
+              description: 'Câmeras',
+              roleName: 'Câmeras',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: visibleEvents,
+      myScales: myScales,
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    final result = await localContainer.read(
+      userAgendaPersonalScalesProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
+
+    expect(result.attachedScales, hasLength(2));
+    expect(result.attachedScales.map((scale) => scale.department).toSet(), {
+      'Louvor',
+      'Mídia',
+    });
+  });
+
+  test('deduplica papel repetido na mesma escala', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final visibleEvents = [
+      _calendarEvent(
+        id: 'event-1',
+        title: 'Culto de domingo',
+        type: CalendarEventType.department,
+        departmentId: 'dep-1',
+      ),
+    ];
+    final myScales = [
+      _personalScaleEvent(
+        scaleId: 'scale-1',
+        lineupId: 'lineup-1',
+        eventId: 'event-1',
+        departmentId: 'dep-1',
+        title: 'Culto de domingo',
+      ),
+    ];
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+        ScaleItemEntity(
+          id: 'item-2',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(
+          lineupId: 'lineup-1',
+          name: 'Louvor',
+          items: [
+            _lineupItem(
+              id: 'lineup-item-1',
+              lineupId: 'lineup-1',
+              roleId: 'role-vocal',
+              description: 'Vocal',
+              roleName: 'Vocal',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: visibleEvents,
+      myScales: myScales,
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    final result = await localContainer.read(
+      userAgendaPersonalScalesProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
+
+    expect(result.attachedScales, hasLength(1));
+    expect(result.attachedScales.single.roles, ['Vocal']);
+  });
+
+  test('nao imprime funcao quando getScaleItems falha', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final visibleEvents = [
+      _calendarEvent(
+        id: 'event-1',
+        title: 'Culto de domingo',
+        type: CalendarEventType.department,
+        departmentId: 'dep-1',
+      ),
+    ];
+    final myScales = [
+      _personalScaleEvent(
+        scaleId: 'scale-1',
+        lineupId: 'lineup-1',
+        eventId: 'event-1',
+        departmentId: 'dep-1',
+        title: 'Culto de domingo',
+      ),
+    ];
+
+    when(
+      () => calendarRepository.getScaleItems('scale-1'),
+    ).thenAnswer((_) async => const Left(NetworkFailure('Falha na escala')));
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(lineupId: 'lineup-1', name: 'Louvor', items: const []),
+      ),
+    );
+
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: visibleEvents,
+      myScales: myScales,
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    final result = await localContainer.read(
+      userAgendaPersonalScalesProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
+
+    expect(result.attachedScales, hasLength(1));
+    expect(result.attachedScales.single.roles, isEmpty);
+  });
+
+  test('nao imprime funcao quando getLineupWithItems falha', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final visibleEvents = [
+      _calendarEvent(
+        id: 'event-1',
+        title: 'Culto de domingo',
+        type: CalendarEventType.department,
+        departmentId: 'dep-1',
+      ),
+    ];
+    final myScales = [
+      _personalScaleEvent(
+        scaleId: 'scale-1',
+        lineupId: 'lineup-1',
+        eventId: 'event-1',
+        departmentId: 'dep-1',
+        title: 'Culto de domingo',
+      ),
+    ];
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(
+      () => departmentRepository.getLineupWithItems('lineup-1'),
+    ).thenAnswer((_) async => const Left(NetworkFailure('Falha na formação')));
+
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: visibleEvents,
+      myScales: myScales,
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    final result = await localContainer.read(
+      userAgendaPersonalScalesProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
+
+    expect(result.attachedScales, hasLength(1));
+    expect(result.attachedScales.single.roles, isEmpty);
+  });
+
+  test('nao mostra escala sem item do usuario', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final visibleEvents = [
+      _calendarEvent(
+        id: 'event-1',
+        title: 'Culto de domingo',
+        type: CalendarEventType.department,
+        departmentId: 'dep-1',
+      ),
+    ];
+    final myScales = [
+      _personalScaleEvent(
+        scaleId: 'scale-1',
+        lineupId: 'lineup-1',
+        eventId: 'event-1',
+        departmentId: 'dep-1',
+        title: 'Culto de domingo',
+      ),
+    ];
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'outra-pessoa',
+        ),
+      ]),
+    );
+
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: visibleEvents,
+      myScales: myScales,
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    final result = await localContainer.read(
+      userAgendaPersonalScalesProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
+
+    expect(result.attachedScales, isEmpty);
+    expect(result.standaloneItems, isEmpty);
+  });
+
+  test('materializa card proprio quando o evento nao esta visivel', () async {
+    final calendarRepository = _MockCalendarEventRepository();
+    final departmentRepository = _MockDepartmentRepository();
+    final visibleEvents = <CalendarEventEntity>[];
+    final myScales = [
+      _personalScaleEvent(
+        scaleId: 'scale-1',
+        lineupId: 'lineup-1',
+        eventId: 'event-1',
+        departmentId: 'dep-1',
+        title: 'Culto de domingo',
+      ),
+    ];
+
+    when(() => calendarRepository.getScaleItems('scale-1')).thenAnswer(
+      (_) async => const Right([
+        ScaleItemEntity(
+          id: 'item-1',
+          scaleId: 'scale-1',
+          roleId: 'role-vocal',
+          personId: 'person-1',
+        ),
+      ]),
+    );
+    when(() => departmentRepository.getDepartmentById('dep-1')).thenAnswer(
+      (_) async =>
+          const Right(DepartmentDetailEntity(id: 'dep-1', name: 'Louvor')),
+    );
+    when(() => departmentRepository.getLineupWithItems('lineup-1')).thenAnswer(
+      (_) async => Right(
+        _lineupWithRoles(
+          lineupId: 'lineup-1',
+          name: 'Louvor',
+          items: [
+            _lineupItem(
+              id: 'lineup-item-1',
+              lineupId: 'lineup-1',
+              roleId: 'role-vocal',
+              description: 'Vocal',
+              roleName: 'Vocal',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final localContainer = _buildPersonalScalesContainer(
+      visibleEvents: visibleEvents,
+      myScales: myScales,
+      calendarEventRepository: calendarRepository,
+      departmentRepository: departmentRepository,
+    );
+    addTearDown(localContainer.dispose);
+
+    final result = await localContainer.read(
+      userAgendaPersonalScalesProvider(
+        UserAgendaItemsRequest.forFocusedMonth(DateTime(2026, 6)),
+      ).future,
+    );
+
+    expect(result.attachedScales, isEmpty);
+    expect(result.standaloneItems, hasLength(1));
+    expect(result.standaloneItems.single.department, 'Louvor');
+    expect(result.standaloneItems.single.roles, contains('Vocal'));
+  });
 }
 
 CalendarEventEntity _calendarEvent({

@@ -11,6 +11,7 @@ import 'package:client/features/calendar/domain/entities/visibility_rule_entity.
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/providers/department_providers.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,6 +58,16 @@ class DepartmentCalendarEventsRequest extends Equatable {
 
 class UnitBirthdaysRequest extends Equatable {
   const UnitBirthdaysRequest({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  @override
+  List<Object?> get props => [start, end];
+}
+
+class MyCalendarScalesRequest extends Equatable {
+  const MyCalendarScalesRequest({required this.start, required this.end});
 
   final DateTime start;
   final DateTime end;
@@ -122,6 +133,18 @@ final unitBirthdaysProvider =
           .getUnitBirthdays(request.start, request.end);
 
       return result.fold((failure) => throw failure, (birthdays) => birthdays);
+    });
+
+final myCalendarScalesProvider =
+    FutureProvider.family<
+      List<DepartmentCalendarEventScaleEntity>,
+      MyCalendarScalesRequest
+    >((ref, request) async {
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .getMyScales(request.start, request.end);
+
+      return result.fold((failure) => throw failure, (scales) => scales);
     });
 
 final visibleUnitCalendarEventsProvider =

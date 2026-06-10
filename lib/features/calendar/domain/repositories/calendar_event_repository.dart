@@ -94,6 +94,11 @@ abstract class CalendarEventRepository {
 
   Future<Either<Failure, List<ScaleItemEntity>>> getScaleItems(String scaleId);
 
+  Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>> getMyScales(
+    DateTime start,
+    DateTime end,
+  );
+
   Future<Either<Failure, ScaleItemEntity>> addScaleItem({
     required String scaleId,
     required ScaleItemRequestModel request,

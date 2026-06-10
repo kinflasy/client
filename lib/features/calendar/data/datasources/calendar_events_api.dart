@@ -167,6 +167,14 @@ class CalendarEventsApi {
     return _readList(response.data);
   }
 
+  Future<List<dynamic>> getMyScales(DateTime start, DateTime end) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/scales/person',
+      queryParameters: _rangeQuery(start, end),
+    );
+    return _readList(response.data);
+  }
+
   Future<Map<String, dynamic>> addScaleItem(
     String scaleId,
     Map<String, dynamic> payload,

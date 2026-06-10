@@ -55,6 +55,175 @@ void main() {
       });
     });
 
+    test('returns visible events on success', () async {
+      final start = DateTime(2026, 5);
+      final end = DateTime(2026, 6);
+      when(() => api.getVisibleEvents(start, end)).thenAnswer(
+        (_) async => [
+          _eventJson(
+            id: 'event-1',
+            type: 'UNIT',
+            ownerKey: 'unitId',
+            ownerId: 'unit-1',
+          ),
+          _eventJson(
+            id: 'event-2',
+            type: 'DEPARTMENT',
+            ownerKey: 'departmentId',
+            ownerId: 'dep-1',
+          ),
+        ],
+      );
+
+      final result = await repository.getVisibleEvents(start, end);
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (events) {
+        expect(events.map((event) => event.id), ['event-1', 'event-2']);
+        expect(events.first.type, CalendarEventType.unit);
+        expect(events.last.type, CalendarEventType.department);
+      });
+      verify(() => api.getVisibleEvents(start, end)).called(1);
+    });
+
+    test('returns visible events with loose backend type', () async {
+      final start = DateTime(2026, 5);
+      final end = DateTime(2026, 6);
+      when(() => api.getVisibleEvents(start, end)).thenAnswer(
+        (_) async => [
+          _eventJson(
+            id: 'event-1',
+            type: 'string',
+            ownerKey: 'departmentId',
+            ownerId: 'dep-1',
+          ),
+          {
+            'id': 'event-2',
+            'title': 'Evento',
+            'description': 'Descricao do evento.',
+            'startDateTime': '2026-05-10T18:00:00',
+            'endDateTime': '2026-05-10T20:00:00',
+            'type': 'string',
+            'unit': {'id': 'unit-1', 'name': 'Central'},
+            'visibilityRules': [
+              {'type': 'string'},
+              {'type': 'UNIT', 'unitId': 'unit-1', 'affiliation': 'VISITOR'},
+            ],
+          },
+        ],
+      );
+
+      final result = await repository.getVisibleEvents(start, end);
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (events) {
+        expect(events.map((event) => event.id), ['event-1', 'event-2']);
+        expect(events.first.type, CalendarEventType.department);
+        expect(events.first.departmentId, 'dep-1');
+        expect(events.last.type, CalendarEventType.unit);
+        expect(events.last.unitId, 'unit-1');
+        expect(events.last.visibilityRules, hasLength(1));
+      });
+    });
+
+    test('returns department events with collabs on success', () async {
+      final start = DateTime(2026, 5);
+      final end = DateTime(2026, 6);
+      when(
+        () => api.getDepartmentEventsWithCollabs('dep-1', start, end),
+      ).thenAnswer(
+        (_) async => [
+          _eventJson(
+            id: 'event-owner',
+            type: 'DEPARTMENT',
+            ownerKey: 'departmentId',
+            ownerId: 'dep-1',
+          ),
+          _eventJson(
+            id: 'event-collab',
+            type: 'DEPARTMENT',
+            ownerKey: 'departmentId',
+            ownerId: 'dep-owner',
+          ),
+        ],
+      );
+
+      final result = await repository.getDepartmentEventsWithCollabs(
+        'dep-1',
+        start,
+        end,
+      );
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (events) {
+        expect(events.map((event) => event.id), [
+          'event-owner',
+          'event-collab',
+        ]);
+        expect(events.first.departmentId, 'dep-1');
+        expect(events.last.departmentId, 'dep-owner');
+      });
+      verify(
+        () => api.getDepartmentEventsWithCollabs('dep-1', start, end),
+      ).called(1);
+    });
+
+    test('gets unit birthdays and maps entities on success', () async {
+      final start = DateTime(2026, 6);
+      final end = DateTime(2026, 6, 30);
+      when(() => api.getUnitBirthdays('--06-01', '--06-30')).thenAnswer(
+        (_) async => const [
+          {'id': 'person-1', 'nickname': 'Maria', 'birthday': '--06-07'},
+        ],
+      );
+
+      final result = await repository.getUnitBirthdays(start, end);
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (birthdays) {
+        expect(birthdays, hasLength(1));
+        expect(birthdays.single.id, 'person-1');
+        expect(birthdays.single.name, 'Maria');
+        expect(birthdays.single.birthdayMonth, 6);
+        expect(birthdays.single.birthdayDay, 7);
+      });
+      verify(() => api.getUnitBirthdays('--06-01', '--06-30')).called(1);
+    });
+
+    test('maps unit birthdays DioException into NetworkFailure', () async {
+      when(
+        () => api.getUnitBirthdays('--06-01', '--06-30'),
+      ).thenThrow(_dioError(500, 'Falha ao carregar aniversariantes.'));
+
+      final result = await repository.getUnitBirthdays(
+        DateTime(2026, 6),
+        DateTime(2026, 6, 30),
+      );
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<NetworkFailure>());
+        expect(failure.message, 'Falha ao carregar aniversariantes.');
+      }, (_) => fail('expected failure'));
+    });
+
+    test('maps unit birthdays 403 into ValidationFailure', () async {
+      when(
+        () => api.getUnitBirthdays('--06-01', '--06-30'),
+      ).thenThrow(_dioError(403, 'Sem permissao para aniversariantes.'));
+
+      final result = await repository.getUnitBirthdays(
+        DateTime(2026, 6),
+        DateTime(2026, 6, 30),
+      );
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<ValidationFailure>());
+        expect(failure.message, 'Sem permissao para aniversariantes.');
+      }, (_) => fail('expected failure'));
+    });
+
     test('maps DioException into NetworkFailure', () async {
       final start = DateTime(2026, 5);
       final end = DateTime(2026, 6);
@@ -329,6 +498,41 @@ void main() {
       ).called(1);
     });
 
+    test('creates collaborator event scale and maps response', () async {
+      when(
+        () => api.createCollaboratorEventScale(
+          'event-1',
+          'dep-1',
+          any(that: isA<Map>()),
+        ),
+      ).thenAnswer(
+        (_) async => const {
+          'id': 'scale-2',
+          'lineupId': 'lineup-1',
+          'type': 'COLLABORATOR',
+          'collaborationId': 'collab-1',
+        },
+      );
+
+      final result = await repository.createCollaboratorEventScale(
+        'event-1',
+        'dep-1',
+        const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
+      );
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (scale) {
+        expect(scale.lineupId, 'lineup-1');
+        expect(scale.type, CalendarEventScaleType.collaborator);
+        expect(scale.collaborationId, 'collab-1');
+      });
+      verify(
+        () => api.createCollaboratorEventScale('event-1', 'dep-1', {
+          'lineupId': 'lineup-1',
+        }),
+      ).called(1);
+    });
+
     test('maps scale creation conflict into ValidationFailure', () async {
       when(
         () => api.createEventScale('event-1', any(that: isA<Map>())),
@@ -423,6 +627,54 @@ void main() {
       result.match((failure) {
         expect(failure, isA<NetworkFailure>());
         expect(failure.message, 'Falha ao carregar alocacoes.');
+      }, (_) => fail('expected failure'));
+    });
+
+    test('gets my scales and maps embedded calendar event', () async {
+      final start = DateTime(2026, 5, 30);
+      final end = DateTime(2026, 11, 30, 23, 59, 59);
+      when(() => api.getMyScales(start, end)).thenAnswer(
+        (_) async => [
+          {
+            'id': 'scale-1',
+            'lineupId': 'lineup-1',
+            'type': 'OWNER',
+            'calendarEventId': 'event-1',
+            'calendarEvent': _eventJson(
+              id: 'event-1',
+              type: 'DEPARTMENT',
+              ownerKey: 'departmentId',
+              ownerId: 'dep-1',
+            ),
+          },
+        ],
+      );
+
+      final result = await repository.getMyScales(start, end);
+
+      expect(result.isRight(), isTrue);
+      result.match((_) => fail('expected success'), (scales) {
+        expect(scales.single.scale.id, 'scale-1');
+        expect(scales.single.scale.calendarEventId, 'event-1');
+        expect(scales.single.calendarEvent.id, 'event-1');
+        expect(scales.single.calendarEvent.departmentId, 'dep-1');
+      });
+      verify(() => api.getMyScales(start, end)).called(1);
+    });
+
+    test('maps my scales DioException into Failure', () async {
+      final start = DateTime(2026, 5, 30);
+      final end = DateTime(2026, 11, 30, 23, 59, 59);
+      when(
+        () => api.getMyScales(start, end),
+      ).thenThrow(_dioError(500, 'Falha ao listar minhas escalas.'));
+
+      final result = await repository.getMyScales(start, end);
+
+      expect(result.isLeft(), isTrue);
+      result.match((failure) {
+        expect(failure, isA<NetworkFailure>());
+        expect(failure.message, 'Falha ao listar minhas escalas.');
       }, (_) => fail('expected failure'));
     });
 

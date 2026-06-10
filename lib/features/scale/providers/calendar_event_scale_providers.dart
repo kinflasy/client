@@ -10,6 +10,7 @@ import 'package:client/features/membership/data/models/person_profile_model.dart
 import 'package:client/features/membership/providers/member_profile_providers.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/department_scale_card_summary_entity.dart';
 import 'package:client/features/scale/domain/entities/department_scale_detail_entity.dart';
 import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
 import 'package:client/features/scale/domain/entities/editable_scale_assignment_entity.dart';
@@ -169,6 +170,120 @@ final departmentScalesWithLineupsProvider =
       }).toList();
     });
 
+final departmentScalesWithAssignmentSummariesProvider =
+    FutureProvider.family<
+      List<DepartmentScaleCardSummaryEntity>,
+      DepartmentScalesRequest
+    >((ref, request) async {
+      final bases = await ref.watch(
+        departmentScalesWithLineupsProvider(request).future,
+      );
+      if (bases.isEmpty) return const [];
+
+      final participantDetail = await _loadParticipants(
+        ref,
+        request.departmentId,
+      );
+      if (participantDetail.failureMessage != null) {
+        return bases.map((base) {
+          return DepartmentScaleCardSummaryEntity(
+            base: base,
+            roleSummaries: _groupRoleAssignments(
+              base.lineup?.items ?? const [],
+              const <String, List<ScaleAssignmentPersonEntity>>{},
+            ),
+            peopleLoadFailed: true,
+          );
+        }).toList();
+      }
+
+      final participantsByPersonId = {
+        for (final participant in participantDetail.participants)
+          participant.personId: participant,
+      };
+      final fallbackPeople = <String, ScaleAssignmentPersonEntity>{};
+
+      Future<ScaleAssignmentPersonEntity> resolvePerson(String personId) async {
+        final participant = participantsByPersonId[personId];
+        if (participant != null) {
+          return _assignmentPersonFromParticipant(participant);
+        }
+
+        final cached = fallbackPeople[personId];
+        if (cached != null) return cached;
+
+        final result = await ref
+            .read(memberProfileRepositoryProvider)
+            .getPersonProfile(personId);
+
+        return result.fold(
+          (_) {
+            final person = ScaleAssignmentPersonEntity(
+              personId: personId,
+              displayName: 'Pessoa não encontrada',
+              source: ScaleAssignmentPersonSource.notFound,
+            );
+            fallbackPeople[personId] = person;
+            return person;
+          },
+          (profile) {
+            final person = _assignmentPersonFromProfile(profile);
+            fallbackPeople[personId] = person;
+            return person;
+          },
+        );
+      }
+
+      return Future.wait(
+        bases.map((base) async {
+          if (base.hasLineupFailure) {
+            return DepartmentScaleCardSummaryEntity(
+              base: base,
+              roleSummaries: const [],
+            );
+          }
+
+          final itemsResult = await ref
+              .read(calendarEventRepositoryProvider)
+              .getScaleItems(base.scale.scale.id);
+
+          final scaleItems = itemsResult.getRight().toNullable();
+          if (scaleItems == null) {
+            return DepartmentScaleCardSummaryEntity(
+              base: base,
+              roleSummaries: _groupRoleAssignments(
+                base.lineup?.items ?? const [],
+                const <String, List<ScaleAssignmentPersonEntity>>{},
+              ),
+              peopleLoadFailed: true,
+            );
+          }
+
+          final peopleByRoleId = <String, List<ScaleAssignmentPersonEntity>>{};
+          final seenPeopleByRoleId = <String, Set<String>>{};
+          for (final item in scaleItems) {
+            final seenPeople = seenPeopleByRoleId.putIfAbsent(
+              item.roleId,
+              () => {},
+            );
+            if (!seenPeople.add(item.personId)) continue;
+
+            final people = peopleByRoleId.putIfAbsent(item.roleId, () => []);
+            final person = await resolvePerson(item.personId);
+            people.add(person.copyWith(scaleItemId: item.id));
+          }
+
+          return DepartmentScaleCardSummaryEntity(
+            base: base,
+            roleSummaries: _groupRoleAssignments(
+              base.lineup?.items ?? const [],
+              peopleByRoleId,
+            ),
+          );
+        }),
+      );
+    });
+
 final departmentScaleDetailProvider =
     StreamProvider.family<
       DepartmentScaleWithLineupEntity,
@@ -234,41 +349,23 @@ final eligibleDepartmentScaleEventsProvider =
       List<CalendarEventEntity>,
       EligibleDepartmentScaleEventsRequest
     >((ref, request) async {
-      final events = await ref.watch(
-        departmentCalendarEventsProvider(
-          DepartmentCalendarEventsRequest(
-            departmentId: request.departmentId,
-            start: request.start,
-            end: request.end,
-          ),
-        ).future,
-      );
-
-      final futureEvents = events
-          .where((event) => !event.startDateTime.isBefore(request.start))
-          .toList();
-
-      final checks = await Future.wait(
-        futureEvents.map((event) async {
-          final result = await ref
-              .read(calendarEventRepositoryProvider)
-              .getEventScales(event.id);
-          final scales = result.fold(
-            (failure) => throw failure,
-            (value) => value,
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .getDepartmentEventsWithCollabs(
+            request.departmentId,
+            request.start,
+            request.end,
           );
-          return (event: event, hasScale: scales.isNotEmpty);
-        }),
+
+      final events = result.fold(
+        (failure) => throw failure,
+        (events) => events,
       );
 
-      final eligibleEvents =
-          checks
-              .where((check) => !check.hasScale)
-              .map((check) => check.event)
-              .toList()
-            ..sort(_compareEventsForScaleCreation);
-
-      return eligibleEvents;
+      return events
+          .where((event) => !event.startDateTime.isBefore(request.start))
+          .toList()
+        ..sort(_compareEventsForScaleCreation);
     });
 
 final createEventScaleProvider =
@@ -281,19 +378,34 @@ final saveScaleAssignmentsProvider =
       SaveScaleAssignmentsNotifier.new,
     );
 
+final deleteDepartmentScaleProvider =
+    NotifierProvider<DeleteDepartmentScaleNotifier, AsyncValue<void>>(
+      DeleteDepartmentScaleNotifier.new,
+    );
+
 class CreateEventScaleNotifier extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
   Future<Either<Failure, CalendarEventScaleEntity>> create({
-    required String eventId,
+    required String departmentId,
+    required CalendarEventEntity event,
     required CalendarEventScaleRequestModel request,
   }) async {
     state = const AsyncLoading();
 
-    final result = await ref
-        .read(calendarEventRepositoryProvider)
-        .createEventScale(eventId, request);
+    final repository = ref.read(calendarEventRepositoryProvider);
+    final isOwnerEvent =
+        event.type == CalendarEventType.department &&
+        event.departmentId == departmentId;
+
+    final result = isOwnerEvent
+        ? await repository.createEventScale(event.id, request)
+        : await repository.createCollaboratorEventScale(
+            event.id,
+            departmentId,
+            request,
+          );
 
     return result.fold(
       (failure) {
@@ -302,10 +414,11 @@ class CreateEventScaleNotifier extends Notifier<AsyncValue<void>> {
       },
       (scale) {
         state = const AsyncData(null);
-        ref.invalidate(eventScalesProvider(eventId));
+        ref.invalidate(eventScalesProvider(event.id));
         ref.invalidate(eligibleDepartmentScaleEventsProvider);
         ref.invalidate(departmentScalesProvider);
         ref.invalidate(departmentScalesWithLineupsProvider);
+        ref.invalidate(departmentScalesWithAssignmentSummariesProvider);
         ref.invalidate(departmentScaleDetailProvider);
         ref.invalidate(departmentScaleAssignmentDetailProvider);
         return Right(scale);
@@ -364,9 +477,44 @@ class SaveScaleAssignmentsNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncData(null);
     ref.invalidate(departmentScaleDetailProvider);
     ref.invalidate(departmentScaleAssignmentDetailProvider);
+    ref.invalidate(departmentScalesWithAssignmentSummariesProvider);
     ref.invalidate(departmentScalesWithLineupsProvider);
     ref.invalidate(departmentScalesProvider);
     return const Right(null);
+  }
+}
+
+class DeleteDepartmentScaleNotifier extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncData(null);
+
+  Future<Either<Failure, void>> delete({
+    required String departmentId,
+    required String scaleId,
+  }) async {
+    state = const AsyncLoading();
+
+    final result = await ref
+        .read(calendarEventRepositoryProvider)
+        .deleteScale(scaleId);
+
+    return result.fold(
+      (failure) {
+        state = AsyncError(failure, StackTrace.current);
+        return Left(failure);
+      },
+      (_) {
+        state = const AsyncData(null);
+        ref.invalidate(eventScalesProvider);
+        ref.invalidate(eligibleDepartmentScaleEventsProvider);
+        ref.invalidate(departmentScalesProvider);
+        ref.invalidate(departmentScalesWithLineupsProvider);
+        ref.invalidate(departmentScalesWithAssignmentSummariesProvider);
+        ref.invalidate(departmentScaleDetailProvider);
+        ref.invalidate(departmentScaleAssignmentDetailProvider);
+        return const Right(null);
+      },
+    );
   }
 }
 

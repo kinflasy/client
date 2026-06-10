@@ -9,6 +9,7 @@ import 'package:client/features/calendar/domain/entities/visibility_rule_entity.
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_actions_provider.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
+import 'package:client/features/calendar/providers/user_agenda_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -242,6 +243,99 @@ void main() {
     expect(detailLoadCount, 2);
     expect(listLoadCount, 2);
   });
+
+  test('recarrega agenda depois de editar evento', () async {
+    when(
+      () => repository.updateEvent('event-1', any()),
+    ).thenAnswer((_) async => Right(_event(title: 'Evento atualizado')));
+
+    final agendaLoadCount = await _countAgendaReloadsAfter(
+      container,
+      repository,
+      () => container
+          .read(calendarEventActionsProvider.notifier)
+          .updateEvent('event-1', _request()),
+    );
+
+    expect(agendaLoadCount, 2);
+  });
+
+  test('recarrega agenda depois de excluir evento', () async {
+    when(
+      () => repository.deleteEvent('event-1'),
+    ).thenAnswer((_) async => const Right(null));
+
+    final agendaLoadCount = await _countAgendaReloadsAfter(
+      container,
+      repository,
+      () => container
+          .read(calendarEventActionsProvider.notifier)
+          .deleteEvent('event-1'),
+    );
+
+    expect(agendaLoadCount, 2);
+  });
+
+  test('recarrega agenda depois de atualizar imagem do card', () async {
+    when(
+      () => repository.updateCardImage('event-1', '/tmp/card.png'),
+    ).thenAnswer((_) async => Right(_event(title: 'Atualizado')));
+
+    final agendaLoadCount = await _countAgendaReloadsAfter(
+      container,
+      repository,
+      () => container
+          .read(calendarEventActionsProvider.notifier)
+          .updateCardImage('event-1', '/tmp/card.png'),
+    );
+
+    expect(agendaLoadCount, 2);
+  });
+
+  test('recarrega agenda depois de remover imagem do card', () async {
+    when(
+      () => repository.deleteCardImage('event-1'),
+    ).thenAnswer((_) async => const Right(null));
+
+    final agendaLoadCount = await _countAgendaReloadsAfter(
+      container,
+      repository,
+      () => container
+          .read(calendarEventActionsProvider.notifier)
+          .deleteCardImage('event-1'),
+    );
+
+    expect(agendaLoadCount, 2);
+  });
+}
+
+Future<int> _countAgendaReloadsAfter(
+  ProviderContainer container,
+  CalendarEventRepository repository,
+  Future<Object?> Function() action,
+) async {
+  final start = DateTime(2026, 5);
+  final end = DateTime(2026, 6);
+  final request = UserAgendaItemsRequest(start: start, end: end);
+  var agendaLoadCount = 0;
+
+  when(() => repository.getVisibleEvents(start, end)).thenAnswer((_) {
+    agendaLoadCount++;
+    return Future.value(Right([_event(title: 'Agenda $agendaLoadCount')]));
+  });
+
+  final subscription = container.listen(
+    userAgendaItemsProvider(request),
+    (_, _) {},
+    fireImmediately: true,
+  );
+  addTearDown(subscription.close);
+
+  await _readFutureProvider(container, userAgendaItemsProvider(request));
+  await action();
+  await container.read(userAgendaItemsProvider(request).future);
+
+  return agendaLoadCount;
 }
 
 CalendarEventRequestModel _request({String title = 'Evento'}) {

@@ -5,6 +5,14 @@ class CalendarEventsApi {
 
   final Dio _dio;
 
+  Future<List<dynamic>> getVisibleEvents(DateTime start, DateTime end) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/visible',
+      queryParameters: _rangeQuery(start, end),
+    );
+    return _readList(response.data);
+  }
+
   Future<List<dynamic>> getUnitEvents(
     String unitId,
     DateTime start,
@@ -25,6 +33,25 @@ class CalendarEventsApi {
     final response = await _dio.get<dynamic>(
       '/v1/core/calendar-events/department/$departmentId',
       queryParameters: _rangeQuery(start, end),
+    );
+    return _readList(response.data);
+  }
+
+  Future<List<dynamic>> getDepartmentEventsWithCollabs(
+    String departmentId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/department/$departmentId/with-collabs',
+      queryParameters: _rangeQuery(start, end),
+    );
+    return _readList(response.data);
+  }
+
+  Future<List<dynamic>> getUnitBirthdays(String start, String end) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/church/units/birthdays/$start/$end',
     );
     return _readList(response.data);
   }
@@ -110,6 +137,18 @@ class CalendarEventsApi {
     return _readMap(response.data);
   }
 
+  Future<Map<String, dynamic>> createCollaboratorEventScale(
+    String eventId,
+    String departmentId,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await _dio.post<dynamic>(
+      '/v1/core/calendar-events/$eventId/collaborators/$departmentId/scales',
+      data: payload,
+    );
+    return _readMap(response.data);
+  }
+
   Future<Map<String, dynamic>> getScaleById(String scaleId) async {
     final response = await _dio.get<dynamic>(
       '/v1/core/calendar-events/scales/$scaleId',
@@ -117,9 +156,21 @@ class CalendarEventsApi {
     return _readMap(response.data);
   }
 
+  Future<void> deleteScale(String scaleId) async {
+    await _dio.delete<void>('/v1/core/calendar-events/scales/$scaleId');
+  }
+
   Future<List<dynamic>> getScaleItems(String scaleId) async {
     final response = await _dio.get<dynamic>(
       '/v1/core/calendar-events/scales/$scaleId/items',
+    );
+    return _readList(response.data);
+  }
+
+  Future<List<dynamic>> getMyScales(DateTime start, DateTime end) async {
+    final response = await _dio.get<dynamic>(
+      '/v1/core/calendar-events/scales/person',
+      queryParameters: _rangeQuery(start, end),
     );
     return _readList(response.data);
   }
@@ -190,6 +241,7 @@ class CalendarEventsApi {
         'data',
         'events',
         'scales',
+        'birthdays',
       ]) {
         final value = map[key];
         if (value is List) return value;

@@ -6,12 +6,14 @@ import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -94,6 +96,150 @@ void main() {
 
     expect(result, [event]);
     verify(() => repository.getUnitEvents('unit-1', start, end)).called(1);
+  });
+
+  test('visible provider returns repository events in source order', () async {
+    final start = DateTime(2026, 5);
+    final end = DateTime(2026, 6);
+    final events = [
+      _event(
+        id: 'event-2',
+        title: 'Segundo',
+        type: CalendarEventType.department,
+        departmentId: 'dep-1',
+      ),
+      _event(
+        id: 'event-1',
+        title: 'Primeiro',
+        type: CalendarEventType.unit,
+        unitId: 'unit-1',
+      ),
+    ];
+    when(
+      () => repository.getVisibleEvents(start, end),
+    ).thenAnswer((_) async => Right(events));
+
+    final result = await _readFutureProvider(
+      container,
+      visibleCalendarEventsProvider(
+        VisibleCalendarEventsRequest(start: start, end: end),
+      ),
+    );
+
+    expect(result, events);
+    verify(() => repository.getVisibleEvents(start, end)).called(1);
+  });
+
+  test('visible provider surfaces repository failure', () async {
+    final start = DateTime(2026, 5);
+    final end = DateTime(2026, 6);
+    when(() => repository.getVisibleEvents(start, end)).thenAnswer(
+      (_) async => const Left(NetworkFailure('Falha ao carregar eventos')),
+    );
+
+    await expectLater(
+      _readFutureProvider(
+        container,
+        visibleCalendarEventsProvider(
+          VisibleCalendarEventsRequest(start: start, end: end),
+        ),
+      ),
+      throwsA(isA<NetworkFailure>()),
+    );
+  });
+
+  test(
+    'unit birthdays provider reads repository and returns birthdays',
+    () async {
+      final start = DateTime(2026, 6);
+      final end = DateTime(2026, 6, 30);
+      const birthdays = [
+        PersonBirthdayEntity(
+          id: 'person-1',
+          name: 'Maria',
+          birthdayMonth: 6,
+          birthdayDay: 7,
+        ),
+      ];
+      when(
+        () => repository.getUnitBirthdays(start, end),
+      ).thenAnswer((_) async => const Right(birthdays));
+
+      final result = await _readFutureProvider(
+        container,
+        unitBirthdaysProvider(UnitBirthdaysRequest(start: start, end: end)),
+      );
+
+      expect(result, birthdays);
+      verify(() => repository.getUnitBirthdays(start, end)).called(1);
+    },
+  );
+
+  test('unit birthdays provider surfaces repository failure', () async {
+    final start = DateTime(2026, 6);
+    final end = DateTime(2026, 6, 30);
+    when(() => repository.getUnitBirthdays(start, end)).thenAnswer(
+      (_) async => const Left(NetworkFailure('Falha ao carregar aniversarios')),
+    );
+
+    await expectLater(
+      _readFutureProvider(
+        container,
+        unitBirthdaysProvider(UnitBirthdaysRequest(start: start, end: end)),
+      ),
+      throwsA(isA<NetworkFailure>()),
+    );
+  });
+
+  test('my scales provider reads repository and returns scales', () async {
+    final start = DateTime(2026, 6);
+    final end = DateTime(2026, 6, 30);
+    final scales = [
+      DepartmentCalendarEventScaleEntity(
+        scale: const CalendarEventScaleEntity(
+          id: 'scale-1',
+          lineupId: 'lineup-1',
+          type: CalendarEventScaleType.owner,
+          calendarEventId: 'event-1',
+        ),
+        calendarEvent: _event(
+          id: 'event-1',
+          title: 'Culto',
+          type: CalendarEventType.department,
+          departmentId: 'dep-1',
+        ),
+      ),
+    ];
+    when(
+      () => repository.getMyScales(start, end),
+    ).thenAnswer((_) async => Right(scales));
+
+    final result = await _readFutureProvider(
+      container,
+      myCalendarScalesProvider(MyCalendarScalesRequest(start: start, end: end)),
+    );
+
+    expect(result, scales);
+    verify(() => repository.getMyScales(start, end)).called(1);
+  });
+
+  test('my scales provider surfaces repository failure', () async {
+    final start = DateTime(2026, 6);
+    final end = DateTime(2026, 6, 30);
+    when(() => repository.getMyScales(start, end)).thenAnswer(
+      (_) async =>
+          const Left(NetworkFailure('Falha ao carregar minhas escalas')),
+    );
+
+    await expectLater(
+      _readFutureProvider(
+        container,
+        myCalendarScalesProvider(
+          MyCalendarScalesRequest(start: start, end: end),
+        ),
+      ),
+      throwsA(isA<NetworkFailure>()),
+    );
   });
 
   test('department provider surfaces repository failure', () async {

@@ -1,3 +1,4 @@
+import 'package:client/core/config/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class MenuLogoutButton extends StatelessWidget {
@@ -23,7 +24,7 @@ class MenuLogoutButton extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.logout_rounded, color: colorScheme.error),
+              Icon(Icons.logout_rounded, color: AppColors.error),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -34,7 +35,7 @@ class MenuLogoutButton extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: colorScheme.error),
+              Icon(Icons.chevron_right_rounded, color: AppColors.error),
             ],
           ),
         ),

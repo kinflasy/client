@@ -128,7 +128,12 @@ CalendarEventType _readType(
 }) {
   final type = _readString(json, 'type');
   if (type != null && !_isGenericEventDtoType(type)) {
-    return CalendarEventType.fromString(type);
+    try {
+      return CalendarEventType.fromString(type);
+    } on ArgumentError {
+      // Visible events may carry an implementation/discriminator value that
+      // does not describe the owner. In that case, infer from the owner ids.
+    }
   }
 
   return departmentId == null

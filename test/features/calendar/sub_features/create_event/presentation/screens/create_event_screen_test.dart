@@ -7,6 +7,7 @@ import 'package:client/features/calendar/domain/entities/calendar_event_entity.d
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/scale/domain/entities/scale_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/calendar/providers/calendar_event_providers.dart';
@@ -680,6 +681,14 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   List<EventCollaborationEntity> collaborators = const [];
 
   @override
+  Future<Either<Failure, List<CalendarEventEntity>>> getVisibleEvents(
+    DateTime start,
+    DateTime end,
+  ) async {
+    return const Left(ServerFailure('NÃ£o implementado no teste.'));
+  }
+
+  @override
   Future<Either<Failure, CalendarEventEntity>> createUnitEvent(
     String unitId,
     CalendarEventRequestModel request,
@@ -755,8 +764,21 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, void>> deleteScale(String scaleId) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
   Future<Either<Failure, List<ScaleItemEntity>>> getScaleItems(
     String scaleId,
+  ) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
+  Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>> getMyScales(
+    DateTime start,
+    DateTime end,
   ) async {
     return const Left(ServerFailure('Não implementado no teste.'));
   }
@@ -777,8 +799,26 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, List<CalendarEventEntity>>>
+  getDepartmentEventsWithCollabs(
+    String departmentId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
   Future<Either<Failure, List<CalendarEventEntity>>> getUnitEvents(
     String unitId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
+  Future<Either<Failure, List<PersonBirthdayEntity>>> getUnitBirthdays(
     DateTime start,
     DateTime end,
   ) async {
@@ -797,6 +837,16 @@ class _CapturingCalendarEventRepository implements CalendarEventRepository {
   @override
   Future<Either<Failure, CalendarEventScaleEntity>> createEventScale(
     String eventId,
+    CalendarEventScaleRequestModel request,
+  ) async {
+    return const Left(ServerFailure('Não implementado no teste.'));
+  }
+
+  @override
+  Future<Either<Failure, CalendarEventScaleEntity>>
+  createCollaboratorEventScale(
+    String eventId,
+    String departmentId,
     CalendarEventScaleRequestModel request,
   ) async {
     return const Left(ServerFailure('Não implementado no teste.'));

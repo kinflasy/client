@@ -2,6 +2,7 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/features/calendar/data/datasources/calendar_events_api.dart';
 import 'package:client/features/calendar/data/models/calendar_event_read_model.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
+import 'package:client/features/calendar/data/models/person_birthday_read_model.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_read_model.dart';
 import 'package:client/features/scale/data/models/calendar_event_scale_request_model.dart';
 import 'package:client/features/scale/data/models/scale_item_read_model.dart';
@@ -11,7 +12,9 @@ import 'package:client/features/calendar/domain/entities/calendar_event_entity.d
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/scale/domain/entities/scale_item_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
+import 'package:client/features/calendar/domain/utils/month_day_utils.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -19,6 +22,17 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
   CalendarEventRepositoryImpl(this._api);
 
   final CalendarEventsApi _api;
+
+  @override
+  Future<Either<Failure, List<CalendarEventEntity>>> getVisibleEvents(
+    DateTime start,
+    DateTime end,
+  ) {
+    return _getEvents(
+      () => _api.getVisibleEvents(start, end),
+      fallbackMessage: 'Erro ao carregar eventos visiveis.',
+    );
+  }
 
   @override
   Future<Either<Failure, List<CalendarEventEntity>>> getUnitEvents(
@@ -42,6 +56,43 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
       () => _api.getDepartmentEvents(departmentId, start, end),
       fallbackMessage: 'Erro ao carregar eventos do departamento.',
     );
+  }
+
+  @override
+  Future<Either<Failure, List<CalendarEventEntity>>>
+  getDepartmentEventsWithCollabs(
+    String departmentId,
+    DateTime start,
+    DateTime end,
+  ) {
+    return _getEvents(
+      () => _api.getDepartmentEventsWithCollabs(departmentId, start, end),
+      fallbackMessage: 'Erro ao carregar eventos do departamento.',
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<PersonBirthdayEntity>>> getUnitBirthdays(
+    DateTime start,
+    DateTime end,
+  ) async {
+    try {
+      final jsonList = await _api.getUnitBirthdays(
+        formatMonthDay(start),
+        formatMonthDay(end),
+      );
+      final birthdays = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(PersonBirthdayReadModel.fromJson)
+          .map((model) => model.toEntity())
+          .toList();
+      return Right(birthdays);
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao carregar aniversariantes.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
   }
 
   @override
@@ -167,6 +218,27 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
   }
 
   @override
+  Future<Either<Failure, CalendarEventScaleEntity>>
+  createCollaboratorEventScale(
+    String eventId,
+    String departmentId,
+    CalendarEventScaleRequestModel request,
+  ) async {
+    try {
+      final json = await _api.createCollaboratorEventScale(
+        eventId,
+        departmentId,
+        request.toJson(),
+      );
+      return Right(CalendarEventScaleReadModel.fromJson(json).toEntity());
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao criar escala do evento.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, CalendarEventScaleEntity>> getScaleById(
     String scaleId,
   ) async {
@@ -178,6 +250,14 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
     }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteScale(String scaleId) {
+    return _delete(
+      () => _api.deleteScale(scaleId),
+      fallbackMessage: 'Erro ao remover escala.',
+    );
   }
 
   @override
@@ -195,6 +275,27 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
       return Right(items);
     } on DioException catch (e) {
       return Left(_mapDioFailure(e, 'Erro ao carregar pessoas da escala.'));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<DepartmentCalendarEventScaleEntity>>> getMyScales(
+    DateTime start,
+    DateTime end,
+  ) async {
+    try {
+      final jsonList = await _api.getMyScales(start, end);
+      final scales = jsonList
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map(DepartmentCalendarEventScaleReadModel.fromJson)
+          .map((model) => model.toEntity())
+          .toList();
+      return Right(scales);
+    } on DioException catch (e) {
+      return Left(_mapDioFailure(e, 'Erro ao carregar minhas escalas.'));
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
     }

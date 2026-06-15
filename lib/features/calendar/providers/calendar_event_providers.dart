@@ -6,13 +6,25 @@ import 'package:client/features/calendar/data/datasources/calendar_events_api.da
 import 'package:client/features/calendar/data/repositories/calendar_event_repository_impl.dart';
 import 'package:client/features/calendar/domain/entities/calendar_event_entity.dart';
 import 'package:client/features/calendar/domain/entities/event_collaboration_entity.dart';
+import 'package:client/features/calendar/domain/entities/person_birthday_entity.dart';
 import 'package:client/features/calendar/domain/entities/visibility_rule_entity.dart';
 import 'package:client/features/calendar/domain/repositories/calendar_event_repository.dart';
 import 'package:client/features/department/domain/entities/department_entity.dart';
 import 'package:client/features/department/providers/department_providers.dart';
+import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class VisibleCalendarEventsRequest extends Equatable {
+  const VisibleCalendarEventsRequest({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  @override
+  List<Object?> get props => [start, end];
+}
 
 class UnitCalendarEventsRequest extends Equatable {
   const UnitCalendarEventsRequest({
@@ -44,6 +56,26 @@ class DepartmentCalendarEventsRequest extends Equatable {
   List<Object?> get props => [departmentId, start, end];
 }
 
+class UnitBirthdaysRequest extends Equatable {
+  const UnitBirthdaysRequest({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  @override
+  List<Object?> get props => [start, end];
+}
+
+class MyCalendarScalesRequest extends Equatable {
+  const MyCalendarScalesRequest({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  @override
+  List<Object?> get props => [start, end];
+}
+
 final calendarEventsApiProvider = Provider<CalendarEventsApi>(
   (ref) => CalendarEventsApi(ref.watch(dioClientProvider)),
 );
@@ -51,6 +83,18 @@ final calendarEventsApiProvider = Provider<CalendarEventsApi>(
 final calendarEventRepositoryProvider = Provider<CalendarEventRepository>(
   (ref) => CalendarEventRepositoryImpl(ref.watch(calendarEventsApiProvider)),
 );
+
+final visibleCalendarEventsProvider =
+    FutureProvider.family<
+      List<CalendarEventEntity>,
+      VisibleCalendarEventsRequest
+    >((ref, request) async {
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .getVisibleEvents(request.start, request.end);
+
+      return result.fold((failure) => throw failure, (events) => events);
+    });
 
 final unitCalendarEventsProvider =
     FutureProvider.family<List<CalendarEventEntity>, UnitCalendarEventsRequest>(
@@ -77,6 +121,30 @@ final departmentCalendarEventsProvider =
           );
 
       return result.fold((failure) => throw failure, (events) => events);
+    });
+
+final unitBirthdaysProvider =
+    FutureProvider.family<List<PersonBirthdayEntity>, UnitBirthdaysRequest>((
+      ref,
+      request,
+    ) async {
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .getUnitBirthdays(request.start, request.end);
+
+      return result.fold((failure) => throw failure, (birthdays) => birthdays);
+    });
+
+final myCalendarScalesProvider =
+    FutureProvider.family<
+      List<DepartmentCalendarEventScaleEntity>,
+      MyCalendarScalesRequest
+    >((ref, request) async {
+      final result = await ref
+          .read(calendarEventRepositoryProvider)
+          .getMyScales(request.start, request.end);
+
+      return result.fold((failure) => throw failure, (scales) => scales);
     });
 
 final visibleUnitCalendarEventsProvider =

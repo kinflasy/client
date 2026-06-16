@@ -56,10 +56,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Não foi possível carregar os eventos.'),
-      findsOneWidget,
-    );
+    expect(find.text('Não foi possível carregar os eventos.'), findsOneWidget);
     expect(find.text('Falha nos eventos'), findsOneWidget);
   });
 
@@ -103,7 +100,85 @@ void main() {
     expect(find.text('Destino de formação'), findsOneWidget);
   });
 
-  testWidgets('creates scale with selected event and lineup', (tester) async {
+  testWidgets(
+    'creates owner scale without confirmation when event has no scale',
+    (tester) async {
+      when(
+        () => repository.getEventScales('event-1'),
+      ).thenAnswer((_) async => const Right(<CalendarEventScaleEntity>[]));
+      when(
+        () => repository.createEventScale('event-1', any()),
+      ).thenAnswer((_) async => const Right(_scale));
+
+      await _pumpScreen(
+        tester,
+        repository: repository,
+        events: [_event],
+        lineups: const [_lineup],
+      );
+      await tester.pumpAndSettle();
+
+      await _selectEventAndLineup(tester);
+
+      await tester.tap(find.text('Criar escala'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Já existe uma escala para esse evento.'), findsNothing);
+      verify(() => repository.getEventScales('event-1')).called(1);
+      verify(
+        () => repository.createEventScale(
+          'event-1',
+          any(
+            that: isA<CalendarEventScaleRequestModel>().having(
+              (request) => request.lineupId,
+              'lineupId',
+              'lineup-1',
+            ),
+          ),
+        ),
+      ).called(1);
+      expect(find.text('Escala criada com sucesso.'), findsOneWidget);
+    },
+  );
+
+  testWidgets('shows confirmation for scaled event and cancels creation', (
+    tester,
+  ) async {
+    when(
+      () => repository.getEventScales('event-1'),
+    ).thenAnswer((_) async => const Right([_scale]));
+
+    await _pumpScreen(
+      tester,
+      repository: repository,
+      events: [_event],
+      lineups: const [_lineup],
+    );
+    await tester.pumpAndSettle();
+
+    await _selectEventAndLineup(tester);
+
+    await tester.tap(find.text('Criar escala'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Já existe uma escala para esse evento.'), findsOneWidget);
+
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => repository.createEventScale(any(), any()));
+    verifyNever(
+      () => repository.createCollaboratorEventScale(any(), any(), any()),
+    );
+  });
+
+  testWidgets('creates another scale after confirming scaled event', (
+    tester,
+  ) async {
+    when(
+      () => repository.getEventScales('event-1'),
+    ).thenAnswer((_) async => const Right([_scale]));
     when(
       () => repository.createEventScale('event-1', any()),
     ).thenAnswer((_) async => const Right(_scale));
@@ -116,36 +191,73 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('Culto da manhã').last);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Louvor completo').last);
-    await tester.pumpAndSettle();
+    await _selectEventAndLineup(tester);
 
     await tester.tap(find.text('Criar escala'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Criar outra escala'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    verify(
-      () => repository.createEventScale(
-        'event-1',
-        any(
-          that: isA<CalendarEventScaleRequestModel>().having(
-            (request) => request.lineupId,
-            'lineupId',
-            'lineup-1',
-          ),
-        ),
-      ),
-    ).called(1);
+    verify(() => repository.createEventScale('event-1', any())).called(1);
     expect(find.text('Escala criada com sucesso.'), findsOneWidget);
   });
 
+  testWidgets(
+    'creates collaborator scale for event owned by another department',
+    (tester) async {
+      final collabEvent = CalendarEventEntity(
+        id: 'event-1',
+        title: 'Culto da manhã',
+        startDateTime: DateTime(2026, 7, 20, 9),
+        endDateTime: DateTime(2026, 7, 20, 11),
+        type: CalendarEventType.department,
+        departmentId: 'dep-owner',
+      );
+      when(
+        () => repository.getEventScales('event-1'),
+      ).thenAnswer((_) async => const Right(<CalendarEventScaleEntity>[]));
+      when(
+        () =>
+            repository.createCollaboratorEventScale('event-1', 'dep-1', any()),
+      ).thenAnswer((_) async => const Right(_collaboratorScale));
+
+      await _pumpScreen(
+        tester,
+        repository: repository,
+        events: [collabEvent],
+        lineups: const [_lineup],
+      );
+      await tester.pumpAndSettle();
+
+      await _selectEventAndLineup(tester);
+
+      await tester.tap(find.text('Criar escala'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      verify(
+        () => repository.createCollaboratorEventScale(
+          'event-1',
+          'dep-1',
+          any(
+            that: isA<CalendarEventScaleRequestModel>().having(
+              (request) => request.lineupId,
+              'lineupId',
+              'lineup-1',
+            ),
+          ),
+        ),
+      ).called(1);
+      verifyNever(() => repository.createEventScale(any(), any()));
+      expect(find.text('Escala criada com sucesso.'), findsOneWidget);
+    },
+  );
+
   testWidgets('shows creation failure message', (tester) async {
+    when(
+      () => repository.getEventScales('event-1'),
+    ).thenAnswer((_) async => const Right(<CalendarEventScaleEntity>[]));
     when(() => repository.createEventScale('event-1', any())).thenAnswer(
       (_) async => const Left(ValidationFailure('Evento já possui escala.')),
     );
@@ -158,14 +270,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('Culto da manhã').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Louvor completo').last);
-    await tester.pumpAndSettle();
+    await _selectEventAndLineup(tester);
 
     await tester.tap(find.text('Criar escala'));
     await tester.pump();
@@ -203,6 +308,18 @@ Future<void> _pumpScreen(
       ),
     ),
   );
+}
+
+Future<void> _selectEventAndLineup(WidgetTester tester) async {
+  await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+  await tester.pumpAndSettle();
+  await tester.tap(find.textContaining('Culto da manhã').last);
+  await tester.pumpAndSettle();
+
+  await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Louvor completo').last);
+  await tester.pumpAndSettle();
 }
 
 GoRouter _router({
@@ -264,4 +381,11 @@ const _scale = CalendarEventScaleEntity(
   lineupId: 'lineup-1',
   type: CalendarEventScaleType.owner,
   calendarEventId: 'event-1',
+);
+
+const _collaboratorScale = CalendarEventScaleEntity(
+  id: 'scale-2',
+  lineupId: 'lineup-1',
+  type: CalendarEventScaleType.collaborator,
+  collaborationId: 'collab-1',
 );

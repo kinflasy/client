@@ -47,10 +47,6 @@ class MenuUserHeaderContent extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
-      ),
       child: Column(
         children: [
           UserAvatar(
@@ -63,7 +59,7 @@ class MenuUserHeaderContent extends StatelessWidget {
             displayName,
             textAlign: TextAlign.center,
             style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w400,
               color: colorScheme.onSurface,
             ),
           ),
@@ -82,10 +78,6 @@ class MenuUserHeaderLoading extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
-      ),
       child: Column(
         children: [
           Container(

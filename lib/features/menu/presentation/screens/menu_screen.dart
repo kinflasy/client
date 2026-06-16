@@ -1,3 +1,4 @@
+import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/router/app_routes.dart';
 import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
@@ -71,24 +72,33 @@ class MenuScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-          children: [
-            MenuUserHeader(authState: authAsync),
-            const SizedBox(height: 20),
-            MenuQuickActionsRow(actions: quickActions),
-            const SizedBox(height: 28),
-            const MenuSectionLabel(label: 'Minha conta'),
-            const SizedBox(height: 12),
-            MenuCardGrid(cards: accountCards),
-            const SizedBox(height: 28),
-            const MenuSectionLabel(label: 'Outros'),
-            const SizedBox(height: 12),
-            MenuCardGrid(cards: otherCards),
-            const SizedBox(height: 28),
-            MenuLogoutButton(onTap: () => _confirmLogout(context, ref)),
-          ],
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.secondaryExtraLight, AppColors.surface],
+          ),
+        ),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+            children: [
+              MenuUserHeader(authState: authAsync),
+              const SizedBox(height: 20),
+              MenuQuickActionsRow(actions: quickActions),
+              const SizedBox(height: 28),
+              const MenuSectionLabel(label: 'Minha conta'),
+              const SizedBox(height: 12),
+              MenuCardGrid(cards: accountCards),
+              const SizedBox(height: 28),
+              const MenuSectionLabel(label: 'Outros'),
+              const SizedBox(height: 12),
+              MenuCardGrid(cards: otherCards),
+              const SizedBox(height: 28),
+              MenuLogoutButton(onTap: () => _confirmLogout(context, ref)),
+            ],
+          ),
         ),
       ),
     );

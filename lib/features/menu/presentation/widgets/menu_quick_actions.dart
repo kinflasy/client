@@ -43,7 +43,6 @@ class MenuQuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final isEnabled = onTap != null;
 
     final iconSurface = Container(
@@ -51,15 +50,13 @@ class MenuQuickActionButton extends StatelessWidget {
       height: 56,
       decoration: BoxDecoration(
         color: isEnabled
-            ? colorScheme.primaryContainer
+            ? AppColors.secondaryLight
             : AppColors.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Icon(
         icon,
-        color: isEnabled
-            ? colorScheme.onPrimaryContainer
-            : colorScheme.onSurfaceVariant,
+        color: isEnabled ? AppColors.primaryDark : AppColors.textPrimary,
       ),
     );
 

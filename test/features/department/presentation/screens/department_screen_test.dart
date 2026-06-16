@@ -18,7 +18,9 @@ import 'package:client/features/department/presentation/screens/department_scree
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/scale/domain/entities/calendar_event_scale_entity.dart';
+import 'package:client/features/scale/domain/entities/department_scale_card_summary_entity.dart';
 import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
+import 'package:client/features/scale/domain/entities/scale_role_assignments_entity.dart';
 import 'package:client/features/scale/providers/calendar_event_scale_providers.dart';
 import 'package:client/features/user_profile/providers/user_profile_providers.dart';
 import 'package:flutter/material.dart';
@@ -230,7 +232,7 @@ void main() {
   });
 
   testWidgets('scales tab shows loading state', (tester) async {
-    final completer = Completer<List<DepartmentScaleWithLineupEntity>>();
+    final completer = Completer<List<DepartmentScaleCardSummaryEntity>>();
 
     await _pumpScaleTab(
       tester: tester,
@@ -264,7 +266,7 @@ void main() {
       tester: tester,
       repository: repository,
       permissions: _leaderPermissions,
-      scales: [_departmentScale],
+      scales: [_departmentScaleSummary],
       detailBuilder: (context, state) {
         capturedExtra = state.extra;
         return Scaffold(
@@ -292,7 +294,7 @@ void main() {
       repository: repository,
       permissions: _leaderPermissions,
       scales: [
-        _departmentScaleWithLineup([
+        _departmentScaleSummaryWithLineup([
           const LineupItemEntity(
             id: 'item-1',
             lineupId: 'lineup-1',
@@ -316,7 +318,7 @@ void main() {
       tester: tester,
       repository: repository,
       permissions: _leaderPermissions,
-      scales: [_departmentScaleWithFailure],
+      scales: [_departmentScaleSummaryWithFailure],
     );
 
     expect(find.text('Culto da manhã'), findsOneWidget);
@@ -786,8 +788,8 @@ Future<void> _pumpScaleTab({
   required WidgetTester tester,
   required DepartmentRepository repository,
   required SessionPermissions permissions,
-  List<DepartmentScaleWithLineupEntity>? scales,
-  Future<List<DepartmentScaleWithLineupEntity>> Function(
+  List<DepartmentScaleCardSummaryEntity>? scales,
+  Future<List<DepartmentScaleCardSummaryEntity>> Function(
     Ref ref,
     DepartmentScalesRequest request,
   )?
@@ -804,7 +806,7 @@ Future<void> _pumpScaleTab({
         departmentCalendarEventsProvider.overrideWith(
           (ref, request) async => const [],
         ),
-        departmentScalesWithLineupsProvider.overrideWith(
+        departmentScalesWithAssignmentSummariesProvider.overrideWith(
           scalesBuilder ?? (ref, request) async => scales ?? const [],
         ),
         sessionPermissionsProvider.overrideWith((ref) async => permissions),
@@ -827,7 +829,7 @@ Future<void> _pumpScaleTabWithRouter({
   required WidgetTester tester,
   required DepartmentRepository repository,
   required SessionPermissions permissions,
-  required List<DepartmentScaleWithLineupEntity> scales,
+  required List<DepartmentScaleCardSummaryEntity> scales,
   required Widget Function(BuildContext context, GoRouterState state)
   detailBuilder,
 }) async {
@@ -857,7 +859,7 @@ Future<void> _pumpScaleTabWithRouter({
         departmentCalendarEventsProvider.overrideWith(
           (ref, request) async => const [],
         ),
-        departmentScalesWithLineupsProvider.overrideWith(
+        departmentScalesWithAssignmentSummariesProvider.overrideWith(
           (ref, request) async => scales,
         ),
         sessionPermissionsProvider.overrideWith((ref) async => permissions),
@@ -935,6 +937,16 @@ final _departmentScaleWithFailure = DepartmentScaleWithLineupEntity(
   scale: _departmentScale.scale,
 );
 
+final _departmentScaleSummary = DepartmentScaleCardSummaryEntity(
+  base: _departmentScale,
+  roleSummaries: const [],
+);
+
+final _departmentScaleSummaryWithFailure = DepartmentScaleCardSummaryEntity(
+  base: _departmentScaleWithFailure,
+  roleSummaries: const [],
+);
+
 DepartmentScaleWithLineupEntity _departmentScaleWithLineup(
   List<LineupItemEntity> items,
 ) {
@@ -942,5 +954,17 @@ DepartmentScaleWithLineupEntity _departmentScaleWithLineup(
     scale: _departmentScale.scale,
     lineupState: DepartmentScaleLineupLoadState.loaded,
     lineup: LineupEntity(id: 'lineup-1', name: 'Banda', items: items),
+  );
+}
+
+DepartmentScaleCardSummaryEntity _departmentScaleSummaryWithLineup(
+  List<LineupItemEntity> items,
+) {
+  final base = _departmentScaleWithLineup(items);
+  return DepartmentScaleCardSummaryEntity(
+    base: base,
+    roleSummaries: items
+        .map((item) => ScaleRoleAssignmentsEntity(item: item, people: const []))
+        .toList(),
   );
 }

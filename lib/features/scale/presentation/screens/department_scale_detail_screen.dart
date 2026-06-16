@@ -1,6 +1,8 @@
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/presentation/widgets/action_confirmation_dialog.dart';
 import 'package:client/core/presentation/widgets/user_avatar.dart';
+import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/department/domain/entities/lineup_entity.dart';
 import 'package:client/features/department/domain/entities/lineup_item_entity.dart';
 import 'package:client/features/scale/domain/entities/department_scale_detail_entity.dart';
@@ -14,6 +16,7 @@ import 'package:client/features/user_profile/providers/user_profile_providers.da
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class DepartmentScaleDetailScreen extends ConsumerStatefulWidget {
   const DepartmentScaleDetailScreen({
@@ -53,17 +56,29 @@ class _DepartmentScaleDetailScreenState
     );
     final permissionsAsync = ref.watch(sessionPermissionsProvider);
     final saveState = ref.watch(saveScaleAssignmentsProvider);
+    final deleteScaleState = ref.watch(deleteDepartmentScaleProvider);
     final isSavingAssignments = saveState.isLoading;
+    final isDeletingScale = deleteScaleState.isLoading;
     final canManageScale = permissionsAsync.maybeWhen(
       data: (permissions) => permissions.canManageDept(widget.departmentId),
       orElse: () => false,
     );
+    final actionsEnabled =
+        canManageScale && !isSavingAssignments && !isDeletingScale;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_appBarTitle(detailAsync)),
         backgroundColor: AppColors.surface,
         surfaceTintColor: AppColors.surface,
+        actions: [
+          if (canManageScale)
+            _ScaleDetailActions(
+              enabled: actionsEnabled,
+              isDeleting: isDeletingScale,
+              onDelete: _confirmAndDeleteScale,
+            ),
+        ],
       ),
       backgroundColor: AppColors.surface,
       body: detailAsync.when(
@@ -78,7 +93,7 @@ class _DepartmentScaleDetailScreenState
           return _ScaleDetailContent(
             detail: detail,
             assignments: _assignmentSnapshot,
-            canManageScale: canManageScale && !isSavingAssignments,
+            canManageScale: actionsEnabled,
             canAddPeople: detail.roleAssignments.any(_hasEditableVacancy),
             onAddPerson: isSavingAssignments
                 ? null
@@ -92,9 +107,9 @@ class _DepartmentScaleDetailScreenState
       bottomNavigationBar: detailAsync.maybeWhen(
         data: (detail) => canManageScale && _hasPendingChanges
             ? _ScaleEditActionBar(
-                isSaving: isSavingAssignments,
-                onCancel: isSavingAssignments ? null : _cancelAssignmentChanges,
-                onComplete: !isSavingAssignments
+                isSaving: isSavingAssignments || isDeletingScale,
+                onCancel: actionsEnabled ? _cancelAssignmentChanges : null,
+                onComplete: actionsEnabled
                     ? () => _saveAssignments(detail)
                     : null,
               )
@@ -176,6 +191,45 @@ class _DepartmentScaleDetailScreenState
     );
   }
 
+  Future<void> _confirmAndDeleteScale() async {
+    final confirmed = await showActionConfirmationDialog(
+      context,
+      title: 'Excluir escala',
+      message: 'Tem certeza que deseja excluir esta escala?',
+      confirmLabel: 'Excluir',
+      isDestructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await ref
+        .read(deleteDepartmentScaleProvider.notifier)
+        .delete(departmentId: widget.departmentId, scaleId: widget.scaleId);
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) {
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(_errorMessage(failure))));
+      },
+      (_) {
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Escala excluída.')));
+        final router = GoRouter.of(context);
+        if (router.canPop()) {
+          router.pop();
+        } else {
+          router.go(
+            AppRoutes.departmentDetail.replaceFirst(':id', widget.departmentId),
+          );
+        }
+      },
+    );
+  }
+
   void _removeAssignment(String localId) {
     setState(() {
       _assignmentSnapshot = _assignmentSnapshot.removeByLocalId(localId);
@@ -198,6 +252,55 @@ class _DepartmentScaleDetailScreenState
     return assignedCount < assignment.capacity;
   }
 }
+
+class _ScaleDetailActions extends StatelessWidget {
+  const _ScaleDetailActions({
+    required this.enabled,
+    required this.isDeleting,
+    required this.onDelete,
+  });
+
+  final bool enabled;
+  final bool isDeleting;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isDeleting) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    return PopupMenuButton<_ScaleDetailAction>(
+      enabled: enabled,
+      tooltip: 'Ações da escala',
+      icon: const Icon(Icons.more_vert_rounded),
+      onSelected: (action) {
+        if (action == _ScaleDetailAction.delete) onDelete();
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem<_ScaleDetailAction>(
+          value: _ScaleDetailAction.delete,
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline),
+              SizedBox(width: 12),
+              Text('Excluir escala'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+enum _ScaleDetailAction { delete }
 
 class _ScaleDetailContent extends StatelessWidget {
   const _ScaleDetailContent({

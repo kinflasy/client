@@ -19,6 +19,7 @@ import 'package:client/features/membership/data/models/person_profile_model.dart
 import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/membership/domain/repositories/member_profile_repository.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
+import 'package:client/features/scale/domain/entities/department_scale_card_summary_entity.dart';
 import 'package:client/features/scale/domain/entities/scale_assignment_person_entity.dart';
 import 'package:client/features/scale/domain/entities/department_scale_with_lineup_entity.dart';
 import 'package:client/features/scale/domain/entities/editable_scale_assignment_entity.dart';
@@ -159,7 +160,8 @@ void main() {
     final result = await container
         .read(createEventScaleProvider.notifier)
         .create(
-          eventId: 'event-1',
+          departmentId: 'dep-1',
+          event: _event(id: 'event-1'),
           request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
         );
 
@@ -190,7 +192,8 @@ void main() {
     final result = await container
         .read(createEventScaleProvider.notifier)
         .create(
-          eventId: 'event-1',
+          departmentId: 'dep-1',
+          event: _event(id: 'event-1'),
           request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
         );
 
@@ -199,6 +202,63 @@ void main() {
     expect(state.hasError, isTrue);
     expect(state.error, failure);
   });
+
+  test(
+    'create action uses owner scale endpoint for department owner event',
+    () async {
+      when(
+        () => repository.createEventScale('event-1', any()),
+      ).thenAnswer((_) async => const Right(_ownerScale));
+
+      final result = await container
+          .read(createEventScaleProvider.notifier)
+          .create(
+            departmentId: 'dep-1',
+            event: _event(id: 'event-1', departmentId: 'dep-1'),
+            request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
+          );
+
+      expect(result.isRight(), isTrue);
+      verify(() => repository.createEventScale('event-1', any())).called(1);
+      verifyNever(
+        () => repository.createCollaboratorEventScale(any(), any(), any()),
+      );
+    },
+  );
+
+  test(
+    'create action uses collaborator scale endpoint for collab event',
+    () async {
+      when(
+        () =>
+            repository.createCollaboratorEventScale('event-1', 'dep-1', any()),
+      ).thenAnswer((_) async => const Right(_collaboratorScale));
+
+      final result = await container
+          .read(createEventScaleProvider.notifier)
+          .create(
+            departmentId: 'dep-1',
+            event: _event(id: 'event-1', departmentId: 'dep-owner'),
+            request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
+          );
+
+      expect(result.isRight(), isTrue);
+      verify(
+        () => repository.createCollaboratorEventScale(
+          'event-1',
+          'dep-1',
+          any(
+            that: isA<CalendarEventScaleRequestModel>().having(
+              (request) => request.lineupId,
+              'lineupId',
+              'lineup-1',
+            ),
+          ),
+        ),
+      ).called(1);
+      verifyNever(() => repository.createEventScale(any(), any()));
+    },
+  );
 
   test('save assignments does not call backend when diff is empty', () async {
     final assignments = [_editableAssignment('a1', 'role-1', 'person-1')];
@@ -415,6 +475,77 @@ void main() {
     );
   });
 
+  test('delete scale calls repository and returns success', () async {
+    when(
+      () => repository.deleteScale('scale-1'),
+    ).thenAnswer((_) async => const Right(null));
+
+    final result = await container
+        .read(deleteDepartmentScaleProvider.notifier)
+        .delete(departmentId: 'dep-1', scaleId: 'scale-1');
+
+    expect(result.isRight(), isTrue);
+    expect(
+      container.read(deleteDepartmentScaleProvider),
+      const AsyncData<void>(null),
+    );
+    verify(() => repository.deleteScale('scale-1')).called(1);
+  });
+
+  test('delete scale preserves failure state', () async {
+    const failure = NetworkFailure('Falha ao excluir escala.');
+    when(
+      () => repository.deleteScale('scale-1'),
+    ).thenAnswer((_) async => const Left(failure));
+
+    final result = await container
+        .read(deleteDepartmentScaleProvider.notifier)
+        .delete(departmentId: 'dep-1', scaleId: 'scale-1');
+
+    expect(result.isLeft(), isTrue);
+    final state = container.read(deleteDepartmentScaleProvider);
+    expect(state.hasError, isTrue);
+    expect(state.error, failure);
+  });
+
+  test(
+    'delete scale invalidates department scale list after success',
+    () async {
+      final request = _departmentScalesRequest();
+      var loadCount = 0;
+      when(
+        () => repository.getDepartmentScales(
+          request.departmentId,
+          request.start,
+          request.end,
+        ),
+      ).thenAnswer((_) {
+        loadCount++;
+        return Future.value(
+          const Right(<DepartmentCalendarEventScaleEntity>[]),
+        );
+      });
+      when(
+        () => repository.deleteScale('scale-1'),
+      ).thenAnswer((_) async => const Right(null));
+
+      final subscription = container.listen(
+        departmentScalesProvider(request),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      await container.read(departmentScalesProvider(request).future);
+      await container
+          .read(deleteDepartmentScaleProvider.notifier)
+          .delete(departmentId: 'dep-1', scaleId: 'scale-1');
+      await container.read(departmentScalesProvider(request).future);
+
+      expect(loadCount, 2);
+    },
+  );
+
   test('create action invalidates event scales after success', () async {
     var loadCount = 0;
     when(() => repository.getEventScales('event-1')).thenAnswer((_) {
@@ -436,7 +567,8 @@ void main() {
     await container
         .read(createEventScaleProvider.notifier)
         .create(
-          eventId: 'event-1',
+          departmentId: 'dep-1',
+          event: _event(id: 'event-1'),
           request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
         );
     await container.read(eventScalesProvider('event-1').future);
@@ -796,6 +928,363 @@ void main() {
       );
 
       verifyNever(() => departmentRepository.getLineupWithItems(any()));
+    },
+  );
+
+  test(
+    'department assignment summaries provider resolves people from participants',
+    () async {
+      final request = _departmentScalesRequest();
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [scale],
+        scaleItemsByScaleId: const {
+          'scale-1': [
+            ScaleItemEntity(
+              id: 'scale-item-1',
+              scaleId: 'scale-1',
+              roleId: 'role-1',
+              personId: 'person-1',
+            ),
+          ],
+        },
+        participants: const [
+          DepartmentParticipantEntity(
+            personId: 'person-1',
+            membershipId: 'membership-1',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Ana',
+            affiliation: 'MEMBER',
+            gender: 'FEMALE',
+          ),
+        ],
+      );
+
+      final List<DepartmentScaleCardSummaryEntity> result =
+          await _readFutureProvider(
+            container,
+            departmentScalesWithAssignmentSummariesProvider(request),
+          );
+
+      expect(result, hasLength(1));
+      expect(result.single.base.scale.scale.id, 'scale-1');
+      expect(result.single.peopleLoadFailed, isFalse);
+      expect(result.single.roleSummaries, hasLength(2));
+      expect(
+        result.single.roleSummaries.first.people.single.displayName,
+        'Ana',
+      );
+      expect(
+        result.single.roleSummaries.first.people.single.scaleItemId,
+        'scale-item-1',
+      );
+    },
+  );
+
+  test(
+    'department assignment summaries provider keeps role without people',
+    () async {
+      final request = _departmentScalesRequest();
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [scale],
+        scaleItemsByScaleId: const {
+          'scale-1': [
+            ScaleItemEntity(
+              id: 'scale-item-1',
+              scaleId: 'scale-1',
+              roleId: 'role-1',
+              personId: 'person-1',
+            ),
+          ],
+        },
+        participants: const [
+          DepartmentParticipantEntity(
+            personId: 'person-1',
+            membershipId: 'membership-1',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Ana',
+            affiliation: 'MEMBER',
+            gender: 'FEMALE',
+          ),
+        ],
+      );
+
+      final List<DepartmentScaleCardSummaryEntity> result =
+          await _readFutureProvider(
+            container,
+            departmentScalesWithAssignmentSummariesProvider(request),
+          );
+
+      final emptyRole = result.single.roleSummaries.last;
+      expect(emptyRole.item.roleId, 'role-2');
+      expect(emptyRole.people, isEmpty);
+      expect(emptyRole.hasOpenVacancy, isTrue);
+    },
+  );
+
+  test(
+    'department assignment summaries provider dedupes people in the same role',
+    () async {
+      final request = _departmentScalesRequest();
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      const lineup = LineupEntity(
+        id: 'lineup-1',
+        name: 'Louvor',
+        items: [
+          LineupItemEntity(
+            id: 'lineup-item-1',
+            lineupId: 'lineup-1',
+            roleId: 'role-1',
+            description: 'Vocal',
+          ),
+          LineupItemEntity(
+            id: 'lineup-item-2',
+            lineupId: 'lineup-1',
+            roleId: 'role-1',
+            description: 'Vocal',
+          ),
+        ],
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [scale],
+        lineup: lineup,
+        scaleItemsByScaleId: const {
+          'scale-1': [
+            ScaleItemEntity(
+              id: 'scale-item-1',
+              scaleId: 'scale-1',
+              roleId: 'role-1',
+              personId: 'person-1',
+            ),
+            ScaleItemEntity(
+              id: 'scale-item-2',
+              scaleId: 'scale-1',
+              roleId: 'role-1',
+              personId: 'person-2',
+            ),
+            ScaleItemEntity(
+              id: 'scale-item-3',
+              scaleId: 'scale-1',
+              roleId: 'role-1',
+              personId: 'person-1',
+            ),
+          ],
+        },
+        participants: const [
+          DepartmentParticipantEntity(
+            personId: 'person-1',
+            membershipId: 'membership-1',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Ana',
+            affiliation: 'MEMBER',
+            gender: 'FEMALE',
+          ),
+          DepartmentParticipantEntity(
+            personId: 'person-2',
+            membershipId: 'membership-2',
+            integrationType: IntegrationType.integrant,
+            nickname: 'Joao',
+            affiliation: 'MEMBER',
+            gender: 'MALE',
+          ),
+        ],
+      );
+
+      final List<DepartmentScaleCardSummaryEntity> result =
+          await _readFutureProvider(
+            container,
+            departmentScalesWithAssignmentSummariesProvider(request),
+          );
+
+      final role = result.single.roleSummaries.single;
+      expect(role.capacity, 2);
+      expect(role.people.map((person) => person.displayName), ['Ana', 'Joao']);
+    },
+  );
+
+  test(
+    'department assignment summaries provider keeps list when people fail',
+    () async {
+      final request = _departmentScalesRequest();
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [scale],
+        participantsFailure: const NetworkFailure('Falha nos integrantes'),
+      );
+
+      final List<DepartmentScaleCardSummaryEntity> result =
+          await _readFutureProvider(
+            container,
+            departmentScalesWithAssignmentSummariesProvider(request),
+          );
+
+      expect(result, hasLength(1));
+      expect(result.single.peopleLoadFailed, isTrue);
+      expect(result.single.roleSummaries, hasLength(2));
+      for (final role in result.single.roleSummaries) {
+        expect(role.people, isEmpty);
+      }
+      verifyNever(() => repository.getScaleItems(any()));
+    },
+  );
+
+  test(
+    'department assignment summaries provider keeps list when scale items fail',
+    () async {
+      final request = _departmentScalesRequest();
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [scale],
+        scaleItemsFailureByScaleId: const {
+          'scale-1': NetworkFailure('Falha ao carregar itens'),
+        },
+      );
+
+      final List<DepartmentScaleCardSummaryEntity> result =
+          await _readFutureProvider(
+            container,
+            departmentScalesWithAssignmentSummariesProvider(request),
+          );
+
+      expect(result, hasLength(1));
+      expect(result.single.peopleLoadFailed, isTrue);
+      expect(result.single.roleSummaries, hasLength(2));
+      final people = result.single.roleSummaries
+          .expand<ScaleAssignmentPersonEntity>((role) => role.people)
+          .toList();
+      expect(people, isEmpty);
+    },
+  );
+
+  test(
+    'department assignment summaries provider loads participants once',
+    () async {
+      final request = _departmentScalesRequest();
+      final first = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+      final second = _departmentScale(
+        scaleId: 'scale-2',
+        eventId: 'event-2',
+        title: 'Culto',
+        startDateTime: DateTime(2026, 6, 1),
+      );
+      _stubAssignmentSummaryBase(
+        repository,
+        departmentRepository,
+        request: request,
+        scales: [first, second],
+        scaleItemsByScaleId: const {'scale-1': [], 'scale-2': []},
+      );
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScalesWithAssignmentSummariesProvider(request),
+      );
+
+      expect(result, hasLength(2));
+      verify(() => departmentRepository.getParticipants('dep-1')).called(1);
+    },
+  );
+
+  test(
+    'save assignments invalidates department assignment summaries on success',
+    () async {
+      final request = _departmentScalesRequest();
+      var itemsLoadCount = 0;
+      final scale = _departmentScale(
+        scaleId: 'scale-1',
+        eventId: 'event-1',
+        title: 'Ceia',
+        startDateTime: DateTime(2026, 5, 31),
+      );
+
+      when(
+        () => repository.getDepartmentScales(
+          request.departmentId,
+          request.start,
+          request.end,
+        ),
+      ).thenAnswer((_) async => Right([scale]));
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-1'),
+      ).thenAnswer((_) async => const Right(_assignmentLineup));
+      when(
+        () => departmentRepository.getParticipants('dep-1'),
+      ).thenAnswer((_) async => const Right(<DepartmentParticipantEntity>[]));
+      when(() => repository.getScaleItems('scale-1')).thenAnswer((_) {
+        itemsLoadCount++;
+        return Future.value(const Right(<ScaleItemEntity>[]));
+      });
+      when(
+        () => repository.addScaleItem(
+          scaleId: 'scale-1',
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer((_) async => const Right(_scaleItem));
+
+      final provider = departmentScalesWithAssignmentSummariesProvider(request);
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+
+      await container.read(provider.future);
+      await container
+          .read(saveScaleAssignmentsProvider.notifier)
+          .save(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+            originalAssignments: const [],
+            currentAssignments: [
+              _editableAssignment('a1', 'role-1', 'person-1'),
+            ],
+          );
+      await container.read(provider.future);
+
+      expect(itemsLoadCount, 2);
     },
   );
 
@@ -1349,7 +1838,8 @@ void main() {
     await container
         .read(createEventScaleProvider.notifier)
         .create(
-          eventId: 'event-1',
+          departmentId: 'dep-1',
+          event: _event(id: 'event-1'),
           request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
         );
     await container.read(departmentScalesProvider(request).future);
@@ -1400,7 +1890,8 @@ void main() {
       await container
           .read(createEventScaleProvider.notifier)
           .create(
-            eventId: 'event-1',
+            departmentId: 'dep-1',
+            event: _event(id: 'event-1'),
             request: const CalendarEventScaleRequestModel(lineupId: 'lineup-1'),
           );
       await container.read(departmentScalesWithLineupsProvider(request).future);
@@ -1493,7 +1984,7 @@ void main() {
   );
 
   test(
-    'eligible provider calls department events with request interval',
+    'eligible provider calls department events with collabs request interval',
     () async {
       final start = DateTime(2026, 5, 29, 10);
       final end = DateTime(2026, 11, 29, 23, 59, 59);
@@ -1503,7 +1994,7 @@ void main() {
         end: end,
       );
       when(
-        () => repository.getDepartmentEvents('dep-1', start, end),
+        () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
       ).thenAnswer((_) async => const Right(<CalendarEventEntity>[]));
 
       final result = await _readFutureProvider(
@@ -1513,53 +2004,51 @@ void main() {
 
       expect(result, isEmpty);
       verify(
-        () => repository.getDepartmentEvents('dep-1', start, end),
+        () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
       ).called(1);
+      verifyNever(() => repository.getDepartmentEvents('dep-1', start, end));
     },
   );
 
-  test('eligible provider removes past events and events with scale', () async {
-    final start = DateTime(2026, 5, 29, 10);
-    final end = DateTime(2026, 11, 29, 23, 59, 59);
-    final past = _event(
-      id: 'event-past',
-      title: 'Evento passado',
-      startDateTime: DateTime(2026, 5, 29, 9, 59),
-    );
-    final scaled = _event(
-      id: 'event-scaled',
-      title: 'Evento com escala',
-      startDateTime: DateTime(2026, 5, 30, 10),
-    );
-    final eligible = _event(
-      id: 'event-free',
-      title: 'Evento sem escala',
-      startDateTime: DateTime(2026, 5, 31, 10),
-    );
-    final request = EligibleDepartmentScaleEventsRequest(
-      departmentId: 'dep-1',
-      start: start,
-      end: end,
-    );
+  test(
+    'eligible provider removes past events and keeps events with scale',
+    () async {
+      final start = DateTime(2026, 5, 29, 10);
+      final end = DateTime(2026, 11, 29, 23, 59, 59);
+      final past = _event(
+        id: 'event-past',
+        title: 'Evento passado',
+        startDateTime: DateTime(2026, 5, 29, 9, 59),
+      );
+      final scaled = _event(
+        id: 'event-scaled',
+        title: 'Evento com escala',
+        startDateTime: DateTime(2026, 5, 30, 10),
+      );
+      final eligible = _event(
+        id: 'event-free',
+        title: 'Evento sem escala',
+        startDateTime: DateTime(2026, 5, 31, 10),
+      );
+      final request = EligibleDepartmentScaleEventsRequest(
+        departmentId: 'dep-1',
+        start: start,
+        end: end,
+      );
 
-    when(
-      () => repository.getDepartmentEvents('dep-1', start, end),
-    ).thenAnswer((_) async => Right([past, scaled, eligible]));
-    when(
-      () => repository.getEventScales('event-scaled'),
-    ).thenAnswer((_) async => const Right([_ownerScale]));
-    when(
-      () => repository.getEventScales('event-free'),
-    ).thenAnswer((_) async => const Right(<CalendarEventScaleEntity>[]));
+      when(
+        () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
+      ).thenAnswer((_) async => Right([past, scaled, eligible]));
 
-    final result = await _readFutureProvider(
-      container,
-      eligibleDepartmentScaleEventsProvider(request),
-    );
+      final result = await _readFutureProvider(
+        container,
+        eligibleDepartmentScaleEventsProvider(request),
+      );
 
-    expect(result, [eligible]);
-    verifyNever(() => repository.getEventScales('event-past'));
-  });
+      expect(result, [scaled, eligible]);
+      verifyNever(() => repository.getEventScales(any()));
+    },
+  );
 
   test('eligible provider keeps event at exact start instant', () async {
     final start = DateTime(2026, 5, 29, 10);
@@ -1576,11 +2065,8 @@ void main() {
     );
 
     when(
-      () => repository.getDepartmentEvents('dep-1', start, end),
+      () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
     ).thenAnswer((_) async => Right([event]));
-    when(
-      () => repository.getEventScales('event-now'),
-    ).thenAnswer((_) async => const Right(<CalendarEventScaleEntity>[]));
 
     final result = await _readFutureProvider(
       container,
@@ -1588,6 +2074,7 @@ void main() {
     );
 
     expect(result, [event]);
+    verifyNever(() => repository.getEventScales(any()));
   });
 
   test('eligible provider sorts by start date and title', () async {
@@ -1615,13 +2102,8 @@ void main() {
     );
 
     when(
-      () => repository.getDepartmentEvents('dep-1', start, end),
+      () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
     ).thenAnswer((_) async => Right([later, sameStartB, sameStartA]));
-    for (final event in [later, sameStartB, sameStartA]) {
-      when(
-        () => repository.getEventScales(event.id),
-      ).thenAnswer((_) async => const Right(<CalendarEventScaleEntity>[]));
-    }
 
     final result = await _readFutureProvider(
       container,
@@ -1633,16 +2115,12 @@ void main() {
       'event-b',
       'event-later',
     ]);
+    verifyNever(() => repository.getEventScales(any()));
   });
 
-  test('eligible provider propagates event scale query failure', () async {
+  test('eligible provider propagates events with collabs failure', () async {
     final start = DateTime(2026, 5, 29, 10);
     final end = DateTime(2026, 11, 29, 23, 59, 59);
-    final event = _event(
-      id: 'event-1',
-      title: 'Evento',
-      startDateTime: DateTime(2026, 6),
-    );
     final request = EligibleDepartmentScaleEventsRequest(
       departmentId: 'dep-1',
       start: start,
@@ -1650,10 +2128,9 @@ void main() {
     );
 
     when(
-      () => repository.getDepartmentEvents('dep-1', start, end),
-    ).thenAnswer((_) async => Right([event]));
-    when(() => repository.getEventScales('event-1')).thenAnswer(
-      (_) async => const Left(NetworkFailure('Falha ao carregar escalas')),
+      () => repository.getDepartmentEventsWithCollabs('dep-1', start, end),
+    ).thenAnswer(
+      (_) async => const Left(NetworkFailure('Falha ao carregar eventos')),
     );
 
     await expectLater(
@@ -1663,6 +2140,7 @@ void main() {
       ),
       throwsA(isA<NetworkFailure>()),
     );
+    verifyNever(() => repository.getEventScales(any()));
   });
 }
 
@@ -1671,6 +2149,13 @@ const _ownerScale = CalendarEventScaleEntity(
   lineupId: 'lineup-1',
   type: CalendarEventScaleType.owner,
   calendarEventId: 'event-1',
+);
+
+const _collaboratorScale = CalendarEventScaleEntity(
+  id: 'scale-2',
+  lineupId: 'lineup-1',
+  type: CalendarEventScaleType.collaborator,
+  collaborationId: 'collab-1',
 );
 
 const _scaleItem = ScaleItemEntity(
@@ -1698,6 +2183,46 @@ const _assignmentLineup = LineupEntity(
     ),
   ],
 );
+
+void _stubAssignmentSummaryBase(
+  _MockCalendarEventRepository repository,
+  _MockDepartmentRepository departmentRepository, {
+  required DepartmentScalesRequest request,
+  required List<DepartmentCalendarEventScaleEntity> scales,
+  LineupEntity lineup = _assignmentLineup,
+  Map<String, List<ScaleItemEntity>> scaleItemsByScaleId = const {},
+  Map<String, Failure> scaleItemsFailureByScaleId = const {},
+  List<DepartmentParticipantEntity> participants = const [],
+  Failure? participantsFailure,
+}) {
+  when(
+    () => repository.getDepartmentScales(
+      request.departmentId,
+      request.start,
+      request.end,
+    ),
+  ).thenAnswer((_) async => Right(scales));
+  when(
+    () => departmentRepository.getLineupWithItems(lineup.id),
+  ).thenAnswer((_) async => Right(lineup));
+  when(
+    () => departmentRepository.getParticipants(request.departmentId),
+  ).thenAnswer(
+    (_) async => participantsFailure != null
+        ? Left(participantsFailure)
+        : Right(participants),
+  );
+
+  for (final scale in scales) {
+    final scaleId = scale.scale.id;
+    final failure = scaleItemsFailureByScaleId[scaleId];
+    when(() => repository.getScaleItems(scaleId)).thenAnswer(
+      (_) async => failure != null
+          ? Left(failure)
+          : Right(scaleItemsByScaleId[scaleId] ?? const []),
+    );
+  }
+}
 
 void _stubAssignmentDetailBase(
   _MockCalendarEventRepository repository,
@@ -1730,6 +2255,7 @@ CalendarEventEntity _event({
   required String id,
   String title = 'Evento',
   DateTime? startDateTime,
+  String departmentId = 'dep-1',
 }) {
   final start = startDateTime ?? DateTime(2026, 6);
   return CalendarEventEntity(
@@ -1738,7 +2264,7 @@ CalendarEventEntity _event({
     startDateTime: start,
     endDateTime: start.add(const Duration(hours: 2)),
     type: CalendarEventType.department,
-    departmentId: 'dep-1',
+    departmentId: departmentId,
   );
 }
 

@@ -10,6 +10,7 @@ class AppColors {
   static const tertiary = Color(0xFFC37046);
   static const tertiaryLight = Color(0xFFE6C3B2);
   static const quaternary = Color(0xFF976849);
+  static const quaternaryDark = Color(0xFF8B4C2D);
 
   // Neutras
   static const background = Color(0xFFF5F5F5);

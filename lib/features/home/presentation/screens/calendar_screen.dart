@@ -26,7 +26,7 @@ class CalendarScreen extends ConsumerWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppColors.secondaryExtraLight, AppColors.surface],
+          colors: [AppColors.surface, AppColors.surface],
         ),
       ),
       child: SafeArea(

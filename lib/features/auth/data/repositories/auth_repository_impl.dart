@@ -83,12 +83,12 @@ class AuthRepositoryImpl implements AuthRepository {
         birthDate: _formatApiDate(birthDate),
       );
 
-      final user = await _api.register(request);
-      return Right(user.toEntity());
+      await _api.register(request);
+      return Right(UserEntity(id: "", username: ""));
     } on DioException catch (e) {
       return Left(NetworkFailure('Erro de conexão: ${e.message}'));
-    } catch (_) {
-      return Left(UnknownFailure('Erro inesperado'));
+    } catch (e) {
+      return Left(UnknownFailure('Erro inesperado: ${e.toString()}'));
     }
   }
 

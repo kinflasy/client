@@ -16,4 +16,7 @@ abstract class UnitMemberApi {
     @Path('id') String unitId,
     @Body() Map<String, dynamic> body,
   );
+
+  @POST('/v1/core/churches/activate-member')
+  Future<void> activateMember(@Body() Map<String, dynamic> body);
 }

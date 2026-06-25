@@ -89,7 +89,9 @@ void main() {
     expect(find.text('Editar cadastro'), findsNothing);
   });
 
-  testWidgets('renders inactive profile with edit button only', (tester) async {
+  testWidgets('renders inactive profile with edit and activation buttons', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -105,6 +107,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Pessoa inativa'), findsOneWidget);
+    expect(find.text('Vincular usuário'), findsOneWidget);
     expect(find.text('Editar cadastro'), findsOneWidget);
     expect(find.text('Contato'), findsNothing);
   });
@@ -201,6 +204,14 @@ void main() {
           builder: (context, state) =>
               Text('editing:${state.pathParameters['id']}'),
         ),
+        GoRoute(
+          path: AppRoutes.adminMembersActivate,
+          name: AppRoutes.adminMembersActivateName,
+          builder: (context, state) {
+            final profile = state.extra as MemberProfileEntity;
+            return Text('activating:${profile.personId}');
+          },
+        ),
       ],
     );
 
@@ -216,9 +227,52 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Editar cadastro'));
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Editar cadastro'));
     await tester.pumpAndSettle();
 
     expect(find.text('editing:person-2'), findsOneWidget);
+  });
+
+  testWidgets('activation button navigates with inactive profile extra', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: AppRoutes.peopleDetail.replaceFirst(':id', 'person-2'),
+      routes: [
+        GoRoute(
+          path: AppRoutes.peopleDetail,
+          name: AppRoutes.peopleDetailName,
+          builder: (context, state) =>
+              MemberProfileScreen(personId: state.pathParameters['id']!),
+        ),
+        GoRoute(
+          path: AppRoutes.adminMembersActivate,
+          name: AppRoutes.adminMembersActivateName,
+          builder: (context, state) {
+            final profile = state.extra as MemberProfileEntity;
+            return Text('activating:${profile.personId}');
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          memberProfileProvider.overrideWith(
+            (ref, personId) async => buildInactiveProfile(),
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Vincular usuário'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('activating:person-2'), findsOneWidget);
   });
 }

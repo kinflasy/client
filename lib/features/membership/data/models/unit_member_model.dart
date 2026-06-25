@@ -1,4 +1,5 @@
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
+import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'unit_member_model.freezed.dart';
@@ -21,6 +22,7 @@ abstract class UnitMemberModel with _$UnitMemberModel {
 abstract class UnitMemberPersonModel with _$UnitMemberPersonModel {
   const factory UnitMemberPersonModel({
     required String id,
+    required String type,
     required String fullName,
     String? nickname,
     required String gender,
@@ -38,6 +40,7 @@ extension UnitMemberModelX on UnitMemberModel {
   UnitMemberEntity toEntity() => UnitMemberEntity(
     membershipId: id,
     personId: person.id,
+    personType: PersonType.fromApi(person.type),
     fullName: person.fullName,
     nickname: person.nickname,
     affiliation: affiliation,

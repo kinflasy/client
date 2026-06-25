@@ -11,8 +11,6 @@ import 'package:mocktail/mocktail.dart';
 class _MockMembershipRepository extends Mock implements MembershipRepository {}
 
 class _FakeActiveUnitStorage implements ActiveUnitStorage {
-  _FakeActiveUnitStorage([this.selectedUnitId]);
-
   String? selectedUnitId;
   final savedUnitIds = <String>[];
   var clearCount = 0;

@@ -1,4 +1,5 @@
 import 'package:client/features/membership/data/datasources/membership_api.dart';
+import 'package:client/features/membership/data/models/membership_model.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -49,32 +50,44 @@ void main() {
     expect(result.single.unitId, 'unit-1');
   });
 
-  test('getMyMemberships extracts first map when item is wrapped in a list', () async {
-    when(() => dio.get<dynamic>('/v1/core/church/units')).thenAnswer(
-      (_) async => Response<dynamic>(
-        requestOptions: RequestOptions(path: '/v1/core/church/units'),
-        data: [
-          [
-            {'id': 'membership-1', 'unitId': 'unit-1', 'affiliation': 'MEMBER'},
+  test(
+    'getMyMemberships extracts first map when item is wrapped in a list',
+    () async {
+      when(() => dio.get<dynamic>('/v1/core/church/units')).thenAnswer(
+        (_) async => Response<dynamic>(
+          requestOptions: RequestOptions(path: '/v1/core/church/units'),
+          data: [
+            [
+              {
+                'id': 'membership-1',
+                'unitId': 'unit-1',
+                'affiliation': 'MEMBER',
+              },
+            ],
           ],
-        ],
-      ),
-    );
+        ),
+      );
 
-    final result = await api.getMyMemberships();
+      final result = await api.getMyMemberships();
 
-    expect(result, hasLength(1));
-    expect(result.single.id, 'membership-1');
-  });
+      expect(result, hasLength(1));
+      expect(result.single.id, 'membership-1');
+    },
+  );
 
-  test('getMyMemberships reads unitId from nested unit object', () async {
+  test('getMyMemberships reads display data from nested unit object', () async {
     when(() => dio.get<dynamic>('/v1/core/church/units')).thenAnswer(
       (_) async => Response<dynamic>(
         requestOptions: RequestOptions(path: '/v1/core/church/units'),
         data: [
           {
             'id': 'membership-1',
-            'unit': {'id': 'unit-1'},
+            'unit': {
+              'id': 'unit-1',
+              'name': 'Unidade Central',
+              'logoUrl': 'https://cdn.example.com/unit.png',
+              'profileImageId': 'media-1',
+            },
             'affiliation': 'MEMBER',
           },
         ],
@@ -84,6 +97,16 @@ void main() {
     final result = await api.getMyMemberships();
 
     expect(result, hasLength(1));
-    expect(result.single.unitId, 'unit-1');
+    final model = result.single;
+    expect(model.unitId, 'unit-1');
+    expect(model.unitName, 'Unidade Central');
+    expect(model.unitLogoUrl, 'https://cdn.example.com/unit.png');
+    expect(model.unitProfileImageId, 'media-1');
+
+    final entity = model.toEntity();
+    expect(entity.unitId, 'unit-1');
+    expect(entity.unitName, 'Unidade Central');
+    expect(entity.unitLogoUrl, 'https://cdn.example.com/unit.png');
+    expect(entity.unitProfileImageId, 'media-1');
   });
 }

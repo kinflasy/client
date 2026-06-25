@@ -10,7 +10,7 @@ void main() {
     'returns no-membership permissions when memberships list is empty',
     () async {
       final permissions = await resolveSessionPermissions(
-        memberships: const [],
+        activeMembership: null,
         loadIntegrations: () async => const [],
         checkUnitAdmin: (_) async => true,
       );
@@ -23,13 +23,11 @@ void main() {
 
   test('promotes affiliation to unit admin when FGA allows access', () async {
     final permissions = await resolveSessionPermissions(
-      memberships: const [
-        MembershipEntity(
-          id: 'membership-1',
-          unitId: 'unit-1',
-          affiliation: 'MEMBER',
-        ),
-      ],
+      activeMembership: const MembershipEntity(
+        id: 'membership-1',
+        unitId: 'unit-1',
+        affiliation: 'MEMBER',
+      ),
       loadIntegrations: () async => const [
         IntegrationEntity(
           id: 'integration-1',
@@ -51,13 +49,11 @@ void main() {
 
   test('keeps base affiliation when FGA denies access', () async {
     final permissions = await resolveSessionPermissions(
-      memberships: const [
-        MembershipEntity(
-          id: 'membership-1',
-          unitId: 'unit-1',
-          affiliation: 'CONGREGATED',
-        ),
-      ],
+      activeMembership: const MembershipEntity(
+        id: 'membership-1',
+        unitId: 'unit-1',
+        affiliation: 'CONGREGATED',
+      ),
       loadIntegrations: () async => const [],
       checkUnitAdmin: (_) async => false,
     );
@@ -68,13 +64,11 @@ void main() {
 
   test('maps unit admin affiliation from membership data', () async {
     final permissions = await resolveSessionPermissions(
-      memberships: const [
-        MembershipEntity(
-          id: 'membership-1',
-          unitId: 'unit-1',
-          affiliation: 'UNIT_ADMIN',
-        ),
-      ],
+      activeMembership: const MembershipEntity(
+        id: 'membership-1',
+        unitId: 'unit-1',
+        affiliation: 'UNIT_ADMIN',
+      ),
       loadIntegrations: () async => const [],
       checkUnitAdmin: (_) async => false,
     );
@@ -85,13 +79,11 @@ void main() {
 
   test('fails closed when FGA check throws', () async {
     final permissions = await resolveSessionPermissions(
-      memberships: const [
-        MembershipEntity(
-          id: 'membership-1',
-          unitId: 'unit-1',
-          affiliation: 'MEMBER',
-        ),
-      ],
+      activeMembership: const MembershipEntity(
+        id: 'membership-1',
+        unitId: 'unit-1',
+        affiliation: 'MEMBER',
+      ),
       loadIntegrations: () async => const [],
       checkUnitAdmin: (_) async => throw Exception('offline'),
     );
@@ -104,13 +96,11 @@ void main() {
     'falls back to empty integrations when loading integrations fails',
     () async {
       final permissions = await resolveSessionPermissions(
-        memberships: const [
-          MembershipEntity(
-            id: 'membership-1',
-            unitId: 'unit-1',
-            affiliation: 'MEMBER',
-          ),
-        ],
+        activeMembership: const MembershipEntity(
+          id: 'membership-1',
+          unitId: 'unit-1',
+          affiliation: 'MEMBER',
+        ),
         loadIntegrations: () async => throw Exception('offline'),
         checkUnitAdmin: (_) async => false,
       );
@@ -118,4 +108,53 @@ void main() {
       expect(permissions.integrations, isEmpty);
     },
   );
+
+  test('checks unit admin against the resolved active membership', () async {
+    final checkedUnitIds = <String>[];
+
+    final permissions = await resolveSessionPermissions(
+      activeMembership: const MembershipEntity(
+        id: 'membership-2',
+        unitId: 'unit-2',
+        affiliation: 'CONGREGATED',
+      ),
+      loadIntegrations: () async => const [],
+      checkUnitAdmin: (unitId) async {
+        checkedUnitIds.add(unitId);
+        return unitId == 'unit-2';
+      },
+    );
+
+    expect(permissions.activeUnitId, 'unit-2');
+    expect(permissions.isUnitAdmin, isTrue);
+    expect(checkedUnitIds, ['unit-2']);
+  });
+
+  test('loads integrations once as global session data', () async {
+    var integrationLoads = 0;
+
+    final permissions = await resolveSessionPermissions(
+      activeMembership: const MembershipEntity(
+        id: 'membership-2',
+        unitId: 'unit-2',
+        affiliation: 'MEMBER',
+      ),
+      loadIntegrations: () async {
+        integrationLoads++;
+        return const [
+          IntegrationEntity(
+            id: 'integration-1',
+            membershipId: 'membership-1',
+            departmentId: 'dept-1',
+            departmentType: 'MINISTRY',
+            integrationType: IntegrationType.leader,
+          ),
+        ];
+      },
+      checkUnitAdmin: (_) async => false,
+    );
+
+    expect(integrationLoads, 1);
+    expect(permissions.integrations, hasLength(1));
+  });
 }

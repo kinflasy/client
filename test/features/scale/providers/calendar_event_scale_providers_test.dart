@@ -1434,6 +1434,48 @@ void main() {
   );
 
   test(
+    'department scale detail provider loads collaborator scale with event id',
+    () async {
+      const lineup = LineupEntity(id: 'lineup-1', name: 'Colaboracao');
+      const collaboratorScale = CalendarEventScaleEntity(
+        id: 'scale-1',
+        lineupId: 'lineup-1',
+        type: CalendarEventScaleType.collaborator,
+        collaborationId: 'collab-1',
+        calendarEventId: 'event-1',
+      );
+      when(
+        () => repository.getScaleById('scale-1'),
+      ).thenAnswer((_) async => const Right(collaboratorScale));
+      when(
+        () => repository.getEventById('event-1'),
+      ).thenAnswer((_) async => Right(_event(id: 'event-1')));
+      when(
+        () => departmentRepository.getLineupWithItems('lineup-1'),
+      ).thenAnswer((_) async => const Right(lineup));
+
+      final result = await _readFutureProvider(
+        container,
+        departmentScaleDetailProvider(
+          const DepartmentScaleDetailRequest(
+            departmentId: 'dep-1',
+            scaleId: 'scale-1',
+          ),
+        ),
+      );
+
+      expect(result.scale.scale, collaboratorScale);
+      expect(result.scale.calendarEvent.id, 'event-1');
+      expect(result.lineupState, DepartmentScaleLineupLoadState.loaded);
+      expect(result.lineup, lineup);
+      verify(() => repository.getEventById('event-1')).called(1);
+      verify(() => departmentRepository.getLineupWithItems('lineup-1')).called(
+        1,
+      );
+    },
+  );
+
+  test(
     'department scale detail provider fails with friendly message when event cannot be resolved',
     () async {
       const collaboratorScale = CalendarEventScaleEntity(

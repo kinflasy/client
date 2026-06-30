@@ -11,6 +11,9 @@ _MembershipModel _$MembershipModelFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       unitId: json['unitId'] as String,
       affiliation: json['affiliation'] as String? ?? 'VISITOR',
+      unitName: json['unitName'] as String?,
+      unitLogoUrl: json['unitLogoUrl'] as String?,
+      unitProfileImageId: json['unitProfileImageId'] as String?,
     );
 
 Map<String, dynamic> _$MembershipModelToJson(_MembershipModel instance) =>
@@ -18,4 +21,7 @@ Map<String, dynamic> _$MembershipModelToJson(_MembershipModel instance) =>
       'id': instance.id,
       'unitId': instance.unitId,
       'affiliation': instance.affiliation,
+      'unitName': instance.unitName,
+      'unitLogoUrl': instance.unitLogoUrl,
+      'unitProfileImageId': instance.unitProfileImageId,
     };

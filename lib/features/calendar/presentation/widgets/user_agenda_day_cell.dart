@@ -99,7 +99,7 @@ class _DayCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final indicatorColor = markers.hasUserScale
-        ? AppColors.quaternary
+        ? AppColors.quaternaryDark
         : AppColors.primary;
 
     Color? fillColor;
@@ -108,7 +108,7 @@ class _DayCircle extends StatelessWidget {
     if (isToday) {
       fillColor = AppColors.primaryDark;
     } else if (markers.hasUserScale || markers.hasEvent) {
-      fillColor = indicatorColor.withValues(alpha: 0.16);
+      fillColor = indicatorColor.withValues(alpha: 0.25);
     }
 
     if (isSelected && !isToday) {

@@ -50,13 +50,13 @@ class MenuQuickActionButton extends StatelessWidget {
       height: 56,
       decoration: BoxDecoration(
         color: isEnabled
-            ? AppColors.secondaryLight
+            ? AppColors.surfaceContainerHigh
             : AppColors.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Icon(
         icon,
-        color: isEnabled ? AppColors.primaryDark : AppColors.textPrimary,
+        color: isEnabled ? AppColors.textPrimary : AppColors.textPrimary,
       ),
     );
 

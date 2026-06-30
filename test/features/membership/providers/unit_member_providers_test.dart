@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:client/features/membership/data/models/unit_member_model.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
+import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/membership/domain/repositories/unit_member_repository.dart';
 import 'package:client/features/membership/providers/register_member_providers.dart';
 import 'package:client/features/membership/providers/unit_member_providers.dart';
@@ -44,6 +45,7 @@ void main() {
     UnitMemberEntity(
       membershipId: '1',
       personId: 'p1',
+      personType: PersonType.user,
       fullName: 'Ana Maria',
       nickname: 'Aninha',
       affiliation: 'MEMBER',
@@ -53,6 +55,7 @@ void main() {
     UnitMemberEntity(
       membershipId: '2',
       personId: 'p2',
+      personType: PersonType.user,
       fullName: 'Bruno Lima',
       affiliation: 'VISITOR',
       gender: 'MALE',
@@ -61,6 +64,7 @@ void main() {
     const UnitMemberEntity(
       membershipId: '3',
       personId: 'p3',
+      personType: PersonType.user,
       fullName: 'Carla Souza',
       affiliation: 'CONGREGATED',
       gender: 'FEMALE',
@@ -108,6 +112,7 @@ void main() {
       'affiliation': 'MEMBER',
       'person': {
         'id': 'person-1',
+        'type': 'USER',
         'fullName': 'Ana Maria',
         'gender': 'FEMALE',
         'profileImageId': 'image-1',

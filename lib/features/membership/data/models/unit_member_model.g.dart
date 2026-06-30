@@ -28,6 +28,7 @@ _UnitMemberPersonModel _$UnitMemberPersonModelFromJson(
   Map<String, dynamic> json,
 ) => _UnitMemberPersonModel(
   id: json['id'] as String,
+  type: json['type'] as String,
   fullName: json['fullName'] as String,
   nickname: json['nickname'] as String?,
   gender: json['gender'] as String,
@@ -41,6 +42,7 @@ Map<String, dynamic> _$UnitMemberPersonModelToJson(
   _UnitMemberPersonModel instance,
 ) => <String, dynamic>{
   'id': instance.id,
+  'type': instance.type,
   'fullName': instance.fullName,
   'nickname': instance.nickname,
   'gender': instance.gender,

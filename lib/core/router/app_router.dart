@@ -31,6 +31,7 @@ import 'package:client/features/home/presentation/screens/calendar_screen.dart';
 import 'package:client/features/calendar/sub_features/unit_agenda/presentation/screens/unit_agenda_screen.dart';
 import 'package:client/features/calendar/sub_features/create_event/presentation/screens/create_event_screen.dart';
 import 'package:client/features/membership/presentation/screens/edit_inactive_person_screen.dart';
+import 'package:client/features/membership/presentation/screens/activate_member_screen.dart';
 import 'package:client/features/membership/presentation/screens/admin_membership_requests_screen.dart';
 import 'package:client/features/membership/presentation/screens/member_options_screen.dart';
 import 'package:client/features/membership/presentation/screens/member_profile_screen.dart';
@@ -73,6 +74,7 @@ final _protectedRoutes = <String>{
   AppRoutes.adminMembers,
   AppRoutes.adminMembershipRequests,
   AppRoutes.adminMembersRegister,
+  AppRoutes.adminMembersActivate,
   AppRoutes.adminDepartments,
   AppRoutes.adminDepartmentsRegister,
   AppRoutes.adminGeneralInfo,
@@ -106,6 +108,7 @@ final _unitAdminRoutes = <String>{
   AppRoutes.adminMembers,
   AppRoutes.adminMembershipRequests,
   AppRoutes.adminMembersRegister,
+  AppRoutes.adminMembersActivate,
   AppRoutes.adminDepartments,
   AppRoutes.adminDepartmentsRegister,
   AppRoutes.adminGeneralInfo,
@@ -390,6 +393,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.adminMembersRegisterName,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RegisterMemberScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminMembersActivate,
+        name: AppRoutes.adminMembersActivateName,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final initialProfile = state.extra is MemberProfileEntity
+              ? state.extra as MemberProfileEntity
+              : null;
+          return ActivateMemberScreen(initialProfile: initialProfile);
+        },
       ),
       GoRoute(
         path: AppRoutes.adminDepartments,

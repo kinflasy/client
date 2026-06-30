@@ -183,14 +183,28 @@ class _ProfileContent extends StatelessWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                  child: ElevatedButton.icon(
-                    onPressed: () => context.pushNamed(
-                      AppRoutes.peopleEditName,
-                      pathParameters: {'id': profile.personId},
-                      extra: profile,
-                    ),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Editar cadastro'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () => context.pushNamed(
+                          AppRoutes.adminMembersActivateName,
+                          extra: profile,
+                        ),
+                        icon: const Icon(Icons.link),
+                        label: const Text('Vincular usuário'),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => context.pushNamed(
+                          AppRoutes.peopleEditName,
+                          pathParameters: {'id': profile.personId},
+                          extra: profile,
+                        ),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Editar cadastro'),
+                      ),
+                    ],
                   ),
                 ),
               ),

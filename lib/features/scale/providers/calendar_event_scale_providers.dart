@@ -307,9 +307,7 @@ Stream<DepartmentScaleWithLineupEntity> _loadDepartmentScaleDetail(
     return scale;
   });
 
-  if (scale.type != CalendarEventScaleType.owner ||
-      scale.calendarEventId == null ||
-      scale.calendarEventId!.trim().isEmpty) {
+  if (scale.calendarEventId == null || scale.calendarEventId!.trim().isEmpty) {
     throw const ValidationFailure(
       'Não foi possível resolver o evento desta escala.',
     );

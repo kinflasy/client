@@ -26,18 +26,11 @@ class _DepartmentScaleCardState extends State<DepartmentScaleCard> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Material(
-        color: AppColors.surfaceContainerHigh.withValues(alpha: 0.35),
+        color: AppColors.surfaceContainerHigh.withValues(alpha: 0.37),
         child: InkWell(
           onTap: widget.onTap,
           child: Stack(
             children: [
-              const Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 3,
-                child: ColoredBox(color: AppColors.secondary),
-              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(22, 18, 14, 16),
                 child: Row(

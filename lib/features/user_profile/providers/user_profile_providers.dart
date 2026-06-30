@@ -3,10 +3,10 @@ import 'package:client/core/domain/session_permissions.dart';
 import 'package:client/core/fga/fga_relations.dart';
 import 'package:client/core/fga/fga_service.dart';
 import 'package:client/features/auth/providers/auth_providers.dart';
+import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/domain/entities/integration_entity.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:client/features/membership/providers/member_profile_providers.dart';
-import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_profile_providers.g.dart';
@@ -16,8 +16,8 @@ Future<SessionPermissions> sessionPermissions(Ref ref) async {
   final currentUser = await ref.watch(authProvider.future);
   if (currentUser == null) return const SessionPermissions.empty();
 
-  final memberships = await ref.watch(membershipProvider.future);
-  if (memberships.isEmpty) {
+  final activeMembership = await ref.watch(activeMembershipProvider.future);
+  if (activeMembership == null) {
     return const SessionPermissions(
       isAuthenticated: true,
       affiliation: null,
@@ -29,7 +29,7 @@ Future<SessionPermissions> sessionPermissions(Ref ref) async {
   }
 
   return resolveSessionPermissions(
-    memberships: memberships,
+    activeMembership: activeMembership,
     loadIntegrations: () async {
       try {
         return await ref.read(myDepartmentIntegrationsProvider.future);
@@ -64,11 +64,11 @@ Affiliation? _mapAffiliation(String value) {
 }
 
 Future<SessionPermissions> resolveSessionPermissions({
-  required List<MembershipEntity> memberships,
+  required MembershipEntity? activeMembership,
   required Future<List<IntegrationEntity>> Function() loadIntegrations,
   required Future<bool> Function(String unitId) checkUnitAdmin,
 }) async {
-  if (memberships.isEmpty) {
+  if (activeMembership == null) {
     return const SessionPermissions(
       isAuthenticated: true,
       affiliation: null,
@@ -79,7 +79,6 @@ Future<SessionPermissions> resolveSessionPermissions({
     );
   }
 
-  final activeMembership = memberships.first;
   final affiliation = _mapAffiliation(activeMembership.affiliation);
 
   var isUnitAdmin = false;

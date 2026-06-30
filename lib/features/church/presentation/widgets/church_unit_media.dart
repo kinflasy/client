@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/media/media_providers.dart';
@@ -117,6 +118,7 @@ class UnitImagePreview extends ConsumerWidget {
     this.imageId,
     this.imageUrl,
     this.preview,
+    this.previewBytes,
   });
 
   final double height;
@@ -124,6 +126,7 @@ class UnitImagePreview extends ConsumerWidget {
   final String? imageId;
   final String? imageUrl;
   final File? preview;
+  final Uint8List? previewBytes;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -140,7 +143,9 @@ class UnitImagePreview extends ConsumerWidget {
     );
 
     Widget child;
-    if (preview != null) {
+    if (previewBytes != null) {
+      child = Image.memory(previewBytes!, fit: BoxFit.cover);
+    } else if (preview != null) {
       child = Image.file(preview!, fit: BoxFit.cover);
     } else {
       final resolvedUrl = _resolvedImageUrl(ref, imageId, imageUrl);

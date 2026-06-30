@@ -1,4 +1,5 @@
 import 'package:client/features/membership/data/models/join_membership_request_model.dart';
+import 'package:client/core/network/multipart_file_factory.dart';
 import 'package:client/features/membership/data/models/pending_unit_membership_model.dart';
 import 'package:client/features/membership/data/models/update_pending_membership_request_model.dart';
 import 'package:client/features/membership/domain/entities/pending_unit_membership_entity.dart';
@@ -308,7 +309,7 @@ class ChurchUnitRepositoryImpl implements ChurchUnitRepository {
     required String fallbackMessage,
   }) async {
     try {
-      final file = await MultipartFile.fromFile(filePath);
+      final file = await multipartFileFromPath(filePath);
       final json = await upload(unitId, file);
       final unitJson = json.isEmpty ? await _api.getUnitById(unitId) : json;
       final model = ChurchUnitReadModel.fromJson(unitJson);

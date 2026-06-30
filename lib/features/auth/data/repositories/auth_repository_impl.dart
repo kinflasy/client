@@ -1,5 +1,6 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/storage/secure_storage.dart';
+import 'package:client/core/network/multipart_file_factory.dart';
 import 'package:client/core/utils/backend_date_parser.dart';
 import 'package:client/features/auth/data/datasources/auth_api.dart';
 import 'package:client/features/auth/data/datasources/auth_request_models.dart';
@@ -167,7 +168,7 @@ class AuthRepositoryImpl implements AuthRepository {
     String filePath,
   ) async {
     try {
-      final file = await MultipartFile.fromFile(filePath);
+      final file = await multipartFileFromPath(filePath);
       final user = (await _api.updateLoggedUserProfileImage(file)).toEntity();
       if (user.id.trim().isEmpty || user.username.trim().isEmpty) {
         return const Left(

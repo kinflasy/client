@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
@@ -24,11 +24,13 @@ class PickedUnitImage {
     required this.path,
     required this.name,
     required this.sizeInBytes,
+    this.bytes,
   });
 
   final String path;
   final String name;
   final int sizeInBytes;
+  final Uint8List? bytes;
 }
 
 abstract class ChurchUnitImagePicker {
@@ -45,10 +47,12 @@ class ImagePickerChurchUnitImagePicker implements ChurchUnitImagePicker {
     final image = await _picker.pickImage(source: ImageSource.gallery);
     if (image == null) return null;
 
+    final bytes = await image.readAsBytes();
     return PickedUnitImage(
       path: image.path,
       name: image.name,
-      sizeInBytes: await image.length(),
+      sizeInBytes: bytes.length,
+      bytes: bytes,
     );
   }
 }
@@ -83,12 +87,12 @@ class EditChurchUnitImagesScreen extends ConsumerStatefulWidget {
 
 class _EditChurchUnitImagesScreenState
     extends ConsumerState<EditChurchUnitImagesScreen> {
-  File? _profilePreview;
-  File? _coverPreview;
+  Uint8List? _profilePreview;
+  Uint8List? _coverPreview;
 
   Future<void> _pickProfileImage() async {
     await _pickAndSubmitImage(
-      onSelected: (image) => setState(() => _profilePreview = File(image.path)),
+      onSelected: (image) => setState(() => _profilePreview = image.bytes),
       submit: (image) => ref
           .read(churchGeneralInfoActionsProvider)
           .updateActiveUnitProfileImage(image.path),
@@ -98,7 +102,7 @@ class _EditChurchUnitImagesScreenState
 
   Future<void> _pickCoverImage() async {
     await _pickAndSubmitImage(
-      onSelected: (image) => setState(() => _coverPreview = File(image.path)),
+      onSelected: (image) => setState(() => _coverPreview = image.bytes),
       submit: (image) => ref
           .read(churchGeneralInfoActionsProvider)
           .updateActiveUnitCoverImage(image.path),
@@ -206,7 +210,7 @@ class _EditChurchUnitImagesScreenState
               subtitle: 'Usada no avatar da unidade.',
               imageId: profile.unit.profileImageId,
               imageUrl: profile.unit.logoUrl ?? profile.church.logoUrl,
-              preview: _profilePreview,
+              previewBytes: _profilePreview,
               height: 160,
               isRound: true,
               isLoading: isLoading,
@@ -219,7 +223,7 @@ class _EditChurchUnitImagesScreenState
               subtitle: 'Usada no topo dos perfis da unidade.',
               imageId: profile.unit.coverImageId,
               imageUrl: profile.unit.coverUrl ?? profile.church.coverUrl,
-              preview: _coverPreview,
+              previewBytes: _coverPreview,
               height: 180,
               isLoading: isLoading,
               onChange: _pickCoverImage,
@@ -261,7 +265,7 @@ class _ImageSection extends StatelessWidget {
     required this.subtitle,
     required this.imageId,
     required this.imageUrl,
-    required this.preview,
+    required this.previewBytes,
     required this.height,
     required this.isLoading,
     required this.onChange,
@@ -273,7 +277,7 @@ class _ImageSection extends StatelessWidget {
   final String subtitle;
   final String? imageId;
   final String? imageUrl;
-  final File? preview;
+  final Uint8List? previewBytes;
   final double height;
   final bool isLoading;
   final VoidCallback onChange;
@@ -312,7 +316,7 @@ class _ImageSection extends StatelessWidget {
             child: UnitImagePreview(
               imageId: imageId,
               imageUrl: imageUrl,
-              preview: preview,
+              previewBytes: previewBytes,
               height: height,
               isRound: isRound,
             ),

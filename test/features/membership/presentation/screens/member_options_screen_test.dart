@@ -62,4 +62,35 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('navigates to activate member flow from Pontis user option', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: AppRoutes.adminMembers,
+      routes: [
+        GoRoute(
+          path: AppRoutes.adminMembers,
+          builder: (context, state) => const MemberOptionsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.adminMembersActivate,
+          builder: (context, state) =>
+              const Scaffold(body: Text('activate-member-flow')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Adicionar membro'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Usuário do Pontis'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('activate-member-flow'), findsOneWidget);
+  });
 }

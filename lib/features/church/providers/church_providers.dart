@@ -15,6 +15,7 @@ import 'package:client/features/church/domain/entities/current_church_profile_en
 import 'package:client/features/church/domain/entities/public_church_unit_profile_entity.dart';
 import 'package:client/features/church/domain/repositories/church_repository.dart';
 import 'package:client/features/church/domain/repositories/church_unit_repository.dart';
+import 'package:client/features/church/providers/active_unit_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:client/features/membership/providers/membership_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,8 +45,7 @@ final churchEventsApiProvider = Provider<ChurchEventsApi>(
 );
 
 final activeMembershipProvider = FutureProvider<MembershipEntity?>((ref) async {
-  final memberships = await ref.watch(membershipProvider.future);
-  return memberships.isEmpty ? null : memberships.first;
+  return ref.watch(activeUnitProvider.future);
 });
 
 final currentChurchProfileProvider = FutureProvider<CurrentChurchProfileEntity>(

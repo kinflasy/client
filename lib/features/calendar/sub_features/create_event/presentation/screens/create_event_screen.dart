@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
 import 'package:client/core/presentation/forms/app_form_formatters.dart';
@@ -1176,16 +1174,18 @@ class _EventImageSection extends StatelessWidget {
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.file(
-                File(image!.path),
-                fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => Container(
-                  height: 120,
-                  color: AppColors.background,
-                  alignment: Alignment.center,
-                  child: Text(image!.name),
-                ),
-              ),
+              child: image!.bytes != null
+                  ? Image.memory(image!.bytes!, fit: BoxFit.contain)
+                  : Image.network(
+                      image!.path,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => Container(
+                        height: 120,
+                        color: AppColors.background,
+                        alignment: Alignment.center,
+                        child: Text(image!.name),
+                      ),
+                    ),
             ),
           ],
           const SizedBox(height: 12),

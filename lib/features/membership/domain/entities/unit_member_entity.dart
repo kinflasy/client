@@ -1,9 +1,11 @@
 import 'package:equatable/equatable.dart';
+import 'package:client/features/membership/domain/enums/person_type.dart';
 
 class UnitMemberEntity extends Equatable {
   const UnitMemberEntity({
     required this.membershipId,
     required this.personId,
+    required this.personType,
     required this.fullName,
     this.nickname,
     required this.affiliation,
@@ -16,6 +18,7 @@ class UnitMemberEntity extends Equatable {
 
   final String membershipId;
   final String personId;
+  final PersonType personType;
   final String fullName;
   final String? nickname;
   final String affiliation;
@@ -29,6 +32,7 @@ class UnitMemberEntity extends Equatable {
   List<Object?> get props => [
     membershipId,
     personId,
+    personType,
     fullName,
     nickname,
     affiliation,

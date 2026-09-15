@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -12,11 +14,13 @@ class PickedEventImage {
     required this.path,
     required this.name,
     required this.sizeInBytes,
+    this.bytes,
   });
 
   final String path;
   final String name;
   final int sizeInBytes;
+  final Uint8List? bytes;
 }
 
 abstract class EventImagePicker {
@@ -33,10 +37,12 @@ class ImagePickerEventImagePicker implements EventImagePicker {
     final image = await _picker.pickImage(source: ImageSource.gallery);
     if (image == null) return null;
 
+    final bytes = await image.readAsBytes();
     return PickedEventImage(
       path: image.path,
       name: image.name,
-      sizeInBytes: await image.length(),
+      sizeInBytes: bytes.length,
+      bytes: bytes,
     );
   }
 }

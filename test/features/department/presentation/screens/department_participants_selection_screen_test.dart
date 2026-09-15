@@ -12,6 +12,7 @@ import 'package:client/features/department/providers/department_detail_providers
 import 'package:client/features/department/providers/department_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
+import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/membership/providers/unit_member_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +29,7 @@ void main() {
     const UnitMemberEntity(
       membershipId: 'membership-1',
       personId: 'person-1',
+      personType: PersonType.user,
       fullName: 'Ana Mária',
       nickname: 'Aninha',
       affiliation: 'MEMBER',
@@ -36,6 +38,7 @@ void main() {
     const UnitMemberEntity(
       membershipId: 'membership-2',
       personId: 'person-2',
+      personType: PersonType.user,
       fullName: 'Bruno Lima',
       affiliation: 'MEMBER',
       gender: 'MALE',
@@ -89,6 +92,7 @@ void main() {
       UnitMemberEntity(
         membershipId: 'membership-1',
         personId: 'person-1',
+        personType: PersonType.user,
         fullName: 'Ana Maria',
         affiliation: 'MEMBER',
         gender: 'FEMALE',

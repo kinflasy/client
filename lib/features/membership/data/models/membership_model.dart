@@ -10,6 +10,9 @@ abstract class MembershipModel with _$MembershipModel {
     required String id,
     required String unitId,
     @Default('VISITOR') String affiliation,
+    String? unitName,
+    String? unitLogoUrl,
+    String? unitProfileImageId,
   }) = _MembershipModel;
 
   factory MembershipModel.fromJson(Map<String, dynamic> json) =>
@@ -17,8 +20,14 @@ abstract class MembershipModel with _$MembershipModel {
 }
 
 extension MembershipModelX on MembershipModel {
-  MembershipEntity toEntity() =>
-      MembershipEntity(id: id, unitId: unitId, affiliation: affiliation);
+  MembershipEntity toEntity() => MembershipEntity(
+    id: id,
+    unitId: unitId,
+    affiliation: affiliation,
+    unitName: unitName,
+    unitLogoUrl: unitLogoUrl,
+    unitProfileImageId: unitProfileImageId,
+  );
 }
 
 class ActiveMembershipModel {
@@ -28,6 +37,9 @@ class ActiveMembershipModel {
     required this.personId,
     required this.affiliation,
     this.entryDate,
+    this.unitName,
+    this.unitLogoUrl,
+    this.unitProfileImageId,
   });
 
   factory ActiveMembershipModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +49,9 @@ class ActiveMembershipModel {
       personId: (json['personId'] ?? '').toString(),
       affiliation: (json['affiliation'] ?? '').toString(),
       entryDate: json['entryDate']?.toString(),
+      unitName: json['unitName']?.toString(),
+      unitLogoUrl: json['unitLogoUrl']?.toString(),
+      unitProfileImageId: json['unitProfileImageId']?.toString(),
     );
   }
 
@@ -45,7 +60,16 @@ class ActiveMembershipModel {
   final String personId;
   final String affiliation;
   final String? entryDate;
+  final String? unitName;
+  final String? unitLogoUrl;
+  final String? unitProfileImageId;
 
-  MembershipEntity toEntity() =>
-      MembershipEntity(id: id, unitId: unitId, affiliation: affiliation);
+  MembershipEntity toEntity() => MembershipEntity(
+    id: id,
+    unitId: unitId,
+    affiliation: affiliation,
+    unitName: unitName,
+    unitLogoUrl: unitLogoUrl,
+    unitProfileImageId: unitProfileImageId,
+  );
 }

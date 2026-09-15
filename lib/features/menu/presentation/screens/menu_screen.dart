@@ -77,7 +77,7 @@ class MenuScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColors.secondaryExtraLight, AppColors.surface],
+            colors: [AppColors.surface, AppColors.surface],
           ),
         ),
         child: SafeArea(
@@ -85,7 +85,7 @@ class MenuScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
             children: [
               MenuUserHeader(authState: authAsync),
-              const SizedBox(height: 20),
+              const SizedBox(height: 5),
               MenuQuickActionsRow(actions: quickActions),
               const SizedBox(height: 28),
               const MenuSectionLabel(label: 'Minha conta'),

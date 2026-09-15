@@ -13,7 +13,7 @@ abstract class AuthApi {
   Future<LoginResponseModel> login(@Body() LoginRequestModel body);
 
   @POST('/auth/register')
-  Future<UserModel> register(@Body() RegisterRequestModel body);
+  Future<void> register(@Body() RegisterRequestModel body);
 
   @GET('/v1/core/users/identify')
   Future<UserModel> getLoggedUser();

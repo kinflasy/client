@@ -27,6 +27,7 @@ class AppRoutes {
   static const adminMembers = '/admin/membros';
   static const adminMembershipRequests = '/admin/membros/solicitacoes';
   static const adminMembersRegister = '/admin/membros/cadastrar';
+  static const adminMembersActivate = '/admin/membros/vincular-usuario';
   static const adminDepartments = '/admin/departamentos';
   static const adminDepartmentsRegister = '/admin/departamentos/cadastrar';
   static const adminGeneralInfo = '/admin/informacoes-gerais';
@@ -85,6 +86,7 @@ class AppRoutes {
   static const adminMembersName = 'admin-members';
   static const adminMembershipRequestsName = 'admin-membership-requests';
   static const adminMembersRegisterName = 'admin-members-register';
+  static const adminMembersActivateName = 'admin-members-activate';
   static const adminDepartmentsName = 'admin-departments';
   static const adminDepartmentsRegisterName = 'admin-departments-register';
   static const adminGeneralInfoName = 'admin-general-info';

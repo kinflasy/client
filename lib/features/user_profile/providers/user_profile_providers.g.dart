@@ -49,7 +49,7 @@ final class SessionPermissionsProvider
 }
 
 String _$sessionPermissionsHash() =>
-    r'c4ed846c4ba516b8b96654e93601174437d966ef';
+    r'129e2487326569ac0de5db909d3bc1ab61dae8e0';
 
 @ProviderFor(currentUserProfile)
 final currentUserProfileProvider = CurrentUserProfileProvider._();

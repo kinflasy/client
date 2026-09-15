@@ -124,7 +124,10 @@ class _AddMemberItemState extends State<_AddMemberItem> {
     return MenuAnchor(
       controller: _menuController,
       menuChildren: [
-        const MenuItemButton(child: Text('Usuário do Pontis')),
+        MenuItemButton(
+          onPressed: () => context.push(AppRoutes.adminMembersActivate),
+          child: const Text('Usuário do Pontis'),
+        ),
         MenuItemButton(
           onPressed: () => context.push(AppRoutes.adminMembersRegister),
           child: const Text('Pessoa sem conta'),

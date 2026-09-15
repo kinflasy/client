@@ -1,7 +1,9 @@
 import 'package:client/core/errors/failure.dart';
 import 'package:client/features/membership/data/datasources/unit_member_api.dart';
+import 'package:client/features/membership/data/models/activate_member_request_model.dart';
 import 'package:client/features/membership/data/models/register_member_request_model.dart';
 import 'package:client/features/membership/data/models/unit_member_model.dart';
+import 'package:client/features/membership/domain/entities/activation_user_entity.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
 import 'package:client/features/membership/domain/repositories/unit_member_repository.dart';
 import 'package:dio/dio.dart';
@@ -83,6 +85,57 @@ class UnitMemberRepositoryImpl implements UnitMemberRepository {
       return const Left(UnknownFailure('Erro inesperado'));
     }
   }
+
+  @override
+  Future<Either<Failure, ActivationUserEntity>> identifyUserByUsername(
+    String username,
+  ) async {
+    try {
+      final normalizedUsername = username.trim().replaceFirst(
+        RegExp(r'^@+'),
+        '',
+      );
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/v1/core/users/identify/@$normalizedUsername',
+      );
+      final data = response.data;
+      if (data == null) {
+        return const Left(ServerFailure('Usuario nao encontrado.'));
+      }
+      return Right(
+        ActivationUserEntity(
+          id: _requiredString(data, ['id']),
+          username: _requiredString(data, ['username']),
+          nickname: _optionalString(data, ['nickname']),
+          profileImageId: _optionalString(data, [
+            'profileImageId',
+            'profile_image_id',
+          ]),
+        ),
+      );
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return const Left(NotFoundFailure('Usuario nao encontrado.'));
+      }
+      return const Left(NetworkFailure('Erro ao buscar usuario.'));
+    } catch (_) {
+      return const Left(UnknownFailure('Erro inesperado ao buscar usuario.'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> activateMember(
+    ActivateMemberRequestModel request,
+  ) async {
+    try {
+      await _api.activateMember(request.toJson());
+      return const Right(null);
+    } on DioException catch (_) {
+      return const Left(NetworkFailure('Erro ao vincular usuario.'));
+    } catch (_) {
+      return const Left(UnknownFailure('Erro inesperado'));
+    }
+  }
 }
 
 Map<String, dynamic> _normalizeUnitMemberJson(Map<String, dynamic> json) {
@@ -99,6 +152,7 @@ Map<String, dynamic> _normalizeUnitMemberJson(Map<String, dynamic> json) {
     'affiliation': _requiredString(json, ['affiliation']),
     'person': {
       'id': _requiredString(person, ['id']),
+      'type': _optionalString(person, ['type']) ?? 'USER',
       'fullName': _requiredString(person, ['fullName', 'full_name']),
       'nickname': _optionalString(person, ['nickname']),
       'gender': _requiredString(person, ['gender']),

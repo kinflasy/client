@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:client/core/config/theme/app_colors.dart';
 import 'package:client/core/errors/failure.dart';
@@ -22,11 +22,13 @@ class PickedLoggedUserImage {
     required this.path,
     required this.name,
     required this.sizeInBytes,
+    this.bytes,
   });
 
   final String path;
   final String name;
   final int sizeInBytes;
+  final Uint8List? bytes;
 }
 
 abstract class LoggedUserImagePicker {
@@ -43,10 +45,12 @@ class ImagePickerLoggedUserImagePicker implements LoggedUserImagePicker {
     final image = await _picker.pickImage(source: ImageSource.gallery);
     if (image == null) return null;
 
+    final bytes = await image.readAsBytes();
     return PickedLoggedUserImage(
       path: image.path,
       name: image.name,
-      sizeInBytes: await image.length(),
+      sizeInBytes: bytes.length,
+      bytes: bytes,
     );
   }
 }
@@ -81,7 +85,7 @@ class EditLoggedUserProfileImageScreen extends ConsumerStatefulWidget {
 
 class _EditLoggedUserProfileImageScreenState
     extends ConsumerState<EditLoggedUserProfileImageScreen> {
-  File? _preview;
+  Uint8List? _preview;
   bool _isSubmitting = false;
 
   Future<void> _pickImage() async {
@@ -96,7 +100,7 @@ class _EditLoggedUserProfileImageScreenState
       return;
     }
 
-    setState(() => _preview = File(image.path));
+    setState(() => _preview = image.bytes);
     setState(() => _isSubmitting = true);
     final result = await updateLoggedUserProfileImage(
       ref,
@@ -162,7 +166,7 @@ class _EditLoggedUserProfileImageScreenState
             children: [
               _ImageSection(
                 imageId: profile.profileImageId,
-                preview: _preview,
+                previewBytes: _preview,
                 isLoading: isLoading,
                 canRemove: hasImage,
                 onChange: _pickImage,
@@ -243,7 +247,7 @@ class _ScaffoldFrame extends StatelessWidget {
 class _ImageSection extends StatelessWidget {
   const _ImageSection({
     required this.imageId,
-    required this.preview,
+    required this.previewBytes,
     required this.isLoading,
     required this.canRemove,
     required this.onChange,
@@ -251,7 +255,7 @@ class _ImageSection extends StatelessWidget {
   });
 
   final String? imageId;
-  final File? preview;
+  final Uint8List? previewBytes;
   final bool isLoading;
   final bool canRemove;
   final VoidCallback onChange;
@@ -285,7 +289,7 @@ class _ImageSection extends StatelessWidget {
           Center(
             child: UnitImagePreview(
               imageId: imageId,
-              preview: preview,
+              previewBytes: previewBytes,
               height: 160,
               isRound: true,
             ),

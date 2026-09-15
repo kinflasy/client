@@ -25,3 +25,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KINFLASY_CLIENT }}
           projectId: kinflasy-client
           channelId: live
+          

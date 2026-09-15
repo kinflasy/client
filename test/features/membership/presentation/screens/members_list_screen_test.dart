@@ -4,6 +4,7 @@ import 'package:client/core/router/app_routes.dart';
 import 'package:client/features/church/providers/church_providers.dart';
 import 'package:client/features/membership/domain/entities/membership_entity.dart';
 import 'package:client/features/membership/domain/entities/unit_member_entity.dart';
+import 'package:client/features/membership/domain/enums/person_type.dart';
 import 'package:client/features/membership/presentation/screens/members_list_screen.dart';
 import 'package:client/features/membership/providers/unit_member_providers.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ void main() {
     UnitMemberEntity(
       membershipId: '1',
       personId: 'p1',
+      personType: PersonType.user,
       fullName: 'Ana Maria',
       affiliation: 'MEMBER',
       gender: 'FEMALE',
@@ -25,6 +27,7 @@ void main() {
     UnitMemberEntity(
       membershipId: '2',
       personId: 'p2',
+      personType: PersonType.user,
       fullName: 'Bruno Lima',
       affiliation: 'VISITOR',
       gender: 'MALE',

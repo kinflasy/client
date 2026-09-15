@@ -12,7 +12,7 @@ class MenuSectionLabel extends StatelessWidget {
       label,
       style: Theme.of(
         context,
-      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
     );
   }
 }
@@ -106,7 +106,7 @@ class MenuGridCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: textTheme.titleSmall?.copyWith(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: textColor,
                     ),
                   ),

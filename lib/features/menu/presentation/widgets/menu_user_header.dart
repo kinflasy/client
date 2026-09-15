@@ -51,7 +51,7 @@ class MenuUserHeaderContent extends StatelessWidget {
         children: [
           UserAvatar(
             displayName: displayName,
-            radius: 40,
+            radius: 60,
             profileImageId: _profileImageId(user, profile),
           ),
           const SizedBox(height: 16),

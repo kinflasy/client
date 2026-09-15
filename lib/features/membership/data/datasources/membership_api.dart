@@ -45,15 +45,31 @@ class MembershipApi {
     final map = _readMap(value);
     if (map.isEmpty) return map;
 
-    if (map['unitId'] == null && map['unit'] is Map) {
-      final unit = Map<String, dynamic>.from(map['unit'] as Map);
-      final unitId = unit['id']?.toString();
-      if (unitId != null && unitId.isNotEmpty) {
-        return {...map, 'unitId': unitId};
-      }
+    if (map['unit'] is! Map) {
+      return map;
     }
 
-    return map;
+    final unit = Map<String, dynamic>.from(map['unit'] as Map);
+    final normalized = Map<String, dynamic>.from(map);
+    final unitId = _readOptionalString(unit, 'id');
+    final unitName = _readOptionalString(unit, 'name');
+    final unitLogoUrl = _readOptionalString(unit, 'logoUrl');
+    final unitProfileImageId = _readOptionalString(unit, 'profileImageId');
+
+    if (normalized['unitId'] == null && unitId != null) {
+      normalized['unitId'] = unitId;
+    }
+    if (unitName != null) {
+      normalized['unitName'] = unitName;
+    }
+    if (unitLogoUrl != null) {
+      normalized['unitLogoUrl'] = unitLogoUrl;
+    }
+    if (unitProfileImageId != null) {
+      normalized['unitProfileImageId'] = unitProfileImageId;
+    }
+
+    return normalized;
   }
 
   Map<String, dynamic> _readMap(Object? value) {
@@ -67,5 +83,10 @@ class MembershipApi {
     }
 
     return const <String, dynamic>{};
+  }
+
+  String? _readOptionalString(Map<String, dynamic> map, String key) {
+    final value = map[key]?.toString().trim();
+    return value == null || value.isEmpty ? null : value;
   }
 }

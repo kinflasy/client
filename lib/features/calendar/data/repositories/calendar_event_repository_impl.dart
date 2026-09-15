@@ -1,4 +1,5 @@
 import 'package:client/core/errors/failure.dart';
+import 'package:client/core/network/multipart_file_factory.dart';
 import 'package:client/features/calendar/data/datasources/calendar_events_api.dart';
 import 'package:client/features/calendar/data/models/calendar_event_read_model.dart';
 import 'package:client/features/calendar/data/models/calendar_event_request_model.dart';
@@ -354,7 +355,7 @@ class CalendarEventRepositoryImpl implements CalendarEventRepository {
     String filePath,
   ) async {
     try {
-      final file = await MultipartFile.fromFile(filePath);
+      final file = await multipartFileFromPath(filePath);
       final json = await _api.updateCardImage(eventId, file);
       final eventJson = json.isEmpty ? await _api.getEventById(eventId) : json;
       return Right(CalendarEventReadModel.fromJson(eventJson).toEntity());

@@ -60,7 +60,7 @@ class _UserAgendaWeekListState extends State<UserAgendaWeekList> {
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 20,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w400,
           ),
         ),
         const SizedBox(height: 12),
@@ -200,7 +200,7 @@ class _DayTitle extends StatelessWidget {
             style: TextStyle(
               color: isSelected ? AppColors.primaryDark : AppColors.textPrimary,
               fontSize: 14,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -435,7 +435,7 @@ class _BaseEventSurface extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -445,7 +445,7 @@ class _BaseEventSurface extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textSecondary,
-                    fontSize: 13,
+                    fontSize: 11.5,
                   ),
                 ),
               ],
@@ -456,7 +456,7 @@ class _BaseEventSurface extends StatelessWidget {
     );
 
     return Material(
-      color: AppColors.surface.withValues(alpha: 0.78),
+      color: AppColors.surfaceContainerHigh.withValues(alpha: 0.45),
       borderRadius: BorderRadius.circular(8),
       clipBehavior: Clip.antiAlias,
       child: onTap == null ? content : InkWell(onTap: onTap, child: content),
